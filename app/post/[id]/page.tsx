@@ -1,26 +1,28 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase'; // ✅ HELYES PATH
-import { useRouter, useParams } from 'next/navigation';
 
-type Message = {
-  id: string;
-  post_id: number;
-  sender_id: string;
-  receiver_id: string;
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+
+type Post = {
+  id: number;
+  title: string;
   content: string;
-  created_at: string;
-  read?: boolean;
+  image: string | null;
+  images: string[] | null;
+  price: number | null;
+  city: string | null;
+  user_id: string | null;
 };
 
-export default function InboxPage() {
-  const router = useRouter();
+export default function PostPage() {
   const params = useParams();
-  const postId = params?.id as string;
+  const router = useRouter();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const postId = params.id as string;
+
+  const [post, setPost] = useState<Post | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   // 🔐 USER
   useEffect(() => {
@@ -29,112 +31,89 @@ export default function InboxPage() {
     });
   }, []);
 
-  // 📥 MESSAGES
+  // 📥 POST BETÖLTÉS
   useEffect(() => {
-    if (!user) return;
-
-    const loadMessages = async () => {
+    const loadPost = async () => {
       const { data, error } = await supabase
-        .from('messages')
+        .from('posts')
         .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .eq('id', Number(postId))
+        .single();
 
       if (error) {
         console.error(error.message);
         return;
       }
 
-      setMessages(data || []);
-    };
-
-    loadMessages();
-  }, [user]);
-
-  // 👤 PROFILES BETÖLTÉS
-  useEffect(() => {
-    if (!messages.length || !user) return;
-
-    const loadProfiles = async () => {
-      const ids = messages.map((msg) =>
-        msg.sender_id === user.id
-          ? msg.receiver_id
-          : msg.sender_id
-      );
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .in('id', ids);
-
-      const map: Record<string, string> = {};
-
-      data?.forEach((p) => {
-        map[p.id] = p.email;
+      setPost({
+        ...data,
+        images: Array.isArray(data.images)
+          ? data.images
+          : data.image
+          ? [data.image]
+          : [],
       });
-
-      setProfiles(map);
     };
 
-    loadProfiles();
-  }, [messages, user]);
+    loadPost();
+  }, [postId]);
 
-  // 🧠 BESZÉLGETÉSEK CSOPORTOSÍTÁSA
-  const conversations = Object.values(
-    messages.reduce((acc: Record<string, Message>, msg) => {
-      const otherUser =
-        msg.sender_id === user?.id
-          ? msg.receiver_id
-          : msg.sender_id;
+  if (!post) {
+    return <div className="p-6 text-white">Betöltés...</div>;
+  }
 
-      if (!acc[otherUser]) {
-        acc[otherUser] = msg;
-      }
-
-      return acc;
-    }, {})
-  );
+  const images = post.images || [];
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
 
-      <h1 className="text-3xl mb-6">📩 Üzenetek</h1>
+      <button
+        onClick={() => router.back()}
+        className="mb-4 bg-gray-800 px-3 py-1 rounded"
+      >
+        ← Vissza
+      </button>
 
-      {conversations.length === 0 && (
-        <p className="text-gray-400">Nincs beszélgetés</p>
+      {/* 🖼️ KÉPEK */}
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        {images.length > 0 ? (
+          images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              className="w-full h-64 object-cover rounded"
+            />
+          ))
+        ) : (
+          <div className="h-64 bg-gray-800 flex items-center justify-center">
+            Nincs kép
+          </div>
+        )}
+      </div>
+
+      {/* 📄 ADATOK */}
+      <h1 className="text-3xl mb-2">{post.title}</h1>
+      <p className="text-gray-400 mb-2">{post.city}</p>
+      <p className="text-xl mb-4">{post.price} Ft</p>
+
+      <p className="mb-6">{post.content}</p>
+
+      {/* 💬 CHAT GOMB */}
+      {user && post.user_id && user.id !== post.user_id && (
+        <button
+          onClick={() =>
+            router.push(`/post/${post.id}/inbox/chat/${post.user_id}`)
+          }
+          className="bg-blue-600 px-6 py-3 rounded-xl"
+        >
+          💬 Írj az eladónak
+        </button>
       )}
 
-      <div className="space-y-4">
-        {conversations.map((msg) => {
-          const otherUser =
-            msg.sender_id === user?.id
-              ? msg.receiver_id
-              : msg.sender_id;
-
-          return (
-            <div
-              key={msg.id}
-              onClick={() =>
-                router.push(`/post/${postId}/inbox/chat/${otherUser}`)
-              }
-              className="bg-gray-900 p-4 rounded-xl cursor-pointer hover:bg-gray-800 transition"
-            >
-              {/* 👤 EMAIL */}
-              <p className="text-blue-400">
-                👤 {profiles[otherUser] || 'Ismeretlen user'}
-              </p>
-
-              {/* 💬 UTOLSÓ ÜZENET */}
-              <p>{msg.content}</p>
-
-              {/* 🕒 IDŐ */}
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(msg.created_at).toLocaleString()}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+      {/* ⚠️ SAJÁT POST */}
+      {user && user.id === post.user_id && (
+        <p className="text-gray-400">Ez a saját hirdetésed</p>
+      )}
 
     </div>
   );

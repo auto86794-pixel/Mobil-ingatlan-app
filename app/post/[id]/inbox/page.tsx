@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 type Message = {
   id: string;
@@ -11,118 +12,131 @@ type Message = {
   receiver_id: string;
   content: string;
   created_at: string;
+  read?: boolean;
+};
+
+type Profile = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
 };
 
 type Conversation = {
   userId: string;
+  profile: Profile;
   lastMessage: Message;
+  unreadCount: number;
 };
 
 export default function InboxPage() {
-  const router = useRouter();
+  const params = useParams();
+  const postId = params.id as string;
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
 
-  // 🔐 USER BETÖLTÉS
+  // USER
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
     });
   }, []);
 
-  // 📥 ÜZENETEK BETÖLTÉSE
+  // MESSAGES
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
+    if (!user) return;
+
+    supabase
+      .from('messages')
+      .select('*')
+      .eq('post_id', Number(postId))
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setMessages(data || []));
+  }, [user, postId]);
+
+  // PROFILES
+  useEffect(() => {
+    const ids = Array.from(
+      new Set(messages.flatMap((m) => [m.sender_id, m.receiver_id]))
+    );
+
+    supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', ids)
+      .then(({ data }) => {
+        const map: Record<string, Profile> = {};
+        data?.forEach((p) => (map[p.id] = p));
+        setProfiles(map);
+      });
+  }, [messages]);
+
+  const conversations = useMemo(() => {
+    if (!user) return [];
+
+    const map = new Map<string, Conversation>();
+
+    for (const msg of messages) {
+      const otherId =
+        msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+
+      if (!map.has(otherId)) {
+        const unread = messages.filter(
+          (m) =>
+            m.sender_id === otherId &&
+            m.receiver_id === user.id &&
+            !m.read
+        ).length;
+
+        map.set(otherId, {
+          userId: otherId,
+          profile: profiles[otherId] || {
+            id: otherId,
+            full_name: 'Felhasználó',
+            avatar_url: null,
+          },
+          lastMessage: msg,
+          unreadCount: unread,
+        });
+      }
     }
 
-    const loadMessages = async () => {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error(error.message);
-        setLoading(false);
-        return;
-      }
-
-      setMessages(data || []);
-      setLoading(false);
-    };
-
-    loadMessages();
-  }, [user]);
-
-  // 🧠 BESZÉLGETÉSEK (USER SZERINT)
-  const conversations: Conversation[] = Object.values(
-    messages.reduce((acc: Record<string, Conversation>, msg) => {
-      const otherUser =
-        msg.sender_id === user?.id
-          ? msg.receiver_id
-          : msg.sender_id;
-
-      if (!acc[otherUser]) {
-        acc[otherUser] = {
-          userId: otherUser,
-          lastMessage: msg,
-        };
-      }
-
-      return acc;
-    }, {})
-  );
+    return Array.from(map.values());
+  }, [messages, profiles, user]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className="p-6 text-white bg-gray-950 min-h-screen">
+      <div className="max-w-2xl mx-auto space-y-3">
+        <h1>Üzenetek</h1>
 
-      <h1 className="text-3xl mb-6">📩 Üzenetek</h1>
-
-      {/* ⏳ LOADING */}
-      {loading && (
-        <p className="text-gray-400">Betöltés...</p>
-      )}
-
-      {/* ❌ EMPTY */}
-      {!loading && conversations.length === 0 && (
-        <p className="text-gray-400">Nincs beszélgetés</p>
-      )}
-
-      {/* 📦 LISTA */}
-      <div className="space-y-4">
-        {conversations.map((conv) => (
-          <div
-            key={conv.userId}
-            onClick={() =>
-              router.push(`/post/${conv.lastMessage.post_id}`)
-            }
-            className="bg-gray-900 p-4 rounded-xl cursor-pointer hover:bg-gray-800 transition"
+        {conversations.map((c) => (
+          <Link
+            key={c.userId}
+            href={`/post/${postId}/inbox/chat/${c.userId}`}
+            className="flex items-center gap-3 p-4 bg-gray-900 rounded-xl"
           >
-            {/* 👤 USER */}
-            <p className="text-sm text-blue-400">
-              👤 {conv.userId.slice(0, 8)}...
-            </p>
+            <img
+              src={c.profile.avatar_url || 'https://placehold.co/40'}
+              className="w-10 h-10 rounded-full"
+            />
 
-            {/* 💬 UTOLSÓ ÜZENET */}
-            <p className="mt-1">
-              {conv.lastMessage.content}
-            </p>
+            <div className="flex-1">
+              <div>{c.profile.full_name}</div>
+              <div className="text-sm text-gray-400">
+                {c.lastMessage.content || 'Kép'}
+              </div>
+            </div>
 
-            {/* 🕒 IDŐ */}
-            <p className="text-xs text-gray-500 mt-1">
-              {new Date(conv.lastMessage.created_at).toLocaleString()}
-            </p>
-          </div>
+            {c.unreadCount > 0 && (
+              <div className="bg-blue-600 px-2 rounded">
+                {c.unreadCount}
+              </div>
+            )}
+          </Link>
         ))}
       </div>
-
     </div>
   );
 }

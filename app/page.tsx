@@ -36,7 +36,6 @@ export default function Home() {
   const [currentImages, setCurrentImages] = useState<string[]>([]);
   const [activeImages, setActiveImages] = useState<Record<number, number>>({});
 
-  // 🔐 USER
   useEffect(() => {
     const loadUser = async () => {
       const { data } = await supabase.auth.getSession();
@@ -45,27 +44,29 @@ export default function Home() {
 
     loadUser();
 
-    const { data } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
-    return () => data.subscription.unsubscribe();
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
-  // 📥 POSTS
   const fetchPosts = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('*')
       .order('id', { ascending: false });
 
+    if (error) {
+      console.error('Postok betöltési hiba:', error.message);
+      return;
+    }
+
     const normalized = (data || []).map((p: any) => ({
       ...p,
-      images: Array.isArray(p.images)
-        ? p.images
-        : p.image
-        ? [p.image]
-        : [],
+      images: Array.isArray(p.images) ? p.images : p.image ? [p.image] : [],
     }));
 
     setPosts(normalized);
@@ -75,14 +76,21 @@ export default function Home() {
     fetchPosts();
   }, []);
 
-  // ❤️ FAVORITES LOAD
   const fetchFavorites = async () => {
-    if (!user) return;
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('favorites')
       .select('post_id')
       .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Kedvencek betöltési hiba:', error.message);
+      return;
+    }
 
     setFavorites(data?.map((f) => f.post_id) || []);
   };
@@ -91,40 +99,46 @@ export default function Home() {
     fetchFavorites();
   }, [user]);
 
-  // ❤️ TOGGLE
   const toggleFavorite = async (postId: number) => {
-    if (!user) return alert('Jelentkezz be!');
+    if (!user) {
+      alert('Jelentkezz be!');
+      return;
+    }
 
     const isFav = favorites.includes(postId);
 
     if (isFav) {
-      await supabase
+      const { error } = await supabase
         .from('favorites')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', user.id);
 
+      if (error) {
+        console.error('Kedvenc törlési hiba:', error.message);
+        return;
+      }
+
       setFavorites((prev) => prev.filter((id) => id !== postId));
     } else {
-      await supabase.from('favorites').insert({
+      const { error } = await supabase.from('favorites').insert({
         post_id: postId,
         user_id: user.id,
       });
+
+      if (error) {
+        console.error('Kedvenc mentési hiba:', error.message);
+        return;
+      }
 
       setFavorites((prev) => [...prev, postId]);
     }
   };
 
-  // 🖼️ FILE
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
+  const handleFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
 
-    const valid: File[] = [];
-
-    Array.from(files).forEach((file) => {
-      valid.push(file);
-    });
-
+    const valid = Array.from(fileList);
     setFiles(valid);
     setPreview(valid.map((f) => URL.createObjectURL(f)));
   };
@@ -135,7 +149,6 @@ export default function Home() {
     };
   }, [preview]);
 
-  // ☁️ UPLOAD
   const uploadImages = async (): Promise<string[]> => {
     if (!files.length) return [];
 
@@ -153,12 +166,12 @@ export default function Home() {
         .from('images')
         .upload(fileName, file);
 
-      if (error) continue;
+      if (error) {
+        console.error('Képfeltöltési hiba:', error.message);
+        continue;
+      }
 
-      const { data } = supabase.storage
-        .from('images')
-        .getPublicUrl(fileName);
-
+      const { data } = supabase.storage.from('images').getPublicUrl(fileName);
       urls.push(data.publicUrl);
     }
 
@@ -176,13 +189,15 @@ export default function Home() {
     setCurrentImages([]);
   };
 
-  // ➕ CREATE
   const handleCreate = async () => {
-    if (!user) return alert('Login szükséges');
+    if (!user) {
+      alert('Login szükséges');
+      return;
+    }
 
     const images = await uploadImages();
 
-    await supabase.from('posts').insert([
+    const { error } = await supabase.from('posts').insert([
       {
         title,
         content,
@@ -195,40 +210,68 @@ export default function Home() {
       },
     ]);
 
+    if (error) {
+      console.error('Hirdetés létrehozási hiba:', error.message);
+      return;
+    }
+
     resetForm();
     fetchPosts();
   };
 
-  // ✏️ UPDATE
   const handleUpdate = async () => {
     if (!editingId) return;
 
     const newImages = files.length ? await uploadImages() : [];
 
-    await supabase
+    const updatedImages =
+      newImages.length > 0 ? [...currentImages, ...newImages] : currentImages;
+
+    const { error } = await supabase
       .from('posts')
       .update({
         title,
         content,
         price: price ? Number(price) : null,
         city,
-        images: [...currentImages, ...newImages],
+        images: updatedImages,
+        image: updatedImages[0] || null,
       })
       .eq('id', editingId);
+
+    if (error) {
+      console.error('Hirdetés frissítési hiba:', error.message);
+      return;
+    }
 
     resetForm();
     fetchPosts();
   };
 
-  // 🗑️ DELETE
   const handleDelete = async (id: number) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
-    await supabase.from('posts').delete().eq('id', id);
+
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+
+    if (error) {
+      console.error('Törlési hiba:', error.message);
+      fetchPosts();
+    }
+  };
+
+  const startEdit = (post: Post) => {
+    setEditingId(post.id);
+    setTitle(post.title || '');
+    setContent(post.content || '');
+    setPrice(post.price ? String(post.price) : '');
+    setCity(post.city || '');
+    setCurrentImages(post.images || (post.image ? [post.image] : []));
+    setFiles([]);
+    setPreview([]);
   };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
-
       <div className="flex justify-between mb-6">
         <div className="flex gap-3">
           <Link href="/login" className="bg-blue-600 px-3 py-2 rounded">
@@ -255,11 +298,11 @@ export default function Home() {
             <div
               key={p.id}
               onClick={() => router.push(`/post/${p.id}`)}
-              className="relative bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
+              className="relative bg-gray-900 rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition"
             >
-              {/* ❤️ */}
               <div className="absolute top-3 right-3 z-10">
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFavorite(p.id);
@@ -273,16 +316,8 @@ export default function Home() {
               {activeSrc ? (
                 <img
                   src={activeSrc}
+                  alt={p.title || 'Lakás kép'}
                   className="w-full h-48 object-cover"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (images.length <= 1) return;
-
-                    setActiveImages((prev) => ({
-                      ...prev,
-                      [p.id]: (activeIndex + 1) % images.length,
-                    }));
-                  }}
                 />
               ) : (
                 <div className="h-48 bg-gray-800 flex items-center justify-center">
@@ -291,16 +326,47 @@ export default function Home() {
               )}
 
               <div className="p-4">
-                <h2>{p.title}</h2>
+                <h2 className="text-xl font-semibold">{p.title}</h2>
                 <p>{p.city}</p>
                 <p>{p.price}</p>
 
+                {images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImages((prev) => ({
+                        ...prev,
+                        [p.id]: (activeIndex + 1) % images.length,
+                      }));
+                    }}
+                    className="mt-2 text-sm bg-gray-800 px-3 py-1 rounded"
+                  >
+                    Következő kép
+                  </button>
+                )}
+
                 {p.user_id === user?.id && (
                   <div className="flex gap-2 mt-2">
-                    <button onClick={(e) => { e.stopPropagation(); setEditingId(p.id); }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEdit(p);
+                      }}
+                      className="bg-yellow-600 px-3 py-1 rounded"
+                    >
                       Szerkeszt
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(p.id);
+                      }}
+                      className="bg-red-600 px-3 py-1 rounded"
+                    >
                       Törlés
                     </button>
                   </div>
@@ -311,17 +377,77 @@ export default function Home() {
         })}
       </div>
 
-      {/* FORM */}
-      <div className="max-w-md mx-auto">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Cím" />
-        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Város" />
-        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Ár" />
-        <textarea value={content} onChange={(e) => setContent(e.target.value)} />
+      <div className="max-w-md mx-auto flex flex-col gap-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Cím"
+          className="p-2 rounded bg-gray-900 border border-gray-700"
+        />
 
-        <input type="file" multiple onChange={(e) => handleFiles(e.target.files)} />
+        <input
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Város"
+          className="p-2 rounded bg-gray-900 border border-gray-700"
+        />
 
-        <button onClick={editingId ? handleUpdate : handleCreate}>
-          Mentés
+        <input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="Ár"
+          className="p-2 rounded bg-gray-900 border border-gray-700"
+        />
+
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Leírás"
+          className="p-2 rounded bg-gray-900 border border-gray-700 min-h-[120px]"
+        />
+
+        <input
+          type="file"
+          multiple
+          onChange={(e) => handleFiles(e.target.files)}
+          className="p-2 rounded bg-gray-900 border border-gray-700"
+        />
+
+        {preview.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {preview.map((src, index) => (
+              <img
+                key={index}
+                src={src}
+                alt={`Preview ${index + 1}`}
+                className="w-full h-24 object-cover rounded"
+              />
+            ))}
+          </div>
+        )}
+
+        {currentImages.length > 0 && editingId && (
+          <div>
+            <p className="mb-2 text-sm text-gray-300">Jelenlegi képek:</p>
+            <div className="grid grid-cols-3 gap-2">
+              {currentImages.map((src, index) => (
+                <img
+                  key={index}
+                  src={src}
+                  alt={`Current ${index + 1}`}
+                  className="w-full h-24 object-cover rounded"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={editingId ? handleUpdate : handleCreate}
+          className="bg-green-600 px-4 py-2 rounded"
+        >
+          {editingId ? 'Frissítés' : 'Mentés'}
         </button>
       </div>
     </div>

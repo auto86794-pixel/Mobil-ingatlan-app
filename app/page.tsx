@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase';
+import { supabase } from './lib/supabase'; // ✅ EZ HELYES nálad
 
 type Post = {
   id: number;
@@ -18,21 +18,28 @@ export default function HomePage() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
-
   const [posts, setPosts] = useState<Post[]>([]);
 
   // 📥 LOAD POSTS
   useEffect(() => {
     const loadPosts = async () => {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        console.log('ENV URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
-      if (error) {
-        console.error(error.message);
-      } else {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('SUPABASE ERROR:', error);
+          return;
+        }
+
+        console.log('POSTS:', data);
         setPosts(data || []);
+      } catch (err) {
+        console.error('FETCH ERROR:', err);
       }
     };
 
@@ -43,50 +50,68 @@ export default function HomePage() {
   const handleSubmit = async () => {
     let imageUrl: string | null = null;
 
-    if (file) {
-      const fileName = `${Date.now()}-${file.name}`;
+    try {
+      if (file) {
+        const fileName = `${Date.now()}-${file.name}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(fileName, file);
+        const { data: uploadData, error: uploadError } =
+          await supabase.storage
+            .from('images')
+            .upload(fileName, file, {
+              contentType: file.type,
+            });
 
-      if (!uploadError) {
+        if (uploadError) {
+          console.error('UPLOAD ERROR:', uploadError);
+          return;
+        }
+
+        console.log('UPLOAD OK:', uploadData);
+
         const { data } = supabase.storage
           .from('images')
           .getPublicUrl(fileName);
 
         imageUrl = data.publicUrl;
+        console.log('IMAGE URL:', imageUrl);
       }
-    }
 
-    const { error } = await supabase.from('posts').insert({
-      title,
-      city,
-      price: Number(price),
-      description,
-      image: imageUrl,
-    });
+      const { error } = await supabase.from('posts').insert({
+        title,
+        city,
+        price: Number(price),
+        description,
+        image: imageUrl,
+      });
 
-    if (!error) {
+      if (error) {
+        console.error('INSERT ERROR:', error);
+        return;
+      }
+
+      console.log('INSERT OK');
+
+      // reset
       setTitle('');
       setCity('');
       setPrice('');
       setDescription('');
       setFile(null);
 
-      // 🔄 reload
+      // reload posts
       const { data } = await supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
 
       setPosts(data || []);
+    } catch (err) {
+      console.error('SUBMIT ERROR:', err);
     }
   };
 
   return (
     <div className="p-6 text-white bg-gray-950 min-h-screen">
-      
       <h1 className="text-2xl mb-4">🏠 Lakások</h1>
 
       {/* FORM */}
@@ -121,7 +146,10 @@ export default function HomePage() {
 
         <input
           type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            console.log('FILE:', e.target.files);
+            setFile(e.target.files?.[0] || null);
+          }}
         />
 
         <button
@@ -136,7 +164,6 @@ export default function HomePage() {
       <div className="mt-10 space-y-4 max-w-md">
         {posts.map((post) => (
           <div key={post.id} className="bg-gray-800 p-4 rounded-xl">
-
             {post.image && (
               <img
                 src={post.image}
@@ -150,11 +177,9 @@ export default function HomePage() {
               {post.price} Ft
             </p>
             <p className="mt-2">{post.description}</p>
-
           </div>
         ))}
       </div>
-
     </div>
   );
 }

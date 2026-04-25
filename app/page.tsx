@@ -1,15 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase'; // ✅ EZ HELYES nálad
+import { db } from './lib/firebase';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 type Post = {
-  id: number;
+  id?: string;
   title: string;
   city: string;
   price: number;
   description: string;
-  image?: string | null;
+  image?: string;
+};
+
+const uploadToCloudinary = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'albi_upload');
+
+  const res = await fetch(
+    'https://api.cloudinary.com/v1_1/drvdyql4b/image/upload',
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Upload hiba');
+  }
+
+  return data.secure_url;
 };
 
 export default function HomePage() {
@@ -18,167 +48,207 @@ export default function HomePage() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
+
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
-  // 📥 LOAD POSTS
+  // 🔍 FILTER STATE
+  const [searchCity, setSearchCity] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+
+  const loadPosts = async () => {
+    try {
+      setLoadingPosts(true);
+
+      const q = query(
+        collection(db, 'posts'),
+        orderBy('created_at', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      const data: Post[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Post),
+      }));
+
+      setPosts(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        console.log('ENV URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('SUPABASE ERROR:', error);
-          return;
-        }
-
-        console.log('POSTS:', data);
-        setPosts(data || []);
-      } catch (err) {
-        console.error('FETCH ERROR:', err);
-      }
-    };
-
     loadPosts();
   }, []);
 
-  // 📤 SUBMIT
   const handleSubmit = async () => {
-    let imageUrl: string | null = null;
-
     try {
+      setLoading(true);
+
+      let imageUrl = '';
+
       if (file) {
-        const fileName = `${Date.now()}-${file.name}`;
-
-        const { data: uploadData, error: uploadError } =
-          await supabase.storage
-            .from('images')
-            .upload(fileName, file, {
-              contentType: file.type,
-            });
-
-        if (uploadError) {
-          console.error('UPLOAD ERROR:', uploadError);
-          return;
-        }
-
-        console.log('UPLOAD OK:', uploadData);
-
-        const { data } = supabase.storage
-          .from('images')
-          .getPublicUrl(fileName);
-
-        imageUrl = data.publicUrl;
-        console.log('IMAGE URL:', imageUrl);
+        imageUrl = await uploadToCloudinary(file);
       }
 
-      const { error } = await supabase.from('posts').insert({
+      await addDoc(collection(db, 'posts'), {
         title,
         city,
-        price: Number(price),
+        price: Number(price) || 0,
         description,
         image: imageUrl,
+        created_at: serverTimestamp(),
       });
 
-      if (error) {
-        console.error('INSERT ERROR:', error);
-        return;
-      }
-
-      console.log('INSERT OK');
-
-      // reset
       setTitle('');
       setCity('');
       setPrice('');
       setDescription('');
       setFile(null);
 
-      // reload posts
-      const { data } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      setPosts(data || []);
-    } catch (err) {
-      console.error('SUBMIT ERROR:', err);
+      await loadPosts();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // 🔍 FILTER LOGIC
+  const filteredPosts = posts.filter((post) => {
+    const matchCity = post.city
+      .toLowerCase()
+      .includes(searchCity.toLowerCase());
+
+    const matchPrice =
+      !maxPrice || post.price <= Number(maxPrice);
+
+    return matchCity && matchPrice;
+  });
+
   return (
-    <div className="p-6 text-white bg-gray-950 min-h-screen">
-      <h1 className="text-2xl mb-4">🏠 Lakások</h1>
+    <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* FORM */}
-      <div className="max-w-md space-y-2">
-        <input
-          placeholder="Cím"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800"
-        />
-
-        <input
-          placeholder="Város"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800"
-        />
-
-        <input
-          placeholder="Ár"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800"
-        />
-
-        <textarea
-          placeholder="Leírás"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800"
-        />
-
-        <input
-          type="file"
-          onChange={(e) => {
-            console.log('FILE:', e.target.files);
-            setFile(e.target.files?.[0] || null);
-          }}
-        />
-
-        <button
-          onClick={handleSubmit}
-          className="bg-green-600 w-full py-2 rounded"
-        >
-          Mentés
-        </button>
+      {/* NAVBAR */}
+      <div className="bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">🏠 Ingatlanok</h1>
+        <span className="text-sm text-gray-400">
+          Mini app 🚀
+        </span>
       </div>
 
-      {/* 📋 LISTA */}
-      <div className="mt-10 space-y-4 max-w-md">
-        {posts.map((post) => (
-          <div key={post.id} className="bg-gray-800 p-4 rounded-xl">
-            {post.image && (
-              <img
-                src={post.image}
-                className="w-full h-48 object-cover rounded mb-2"
-              />
-            )}
+      <div className="max-w-6xl mx-auto p-6">
 
-            <h2 className="text-xl font-bold">{post.title}</h2>
-            <p className="text-sm opacity-70">{post.city}</p>
-            <p className="text-green-400 font-bold">
-              {post.price} Ft
-            </p>
-            <p className="mt-2">{post.description}</p>
-          </div>
-        ))}
+        {/* FILTER BAR */}
+        <div className="bg-gray-900 p-4 rounded-xl mb-6 flex gap-3 flex-wrap">
+
+          <input
+            placeholder="Keresés város szerint..."
+            value={searchCity}
+            onChange={(e) => setSearchCity(e.target.value)}
+            className="p-2 rounded bg-gray-800 border border-gray-700"
+          />
+
+          <input
+            type="number"
+            placeholder="Max ár"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="p-2 rounded bg-gray-800 border border-gray-700"
+          />
+        </div>
+
+        {/* FORM */}
+        <div className="bg-gray-900 p-6 rounded-xl mb-10 space-y-3">
+
+          <input
+            placeholder="Cím"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-3 rounded bg-gray-800"
+          />
+
+          <input
+            placeholder="Város"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full p-3 rounded bg-gray-800"
+          />
+
+          <input
+            type="number"
+            placeholder="Ár"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full p-3 rounded bg-gray-800"
+          />
+
+          <textarea
+            placeholder="Leírás"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full p-3 rounded bg-gray-800"
+          />
+
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full bg-green-600 py-3 rounded"
+          >
+            {loading ? 'Mentés...' : 'Mentés'}
+          </button>
+        </div>
+
+        {/* LIST */}
+        <div className="grid gap-6 md:grid-cols-3">
+
+          {loadingPosts ? (
+            <p>Betöltés...</p>
+          ) : filteredPosts.length === 0 ? (
+            <p>Nincs találat.</p>
+          ) : (
+            filteredPosts.map((post) => (
+              <div
+                key={post.id}
+                className="bg-gray-900 rounded-xl overflow-hidden shadow hover:scale-[1.02] transition"
+              >
+                {post.image && (
+                  <img
+                    src={post.image}
+                    className="w-full h-40 object-cover"
+                  />
+                )}
+
+                <div className="p-4">
+                  <h2 className="font-bold text-lg">
+                    {post.title}
+                  </h2>
+
+                  <p className="text-gray-400 text-sm">
+                    {post.city}
+                  </p>
+
+                  <p className="text-green-400 font-bold mt-1">
+                    {post.price.toLocaleString()} Ft
+                  </p>
+
+                  <p className="text-sm mt-2 text-gray-300">
+                    {post.description}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

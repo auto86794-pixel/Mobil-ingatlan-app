@@ -1,254 +1,123 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { db } from './lib/firebase';
+import { useEffect, useState } from "react";
+import { db, storage, auth } from "./lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
-  addDoc,
-  getDocs,
-  orderBy,
   query,
-  serverTimestamp,
-} from 'firebase/firestore';
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
-type Post = {
-  id?: string;
-  title: string;
-  city: string;
-  price: number;
-  description: string;
-  image?: string;
-};
+export default function Dashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
 
-const uploadToCloudinary = async (file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', 'albi_upload');
+  // 🔄 fetch
+  const fetchPosts = async (uid: string) => {
+    const q = query(
+      collection(db, "posts"),
+      where("userId", "==", uid)
+    );
 
-  const res = await fetch(
-    'https://api.cloudinary.com/v1_1/drvdyql4b/image/upload',
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
+    const querySnapshot = await getDocs(q);
+    const data: any[] = [];
 
-  const data = await res.json();
+    querySnapshot.forEach((docSnap) => {
+      data.push({ id: docSnap.id, ...docSnap.data() });
+    });
 
-  if (!res.ok) {
-    throw new Error(data.error?.message || 'Upload hiba');
-  }
-
-  return data.secure_url;
-};
-
-export default function HomePage() {
-  const [title, setTitle] = useState('');
-  const [city, setCity] = useState('');
-  const [price, setPrice] = useState('');
-  const [description, setDescription] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingPosts, setLoadingPosts] = useState(true);
-
-  // 🔍 FILTER STATE
-  const [searchCity, setSearchCity] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-
-  const loadPosts = async () => {
-    try {
-      setLoadingPosts(true);
-
-      const q = query(
-        collection(db, 'posts'),
-        orderBy('created_at', 'desc')
-      );
-
-      const snapshot = await getDocs(q);
-
-      const data: Post[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Post),
-      }));
-
-      setPosts(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingPosts(false);
-    }
+    setPosts(data);
   };
 
+  // 👤 auth
   useEffect(() => {
-    loadPosts();
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        fetchPosts(u.uid);
+      } else {
+        window.location.href = "/login";
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
+  // 🗑️ törlés
+  const handleDelete = async (id: string) => {
+    if (!confirm("Biztos törlöd?")) return;
 
-      let imageUrl = '';
+    await deleteDoc(doc(db, "posts", id));
 
-      if (file) {
-        imageUrl = await uploadToCloudinary(file);
-      }
-
-      await addDoc(collection(db, 'posts'), {
-        title,
-        city,
-        price: Number(price) || 0,
-        description,
-        image: imageUrl,
-        created_at: serverTimestamp(),
-      });
-
-      setTitle('');
-      setCity('');
-      setPrice('');
-      setDescription('');
-      setFile(null);
-
-      await loadPosts();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
+    // frissítés
+    setPosts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // 🔍 FILTER LOGIC
-  const filteredPosts = posts.filter((post) => {
-    const matchCity = post.city
-      .toLowerCase()
-      .includes(searchCity.toLowerCase());
-
-    const matchPrice =
-      !maxPrice || post.price <= Number(maxPrice);
-
-    return matchCity && matchPrice;
-  });
-
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white p-6">
+      <h1 className="text-3xl font-bold mb-6">📊 Dashboard</h1>
 
-      {/* NAVBAR */}
-      <div className="bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">🏠 Ingatlanok</h1>
-        <span className="text-sm text-gray-400">
-          Mini app 🚀
-        </span>
-      </div>
+      {user && (
+        <p className="mb-6 text-gray-400">
+          Bejelentkezve: {user.email}
+        </p>
+      )}
 
-      <div className="max-w-6xl mx-auto p-6">
-
-        {/* FILTER BAR */}
-        <div className="bg-gray-900 p-4 rounded-xl mb-6 flex gap-3 flex-wrap">
-
-          <input
-            placeholder="Keresés város szerint..."
-            value={searchCity}
-            onChange={(e) => setSearchCity(e.target.value)}
-            className="p-2 rounded bg-gray-800 border border-gray-700"
-          />
-
-          <input
-            type="number"
-            placeholder="Max ár"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="p-2 rounded bg-gray-800 border border-gray-700"
-          />
+      {/* EMPTY */}
+      {posts.length === 0 && (
+        <div className="text-center text-gray-500 mt-20">
+          <p>Nincs még feltöltött ingatlanod 😢</p>
         </div>
+      )}
 
-        {/* FORM */}
-        <div className="bg-gray-900 p-6 rounded-xl mb-10 space-y-3">
-
-          <input
-            placeholder="Cím"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 rounded bg-gray-800"
-          />
-
-          <input
-            placeholder="Város"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-full p-3 rounded bg-gray-800"
-          />
-
-          <input
-            type="number"
-            placeholder="Ár"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full p-3 rounded bg-gray-800"
-          />
-
-          <textarea
-            placeholder="Leírás"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-3 rounded bg-gray-800"
-          />
-
-          <input
-            type="file"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-green-600 py-3 rounded"
+      {/* GRID */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {posts.map((post) => (
+          <div
+            key={post.id}
+            className="bg-gray-800 rounded-xl overflow-hidden shadow-lg"
           >
-            {loading ? 'Mentés...' : 'Mentés'}
-          </button>
-        </div>
+            {/* KÉP */}
+            {post.imageUrl && (
+              <img
+                src={post.imageUrl}
+                className="h-48 w-full object-cover"
+              />
+            )}
 
-        {/* LIST */}
-        <div className="grid gap-6 md:grid-cols-3">
+            <div className="p-4">
+              <h2 className="text-xl font-bold mb-1">
+                {post.title}
+              </h2>
 
-          {loadingPosts ? (
-            <p>Betöltés...</p>
-          ) : filteredPosts.length === 0 ? (
-            <p>Nincs találat.</p>
-          ) : (
-            filteredPosts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-gray-900 rounded-xl overflow-hidden shadow hover:scale-[1.02] transition"
-              >
-                {post.image && (
-                  <img
-                    src={post.image}
-                    className="w-full h-40 object-cover"
-                  />
-                )}
+              <p className="text-gray-400 mb-1">
+                {post.city}
+              </p>
 
-                <div className="p-4">
-                  <h2 className="font-bold text-lg">
-                    {post.title}
-                  </h2>
+              <p className="text-green-400 text-lg mb-2">
+                {post.price.toLocaleString()} Ft
+              </p>
 
-                  <p className="text-gray-400 text-sm">
-                    {post.city}
-                  </p>
+              <p className="text-sm text-gray-400 mb-4">
+                {post.description}
+              </p>
 
-                  <p className="text-green-400 font-bold mt-1">
-                    {post.price.toLocaleString()} Ft
-                  </p>
-
-                  <p className="text-sm mt-2 text-gray-300">
-                    {post.description}
-                  </p>
-                </div>
+              {/* GOMBOK */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDelete(post.id)}
+                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                >
+                  🗑️ Törlés
+                </button>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

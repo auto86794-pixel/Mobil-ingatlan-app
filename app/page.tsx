@@ -10,6 +10,7 @@ type Post = {
   city: string;
   price: number;
   imageUrl: string;
+  featured?: boolean;
 };
 
 export default function Home() {
@@ -29,7 +30,7 @@ export default function Home() {
     if (fav) setFavorites(JSON.parse(fav));
   }, []);
 
-  // 🔥 FETCH POSTS
+  // 🔥 FETCH
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -51,7 +52,7 @@ export default function Home() {
     fetchPosts();
   }, []);
 
-  // 🔥 TOGGLE FAVORITE
+  // ❤️ TOGGLE FAVORITE
   const toggleFavorite = (id: string) => {
     let updated;
 
@@ -85,6 +86,10 @@ export default function Home() {
 
       return matchCity && matchPrice;
     });
+
+  // ⭐ FEATURED
+  const featuredPosts = filteredPosts.filter((p) => p.featured);
+  const normalPosts = filteredPosts.filter((p) => !p.featured);
 
   // ⏳ LOADING
   if (loading) {
@@ -132,6 +137,61 @@ export default function Home() {
 
       </div>
 
+      {/* ⭐ FEATURED */}
+      {featuredPosts.length > 0 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            ⭐ Kiemelt ingatlanok
+          </h2>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {featuredPosts.map((post) => (
+              <div
+                key={post.id}
+                className="bg-gray-800 border border-yellow-400 rounded-xl overflow-hidden shadow-xl"
+              >
+                <img
+                  src={post.imageUrl}
+                  className="h-56 w-full object-cover"
+                />
+
+                <div className="p-4">
+
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-xl font-bold">
+                      {post.title}
+                    </h2>
+
+                    <button
+                      onClick={() => toggleFavorite(post.id)}
+                      className="text-2xl"
+                    >
+                      {favorites.includes(post.id) ? "❤️" : "🤍"}
+                    </button>
+                  </div>
+
+                  <p className="text-gray-400">
+                    {post.city}
+                  </p>
+
+                  <p className="text-yellow-400 text-lg font-bold">
+                    {post.price.toLocaleString()} Ft
+                  </p>
+
+                  <a
+                    href={`/post/${post.id}`}
+                    className="inline-block mt-2 bg-yellow-500 px-3 py-1 rounded hover:bg-yellow-600"
+                  >
+                    Megnézem
+                  </a>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* EMPTY */}
       {filteredPosts.length === 0 && (
         <p className="text-gray-400">Nincs találat 😢</p>
@@ -139,7 +199,7 @@ export default function Home() {
 
       {/* GRID */}
       <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredPosts.map((post) => (
+        {normalPosts.map((post) => (
           <div
             key={post.id}
             className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition"
@@ -151,7 +211,6 @@ export default function Home() {
 
             <div className="p-4">
 
-              {/* ❤️ HEADER */}
               <div className="flex justify-between items-center mb-1">
                 <h2 className="text-xl font-bold">
                   {post.title}

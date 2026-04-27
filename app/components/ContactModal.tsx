@@ -61,60 +61,62 @@ export default function ContactModal() {
       {/* MODAL */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-[9999] overflow-y-auto p-4"
+          className="fixed inset-0 bg-black/70 z-[9999] overflow-y-auto"
           onClick={() => setOpen(false)}
         >
-          <div
-            className="bg-white p-6 rounded-xl w-full max-w-md relative mt-16 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* CLOSE */}
-            <button
-              onClick={() => setOpen(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+          <div className="min-h-full flex items-start justify-center p-4">
+            <div
+              className="bg-white w-full max-w-md rounded-xl p-6 mt-16 shadow-xl relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              ✕
-            </button>
-
-            <h2 className="text-xl font-semibold mb-4">Kapcsolat</h2>
-
-            <form onSubmit={sendEmail} className="flex flex-col gap-3">
-              <input
-                name="name"
-                placeholder="Név"
-                value={form.name}
-                onChange={handleChange}
-                className="border p-2 rounded"
-                required
-              />
-
-              <input
-                name="email"
-                type="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="border p-2 rounded"
-                required
-              />
-
-              <textarea
-                name="message"
-                placeholder="Üzenet"
-                value={form.message}
-                onChange={handleChange}
-                className="border p-2 rounded min-h-[120px]"
-                required
-              />
-
+              {/* CLOSE */}
               <button
-                type="submit"
-                disabled={loading}
-                className="bg-black text-white p-2 rounded hover:bg-gray-800"
+                onClick={() => setOpen(false)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-black"
               >
-                {loading ? "Küldés..." : "Küldés"}
+                ✕
               </button>
-            </form>
+
+              <h2 className="text-xl font-semibold mb-4">Kapcsolat</h2>
+
+              <form onSubmit={sendEmail} className="flex flex-col gap-3">
+                <input
+                  name="name"
+                  placeholder="Név"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="border p-2 rounded"
+                  required
+                />
+
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="border p-2 rounded"
+                  required
+                />
+
+                <textarea
+                  name="message"
+                  placeholder="Üzenet"
+                  value={form.message}
+                  onChange={handleChange}
+                  className="border p-2 rounded min-h-[120px]"
+                  required
+                />
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-black text-white p-2 rounded hover:bg-gray-800"
+                >
+                  {loading ? "Küldés..." : "Küldés"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

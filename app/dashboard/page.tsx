@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth, db } from "../lib/firebase";
+import { auth, db, storage } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -12,6 +12,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type Post = {
   id: string;
@@ -27,18 +28,18 @@ export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 EDIT MODAL STATE
   const [editingPost, setEditingPost] = useState<Post | null>(null);
 
-  // 🔥 USER FIGYELÉS
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  // 🔥 USER
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-    return () => unsubscribe();
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
   }, []);
 
-  // 🔥 POSTS BETÖLTÉS
+  // 🔥 FETCH
   useEffect(() => {
     if (!user) return;
     fetchPosts(user.uid);
@@ -72,35 +73,48 @@ export default function Dashboard() {
     setPosts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // 🔥 UPDATE
+  // 🔥 UPDATE (EDIT + IMAGE)
   const handleUpdate = async () => {
     if (!editingPost) return;
 
     try {
-      const ref = doc(db, "posts", editingPost.id);
+      let imageUrl = editingPost.imageUrl;
 
-      await updateDoc(ref, {
+      if (newImage) {
+        const fileName = `${Date.now()}-${newImage.name}`;
+        const imageRef = ref(storage, `images/${fileName}`);
+
+        await uploadBytes(imageRef, newImage);
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
+      const refDoc = doc(db, "posts", editingPost.id);
+
+      await updateDoc(refDoc, {
         title: editingPost.title,
         city: editingPost.city,
         price: editingPost.price,
         description: editingPost.description,
+        imageUrl,
       });
 
       setPosts((prev) =>
         prev.map((p) =>
-          p.id === editingPost.id ? editingPost : p
+          p.id === editingPost.id
+            ? { ...editingPost, imageUrl }
+            : p
         )
       );
 
       setEditingPost(null);
+      setNewImage(null);
+      setPreview(null);
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading) {
-    return <div className="text-white p-6">Betöltés...</div>;
-  }
+  if (loading) return <div className="text-white p-6">Betöltés...</div>;
 
   return (
     <div className="p-6 text-white">
@@ -117,38 +131,32 @@ export default function Dashboard() {
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition duration-300"
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] transition"
           >
-            {/* KÉP */}
             <img
               src={post.imageUrl}
               className="w-full h-48 object-cover"
             />
 
             <div className="p-4">
-              <h2 className="text-lg font-bold">{post.title}</h2>
-
+              <h2 className="font-bold">{post.title}</h2>
               <p className="text-gray-400 text-sm">{post.city}</p>
 
-              <p className="text-green-400 font-bold mt-2">
+              <p className="text-green-400 font-bold">
                 {post.price.toLocaleString()} Ft
               </p>
 
-              <p className="text-sm mt-2 line-clamp-2">
-                {post.description}
-              </p>
-
-              <div className="mt-4 flex gap-2">
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setEditingPost(post)}
-                  className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition"
+                  className="bg-blue-600 px-3 py-1 rounded"
                 >
                   Edit
                 </button>
 
                 <button
                   onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
+                  className="bg-red-600 px-3 py-1 rounded"
                 >
                   Törlés
                 </button>
@@ -160,15 +168,13 @@ export default function Dashboard() {
 
       {/* 🔥 MODAL */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
 
-            <h2 className="text-xl font-bold mb-4">
-              Ingatlan szerkesztése
-            </h2>
+            <h2 className="text-xl mb-4">Szerkesztés</h2>
 
             <input
-              className="w-full p-2 mb-2 bg-gray-800 rounded"
+              className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.title}
               onChange={(e) =>
                 setEditingPost({
@@ -176,11 +182,10 @@ export default function Dashboard() {
                   title: e.target.value,
                 })
               }
-              placeholder="Cím"
             />
 
             <input
-              className="w-full p-2 mb-2 bg-gray-800 rounded"
+              className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.city}
               onChange={(e) =>
                 setEditingPost({
@@ -188,12 +193,11 @@ export default function Dashboard() {
                   city: e.target.value,
                 })
               }
-              placeholder="Város"
             />
 
             <input
               type="number"
-              className="w-full p-2 mb-2 bg-gray-800 rounded"
+              className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.price}
               onChange={(e) =>
                 setEditingPost({
@@ -201,11 +205,10 @@ export default function Dashboard() {
                   price: Number(e.target.value),
                 })
               }
-              placeholder="Ár"
             />
 
             <textarea
-              className="w-full p-2 mb-4 bg-gray-800 rounded"
+              className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.description}
               onChange={(e) =>
                 setEditingPost({
@@ -213,20 +216,44 @@ export default function Dashboard() {
                   description: e.target.value,
                 })
               }
-              placeholder="Leírás"
             />
+
+            {/* 🔥 FILE */}
+            <input
+              type="file"
+              className="mb-2"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setNewImage(file);
+                  setPreview(URL.createObjectURL(file));
+                }
+              }}
+            />
+
+            {/* 🔥 PREVIEW */}
+            {preview && (
+              <img
+                src={preview}
+                className="w-full h-40 object-cover mb-3 rounded"
+              />
+            )}
 
             <div className="flex gap-2">
               <button
                 onClick={handleUpdate}
-                className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+                className="bg-green-600 px-4 py-2 rounded"
               >
                 Mentés
               </button>
 
               <button
-                onClick={() => setEditingPost(null)}
-                className="bg-gray-700 px-4 py-2 rounded"
+                onClick={() => {
+                  setEditingPost(null);
+                  setPreview(null);
+                  setNewImage(null);
+                }}
+                className="bg-gray-600 px-4 py-2 rounded"
               >
                 Mégse
               </button>

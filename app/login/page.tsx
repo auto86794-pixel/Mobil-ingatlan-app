@@ -15,21 +15,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      alert(err.message);
-    }
+    await signInWithEmailAndPassword(auth, email, password);
+    router.push("/dashboard");
   };
 
   const handleRegister = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      alert(err.message);
-    }
+    await createUserWithEmailAndPassword(auth, email, password);
+    router.push("/dashboard");
   };
 
   return (

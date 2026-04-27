@@ -1,6 +1,11 @@
 import "./globals.css";
 import Navbar from "./components/Navbar";
 
+export const metadata = {
+  title: "Albi App",
+  description: "Ingatlan kereső alkalmazás",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -9,8 +14,13 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <body className="bg-gray-950 text-white">
+        
+        {/* 🔥 NAVBAR */}
         <Navbar />
-        {children}
+
+        {/* 🔥 OLDAL TARTALOM */}
+        <main>{children}</main>
+
       </body>
     </html>
   );

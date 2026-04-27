@@ -1,5 +1,6 @@
 import "./globals.css";
 import Navbar from "./components/Navbar";
+import { Toaster } from "react-hot-toast";
 
 export const metadata = {
   title: "Albi App",
@@ -14,12 +15,22 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <body className="bg-gray-950 text-white">
-        
-        {/* 🔥 NAVBAR */}
+
         <Navbar />
 
-        {/* 🔥 OLDAL TARTALOM */}
         <main>{children}</main>
+
+        {/* 🔥 TOAST */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "#1f2937",
+              color: "#fff",
+              borderRadius: "10px",
+            },
+          }}
+        />
 
       </body>
     </html>

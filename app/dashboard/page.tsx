@@ -13,6 +13,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import toast from "react-hot-toast";
 
 type Post = {
   id: string;
@@ -32,121 +33,169 @@ export default function Dashboard() {
   const [newImage, setNewImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
+  // 🔥 USER
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (u) {
+        setUser(u);
+        fetchPosts(u.uid);
+      } else {
+        window.location.href = "/login";
+      }
+    });
+
     return () => unsub();
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    fetchPosts(user.uid);
-  }, [user]);
-
+  // 🔥 FETCH
   const fetchPosts = async (uid: string) => {
-    const q = query(
-      collection(db, "posts"),
-      where("userId", "==", uid)
-    );
+    try {
+      const q = query(
+        collection(db, "posts"),
+        where("userId", "==", uid)
+      );
 
-    const snap = await getDocs(q);
+      const snap = await getDocs(q);
 
-    const data: Post[] = [];
-    snap.forEach((docSnap) => {
-      data.push({ id: docSnap.id, ...(docSnap.data() as any) });
-    });
+      const data: Post[] = [];
+      snap.forEach((docSnap) => {
+        data.push({ id: docSnap.id, ...(docSnap.data() as any) });
+      });
 
-    setPosts(data);
-    setLoading(false);
+      setPosts(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Hiba betöltéskor ❌");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // 🗑️ DELETE
   const handleDelete = async (id: string) => {
-    await deleteDoc(doc(db, "posts", id));
-    setPosts((prev) => prev.filter((p) => p.id !== id));
+    if (!confirm("Biztos törlöd?")) return;
+
+    try {
+      await deleteDoc(doc(db, "posts", id));
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Törölve ✅");
+    } catch (err) {
+      console.error(err);
+      toast.error("Hiba törléskor ❌");
+    }
   };
 
+  // ✏️ UPDATE
   const handleUpdate = async () => {
     if (!editingPost) return;
 
-    let imageUrl = editingPost.imageUrl;
+    try {
+      let imageUrl = editingPost.imageUrl;
 
-    if (newImage) {
-      const fileName = `${Date.now()}-${newImage.name}`;
-      const imageRef = ref(storage, `images/${fileName}`);
+      if (newImage) {
+        const fileName = `${Date.now()}-${newImage.name}`;
+        const imageRef = ref(storage, `images/${fileName}`);
 
-      await uploadBytes(imageRef, newImage);
-      imageUrl = await getDownloadURL(imageRef);
+        await uploadBytes(imageRef, newImage);
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
+      const refDoc = doc(db, "posts", editingPost.id);
+
+      await updateDoc(refDoc, {
+        title: editingPost.title,
+        city: editingPost.city,
+        price: editingPost.price,
+        description: editingPost.description,
+        imageUrl,
+      });
+
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editingPost.id
+            ? { ...editingPost, imageUrl }
+            : p
+        )
+      );
+
+      setEditingPost(null);
+      setNewImage(null);
+      setPreview(null);
+
+      toast.success("Frissítve ✨");
+    } catch (err) {
+      console.error(err);
+      toast.error("Hiba frissítéskor ❌");
     }
-
-    const refDoc = doc(db, "posts", editingPost.id);
-
-    await updateDoc(refDoc, {
-      title: editingPost.title,
-      city: editingPost.city,
-      price: editingPost.price,
-      description: editingPost.description,
-      imageUrl,
-    });
-
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === editingPost.id ? { ...editingPost, imageUrl } : p
-      )
-    );
-
-    setEditingPost(null);
-    setNewImage(null);
-    setPreview(null);
   };
 
-  if (loading) return <div className="text-white p-6">Betöltés...</div>;
+  if (loading) {
+    return <div className="p-6 text-white">Betöltés...</div>;
+  }
 
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-3xl mb-6 font-bold">Dashboard</h1>
+    <div className="min-h-screen bg-gray-950 text-white p-6">
+      <h1 className="text-3xl font-bold mb-6">📊 Dashboard</h1>
 
-      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {user && (
+        <p className="mb-6 text-gray-400">
+          Bejelentkezve: {user.email}
+        </p>
+      )}
+
+      {posts.length === 0 && (
+        <p className="text-gray-500">
+          Nincs még ingatlanod 😢
+        </p>
+      )}
+
+      {/* GRID */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition duration-300"
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition"
           >
             <img
               src={post.imageUrl}
-              className="w-full h-48 object-cover"
+              className="h-48 w-full object-cover"
             />
 
             <div className="p-4">
-              <h2 className="font-bold">{post.title}</h2>
-              <p className="text-gray-400 text-sm">{post.city}</p>
+              <h2 className="text-xl font-bold">
+                {post.title}
+              </h2>
 
-              <p className="text-green-400 font-bold">
+              <p className="text-gray-400">{post.city}</p>
+
+              <p className="text-green-400">
                 {post.price.toLocaleString()} Ft
               </p>
 
-              {/* 🔥 GOMBOK */}
+              {/* GOMBOK */}
               <div className="flex gap-2 mt-3">
 
-                {/* 🟢 ZÖLD MEGNÉZEM */}
                 <a
                   href={`/post/${post.id}`}
-                  className="bg-green-600 px-3 py-1 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                  className="bg-green-600 px-3 py-1 rounded hover:bg-green-700"
                 >
                   👁 Megnézem
                 </a>
 
                 <button
                   onClick={() => setEditingPost(post)}
-                  className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition"
+                  className="bg-blue-600 px-3 py-1 rounded"
                 >
                   Edit
                 </button>
 
                 <button
                   onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
+                  className="bg-red-600 px-3 py-1 rounded"
                 >
                   Törlés
                 </button>
+
               </div>
             </div>
           </div>
@@ -155,8 +204,8 @@ export default function Dashboard() {
 
       {/* 🔥 MODAL */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur flex justify-center items-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
 
             <h2 className="text-xl mb-4">Szerkesztés</h2>
 
@@ -164,7 +213,10 @@ export default function Dashboard() {
               className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.title}
               onChange={(e) =>
-                setEditingPost({ ...editingPost, title: e.target.value })
+                setEditingPost({
+                  ...editingPost,
+                  title: e.target.value,
+                })
               }
             />
 
@@ -172,7 +224,10 @@ export default function Dashboard() {
               className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.city}
               onChange={(e) =>
-                setEditingPost({ ...editingPost, city: e.target.value })
+                setEditingPost({
+                  ...editingPost,
+                  city: e.target.value,
+                })
               }
             />
 
@@ -199,7 +254,7 @@ export default function Dashboard() {
               }
             />
 
-            {/* 🔥 KÉP CSERE */}
+            {/* IMAGE */}
             <input
               type="file"
               onChange={(e) => {
@@ -214,29 +269,26 @@ export default function Dashboard() {
             {preview && (
               <img
                 src={preview}
-                className="w-full h-40 object-cover mt-2 rounded"
+                className="w-full h-40 object-cover mt-2"
               />
             )}
 
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleUpdate}
-                className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+                className="bg-green-600 px-4 py-2 rounded"
               >
                 Mentés
               </button>
 
               <button
-                onClick={() => {
-                  setEditingPost(null);
-                  setPreview(null);
-                  setNewImage(null);
-                }}
+                onClick={() => setEditingPost(null)}
                 className="bg-gray-600 px-4 py-2 rounded"
               >
                 Mégse
               </button>
             </div>
+
           </div>
         </div>
       )}

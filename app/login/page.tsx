@@ -1,74 +1,67 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { auth } from '../lib/firebase';
+import { useState } from "react";
+import { auth } from "../lib/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-} from 'firebase/auth';
+} from "firebase/auth";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+export default function Login() {
+  const router = useRouter();
 
-  const login = async () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
     try {
-      setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      alert('Sikeres bejelentkezés!');
+      router.push("/dashboard");
     } catch (err: any) {
       alert(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const register = async () => {
+  const handleRegister = async () => {
     try {
-      setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
-      alert('Sikeres regisztráció!');
+      router.push("/dashboard");
     } catch (err: any) {
       alert(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-xl">
-        <h1 className="text-2xl font-bold mb-6">🔐 Bejelentkezés</h1>
+    <div className="flex items-center justify-center h-screen bg-black">
+      <div className="bg-gray-900 p-6 rounded-xl w-80">
+        <h1 className="text-white text-xl mb-4">Bejelentkezés</h1>
 
         <input
-          type="email"
-          placeholder="Email cím"
+          className="w-full p-2 mb-2 bg-gray-800 text-white"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 mb-3 rounded bg-gray-800 border border-gray-700"
         />
 
         <input
+          className="w-full p-2 mb-2 bg-gray-800 text-white"
           type="password"
           placeholder="Jelszó"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-3 mb-4 rounded bg-gray-800 border border-gray-700"
         />
 
         <button
-          onClick={login}
-          disabled={loading}
-          className="w-full bg-blue-600 py-3 rounded mb-3 disabled:opacity-50"
+          onClick={handleLogin}
+          className="w-full bg-blue-600 p-2 text-white mb-2"
         >
-          {loading ? 'Betöltés...' : 'Belépés'}
+          Belépés
         </button>
 
         <button
-          onClick={register}
-          disabled={loading}
-          className="w-full bg-green-600 py-3 rounded disabled:opacity-50"
+          onClick={handleRegister}
+          className="w-full bg-green-600 p-2 text-white"
         >
           Regisztráció
         </button>

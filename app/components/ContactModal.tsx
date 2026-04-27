@@ -63,14 +63,15 @@ export default function ContactModal() {
         className="bg-white w-full max-w-md rounded-xl p-6 mt-20 shadow-xl relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* CLOSE */}
         <button
           onClick={() => setOpen(false)}
-          className="absolute top-2 right-2 text-gray-500"
+          className="absolute top-2 right-2 text-gray-500 hover:text-black"
         >
           ✕
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">Kapcsolat</h2>
+        <h2 className="text-xl font-semibold mb-4 text-black">Kapcsolat</h2>
 
         <form onSubmit={sendEmail} className="flex flex-col gap-3">
           <input
@@ -78,7 +79,7 @@ export default function ContactModal() {
             placeholder="Név"
             value={form.name}
             onChange={handleChange}
-            className="border p-2 rounded"
+            className="border p-2 rounded text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
@@ -88,7 +89,7 @@ export default function ContactModal() {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="border p-2 rounded"
+            className="border p-2 rounded text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
@@ -97,14 +98,14 @@ export default function ContactModal() {
             placeholder="Üzenet"
             value={form.message}
             onChange={handleChange}
-            className="border p-2 rounded min-h-[120px]"
+            className="border p-2 rounded text-black bg-white min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="bg-black text-white p-2 rounded"
+            className="bg-black text-white p-2 rounded hover:bg-gray-800 transition"
           >
             {loading ? "Küldés..." : "Küldés"}
           </button>
@@ -117,7 +118,7 @@ export default function ContactModal() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
       >
         Kapcsolat
       </button>

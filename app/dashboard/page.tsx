@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { auth, db, storage } from "../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type Post = {
   id: string;
@@ -15,104 +23,223 @@ type Post = {
   imageUrl: string;
 };
 
-export default function PostDetail() {
-  const params = useParams();
-  const id = params.id as string;
-
-  const [post, setPost] = useState<Post | null>(null);
+export default function Dashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const ref = doc(db, "posts", id);
-        const snap = await getDoc(ref);
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
 
-        if (snap.exists()) {
-          setPost({ id: snap.id, ...(snap.data() as Omit<Post, "id">) });
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (!user) return;
+    fetchPosts(user.uid);
+  }, [user]);
 
-    if (id) fetchPost();
-  }, [id]);
-
-  if (loading) {
-    return <div className="text-white p-6">Betöltés...</div>;
-  }
-
-  if (!post) {
-    return (
-      <div className="text-white p-6">
-        <p>Az ingatlan nem található.</p>
-        <Link href="/dashboard" className="text-green-400">
-          ← Vissza
-        </Link>
-      </div>
+  const fetchPosts = async (uid: string) => {
+    const q = query(
+      collection(db, "posts"),
+      where("userId", "==", uid)
     );
-  }
+
+    const snap = await getDocs(q);
+
+    const data: Post[] = [];
+    snap.forEach((docSnap) => {
+      data.push({ id: docSnap.id, ...(docSnap.data() as any) });
+    });
+
+    setPosts(data);
+    setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteDoc(doc(db, "posts", id));
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleUpdate = async () => {
+    if (!editingPost) return;
+
+    let imageUrl = editingPost.imageUrl;
+
+    if (newImage) {
+      const fileName = `${Date.now()}-${newImage.name}`;
+      const imageRef = ref(storage, `images/${fileName}`);
+
+      await uploadBytes(imageRef, newImage);
+      imageUrl = await getDownloadURL(imageRef);
+    }
+
+    const refDoc = doc(db, "posts", editingPost.id);
+
+    await updateDoc(refDoc, {
+      title: editingPost.title,
+      city: editingPost.city,
+      price: editingPost.price,
+      description: editingPost.description,
+      imageUrl,
+    });
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === editingPost.id ? { ...editingPost, imageUrl } : p
+      )
+    );
+
+    setEditingPost(null);
+    setNewImage(null);
+    setPreview(null);
+  };
+
+  if (loading) return <div className="text-white p-6">Betöltés...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="max-w-6xl mx-auto p-6">
-        <Link
-          href="/dashboard"
-          className="inline-block mb-6 text-gray-300 hover:text-white transition"
-        >
-          ← Vissza a dashboardra
-        </Link>
+    <div className="p-6 text-white">
+      <h1 className="text-3xl mb-6 font-bold">Dashboard</h1>
 
-        <div className="relative overflow-hidden rounded-3xl bg-gray-900 shadow-2xl">
-          <img
-            src={post.imageUrl}
-            alt={post.title}
-            className="w-full h-[520px] object-cover"
-          />
+      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {posts.map((post) => (
+          <div
+            key={post.id}
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition duration-300"
+          >
+            <img
+              src={post.imageUrl}
+              className="w-full h-48 object-cover"
+            />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="p-4">
+              <h2 className="font-bold">{post.title}</h2>
+              <p className="text-gray-400 text-sm">{post.city}</p>
 
-          <div className="absolute bottom-0 left-0 right-0 p-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2">
-              {post.title}
-            </h1>
+              <p className="text-green-400 font-bold">
+                {post.price.toLocaleString()} Ft
+              </p>
 
-            <p className="text-xl text-gray-200">📍 {post.city}</p>
+              {/* 🔥 GOMBOK */}
+              <div className="flex gap-2 mt-3">
+
+                {/* 🟢 ZÖLD MEGNÉZEM */}
+                <a
+                  href={`/post/${post.id}`}
+                  className="bg-green-600 px-3 py-1 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                >
+                  👁 Megnézem
+                </a>
+
+                <button
+                  onClick={() => setEditingPost(post)}
+                  className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleDelete(post.id)}
+                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
+                >
+                  Törlés
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6 mt-6">
-          <div className="lg:col-span-2 bg-gray-900 rounded-2xl p-6 border border-gray-800">
-            <h2 className="text-2xl font-bold mb-4">Leírás</h2>
-
-            <p className="text-gray-300 leading-8 text-lg">
-              {post.description}
-            </p>
-          </div>
-
-          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 h-fit sticky top-24">
-            <p className="text-gray-400 mb-2">Ár</p>
-
-            <p className="text-green-400 text-3xl font-bold mb-6">
-              {Number(post.price).toLocaleString("hu-HU")} Ft
-            </p>
-
-            <button className="w-full bg-green-600 hover:bg-green-700 transition rounded-xl py-3 font-semibold">
-              Érdekel
-            </button>
-
-            <Link
-              href="/dashboard"
-              className="block text-center mt-3 bg-gray-800 hover:bg-gray-700 transition rounded-xl py-3"
-            >
-              Vissza
-            </Link>
-          </div>
-        </div>
+        ))}
       </div>
+
+      {/* 🔥 MODAL */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-2xl">
+
+            <h2 className="text-xl mb-4">Szerkesztés</h2>
+
+            <input
+              className="w-full p-2 mb-2 bg-gray-800"
+              value={editingPost.title}
+              onChange={(e) =>
+                setEditingPost({ ...editingPost, title: e.target.value })
+              }
+            />
+
+            <input
+              className="w-full p-2 mb-2 bg-gray-800"
+              value={editingPost.city}
+              onChange={(e) =>
+                setEditingPost({ ...editingPost, city: e.target.value })
+              }
+            />
+
+            <input
+              type="number"
+              className="w-full p-2 mb-2 bg-gray-800"
+              value={editingPost.price}
+              onChange={(e) =>
+                setEditingPost({
+                  ...editingPost,
+                  price: Number(e.target.value),
+                })
+              }
+            />
+
+            <textarea
+              className="w-full p-2 mb-2 bg-gray-800"
+              value={editingPost.description}
+              onChange={(e) =>
+                setEditingPost({
+                  ...editingPost,
+                  description: e.target.value,
+                })
+              }
+            />
+
+            {/* 🔥 KÉP CSERE */}
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setNewImage(file);
+                  setPreview(URL.createObjectURL(file));
+                }
+              }}
+            />
+
+            {preview && (
+              <img
+                src={preview}
+                className="w-full h-40 object-cover mt-2 rounded"
+              />
+            )}
+
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleUpdate}
+                className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+              >
+                Mentés
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingPost(null);
+                  setPreview(null);
+                  setNewImage(null);
+                }}
+                className="bg-gray-600 px-4 py-2 rounded"
+              >
+                Mégse
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

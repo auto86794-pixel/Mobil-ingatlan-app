@@ -40,7 +40,6 @@ export default function ContactModal() {
       alert("Üzenet elküldve! 🎉");
       setForm({ name: "", email: "", message: "" });
       setOpen(false);
-
     } catch (err) {
       console.error(err);
       alert("Hiba történt 😢");
@@ -54,7 +53,7 @@ export default function ContactModal() {
       {/* BUTTON */}
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
         Kapcsolat
       </button>
@@ -62,22 +61,22 @@ export default function ContactModal() {
       {/* MODAL */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-[9999] overflow-y-auto p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white p-6 rounded-xl w-full max-w-md relative mt-10"
+            className="bg-white p-6 rounded-xl w-full max-w-md relative mt-16 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* CLOSE */}
             <button
               onClick={() => setOpen(false)}
-              className="absolute top-2 right-2 text-gray-500"
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
             >
               ✕
             </button>
 
-            <h2 className="text-xl mb-4">Kapcsolat</h2>
+            <h2 className="text-xl font-semibold mb-4">Kapcsolat</h2>
 
             <form onSubmit={sendEmail} className="flex flex-col gap-3">
               <input

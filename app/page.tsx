@@ -16,11 +16,20 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔍 FILTER STATE
+  // 🔍 FILTER
   const [city, setCity] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
-  // 🔥 FETCH
+  // ❤️ FAVORITES
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  // 🔥 LOAD FAVORITES
+  useEffect(() => {
+    const fav = localStorage.getItem("favorites");
+    if (fav) setFavorites(JSON.parse(fav));
+  }, []);
+
+  // 🔥 FETCH POSTS
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -41,6 +50,20 @@ export default function Home() {
 
     fetchPosts();
   }, []);
+
+  // 🔥 TOGGLE FAVORITE
+  const toggleFavorite = (id: string) => {
+    let updated;
+
+    if (favorites.includes(id)) {
+      updated = favorites.filter((f) => f !== id);
+    } else {
+      updated = [...favorites, id];
+    }
+
+    setFavorites(updated);
+    localStorage.setItem("favorites", JSON.stringify(updated));
+  };
 
   // 🔍 FILTER LOGIKA
   const filteredPosts = posts
@@ -79,11 +102,11 @@ export default function Home() {
         🏠 Elérhető ingatlanok
       </h1>
 
-      {/* 🔍 SEARCH BAR */}
+      {/* 🔍 SEARCH */}
       <div className="flex flex-col md:flex-row gap-3 mb-6">
 
         <input
-          placeholder="🔍 Város (pl. Debrecen)"
+          placeholder="🔍 Város"
           value={city}
           onChange={(e) => setCity(e.target.value)}
           className="bg-gray-800 p-2 rounded w-full md:w-1/3"
@@ -106,13 +129,12 @@ export default function Home() {
         >
           Reset
         </button>
+
       </div>
 
       {/* EMPTY */}
       {filteredPosts.length === 0 && (
-        <p className="text-gray-400">
-          Nincs találat 😢
-        </p>
+        <p className="text-gray-400">Nincs találat 😢</p>
       )}
 
       {/* GRID */}
@@ -128,11 +150,22 @@ export default function Home() {
             />
 
             <div className="p-4">
-              <h2 className="text-xl font-bold mb-1">
-                {post.title}
-              </h2>
 
-              <p className="text-gray-400 mb-1">
+              {/* ❤️ HEADER */}
+              <div className="flex justify-between items-center mb-1">
+                <h2 className="text-xl font-bold">
+                  {post.title}
+                </h2>
+
+                <button
+                  onClick={() => toggleFavorite(post.id)}
+                  className="text-2xl"
+                >
+                  {favorites.includes(post.id) ? "❤️" : "🤍"}
+                </button>
+              </div>
+
+              <p className="text-gray-400">
                 {post.city}
               </p>
 
@@ -146,6 +179,7 @@ export default function Home() {
               >
                 👁 Megnézem
               </a>
+
             </div>
           </div>
         ))}

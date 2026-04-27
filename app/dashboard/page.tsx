@@ -29,7 +29,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const [editingPost, setEditingPost] = useState<Post | null>(null);
-
   const [newImage, setNewImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
@@ -46,25 +45,20 @@ export default function Dashboard() {
   }, [user]);
 
   const fetchPosts = async (uid: string) => {
-    try {
-      const q = query(
-        collection(db, "posts"),
-        where("userId", "==", uid)
-      );
+    const q = query(
+      collection(db, "posts"),
+      where("userId", "==", uid)
+    );
 
-      const snapshot = await getDocs(q);
+    const snap = await getDocs(q);
 
-      const data: Post[] = [];
-      snapshot.forEach((docSnap) => {
-        data.push({ id: docSnap.id, ...(docSnap.data() as any) });
-      });
+    const data: Post[] = [];
+    snap.forEach((docSnap) => {
+      data.push({ id: docSnap.id, ...(docSnap.data() as any) });
+    });
 
-      setPosts(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    setPosts(data);
+    setLoading(false);
   };
 
   // 🔥 DELETE
@@ -73,45 +67,39 @@ export default function Dashboard() {
     setPosts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // 🔥 UPDATE (EDIT + IMAGE)
+  // 🔥 UPDATE
   const handleUpdate = async () => {
     if (!editingPost) return;
 
-    try {
-      let imageUrl = editingPost.imageUrl;
+    let imageUrl = editingPost.imageUrl;
 
-      if (newImage) {
-        const fileName = `${Date.now()}-${newImage.name}`;
-        const imageRef = ref(storage, `images/${fileName}`);
+    if (newImage) {
+      const fileName = `${Date.now()}-${newImage.name}`;
+      const imageRef = ref(storage, `images/${fileName}`);
 
-        await uploadBytes(imageRef, newImage);
-        imageUrl = await getDownloadURL(imageRef);
-      }
-
-      const refDoc = doc(db, "posts", editingPost.id);
-
-      await updateDoc(refDoc, {
-        title: editingPost.title,
-        city: editingPost.city,
-        price: editingPost.price,
-        description: editingPost.description,
-        imageUrl,
-      });
-
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === editingPost.id
-            ? { ...editingPost, imageUrl }
-            : p
-        )
-      );
-
-      setEditingPost(null);
-      setNewImage(null);
-      setPreview(null);
-    } catch (err) {
-      console.error(err);
+      await uploadBytes(imageRef, newImage);
+      imageUrl = await getDownloadURL(imageRef);
     }
+
+    const refDoc = doc(db, "posts", editingPost.id);
+
+    await updateDoc(refDoc, {
+      title: editingPost.title,
+      city: editingPost.city,
+      price: editingPost.price,
+      description: editingPost.description,
+      imageUrl,
+    });
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === editingPost.id ? { ...editingPost, imageUrl } : p
+      )
+    );
+
+    setEditingPost(null);
+    setNewImage(null);
+    setPreview(null);
   };
 
   if (loading) return <div className="text-white p-6">Betöltés...</div>;
@@ -119,12 +107,6 @@ export default function Dashboard() {
   return (
     <div className="p-6 text-white">
       <h1 className="text-3xl mb-6 font-bold">Dashboard</h1>
-
-      {posts.length === 0 && (
-        <p className="text-gray-400">
-          Nincs még feltöltött ingatlanod.
-        </p>
-      )}
 
       {/* GRID */}
       <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -146,17 +128,27 @@ export default function Dashboard() {
                 {post.price.toLocaleString()} Ft
               </p>
 
+              {/* 🔥 GOMBOK */}
               <div className="flex gap-2 mt-3">
+
+                {/* 🔥 DETAIL PAGE */}
+                <a
+                  href={`/post/${post.id}`}
+                  className="bg-purple-600 px-3 py-1 rounded hover:bg-purple-700 transition"
+                >
+                  Megnézem
+                </a>
+
                 <button
                   onClick={() => setEditingPost(post)}
-                  className="bg-blue-600 px-3 py-1 rounded"
+                  className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition"
                 >
                   Edit
                 </button>
 
                 <button
                   onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 px-3 py-1 rounded"
+                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
                 >
                   Törlés
                 </button>
@@ -177,10 +169,7 @@ export default function Dashboard() {
               className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.title}
               onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  title: e.target.value,
-                })
+                setEditingPost({ ...editingPost, title: e.target.value })
               }
             />
 
@@ -188,10 +177,7 @@ export default function Dashboard() {
               className="w-full p-2 mb-2 bg-gray-800"
               value={editingPost.city}
               onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  city: e.target.value,
-                })
+                setEditingPost({ ...editingPost, city: e.target.value })
               }
             />
 
@@ -218,10 +204,9 @@ export default function Dashboard() {
               }
             />
 
-            {/* 🔥 FILE */}
+            {/* 🔥 IMAGE EDIT */}
             <input
               type="file"
-              className="mb-2"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -231,15 +216,14 @@ export default function Dashboard() {
               }}
             />
 
-            {/* 🔥 PREVIEW */}
             {preview && (
               <img
                 src={preview}
-                className="w-full h-40 object-cover mb-3 rounded"
+                className="w-full h-40 object-cover mt-2 rounded"
               />
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-3">
               <button
                 onClick={handleUpdate}
                 className="bg-green-600 px-4 py-2 rounded"
@@ -248,11 +232,7 @@ export default function Dashboard() {
               </button>
 
               <button
-                onClick={() => {
-                  setEditingPost(null);
-                  setPreview(null);
-                  setNewImage(null);
-                }}
+                onClick={() => setEditingPost(null)}
                 className="bg-gray-600 px-4 py-2 rounded"
               >
                 Mégse

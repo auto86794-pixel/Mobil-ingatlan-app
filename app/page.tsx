@@ -1,87 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db, storage, auth } from "./lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
+import { db } from "./lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
-export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+export default function Home() {
   const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🔄 fetch
-  const fetchPosts = async (uid: string) => {
-    const q = query(
-      collection(db, "posts"),
-      where("userId", "==", uid)
-    );
-
-    const querySnapshot = await getDocs(q);
-    const data: any[] = [];
-
-    querySnapshot.forEach((docSnap) => {
-      data.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    setPosts(data);
-  };
-
-  // 👤 auth
+  // 🔥 PUBLIC FETCH (NINCS user filter!)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u);
-        fetchPosts(u.uid);
-      } else {
-        window.location.href = "/login";
-      }
-    });
+    const fetchPosts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "posts"));
 
-    return () => unsubscribe();
+        const data: any[] = [];
+        snapshot.forEach((doc) => {
+          data.push({ id: doc.id, ...doc.data() });
+        });
+
+        setPosts(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
   }, []);
 
-  // 🗑️ törlés
-  const handleDelete = async (id: string) => {
-    if (!confirm("Biztos törlöd?")) return;
-
-    await deleteDoc(doc(db, "posts", id));
-
-    // frissítés
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+        Betöltés...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">📊 Dashboard</h1>
-
-      {user && (
-        <p className="mb-6 text-gray-400">
-          Bejelentkezve: {user.email}
-        </p>
-      )}
+      <h1 className="text-3xl font-bold mb-6">
+        🏠 Elérhető ingatlanok
+      </h1>
 
       {/* EMPTY */}
       {posts.length === 0 && (
-        <div className="text-center text-gray-500 mt-20">
-          <p>Nincs még feltöltött ingatlanod 😢</p>
-        </div>
+        <p className="text-gray-400">
+          Nincs még feltöltött ingatlan.
+        </p>
       )}
 
       {/* GRID */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-800 rounded-xl overflow-hidden shadow-lg"
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition"
           >
-            {/* KÉP */}
             {post.imageUrl && (
               <img
                 src={post.imageUrl}
@@ -102,19 +78,12 @@ export default function Dashboard() {
                 {post.price.toLocaleString()} Ft
               </p>
 
-              <p className="text-sm text-gray-400 mb-4">
-                {post.description}
-              </p>
-
-              {/* GOMBOK */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
-                >
-                  🗑️ Törlés
-                </button>
-              </div>
+              <a
+                href={`/post/${post.id}`}
+                className="inline-block bg-green-600 px-3 py-1 rounded hover:bg-green-700 transition"
+              >
+                👁 Megnézem
+              </a>
             </div>
           </div>
         ))}

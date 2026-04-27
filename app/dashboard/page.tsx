@@ -31,18 +31,16 @@ export default function Dashboard() {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 🔥 FETCH CSAK HA USER MEGVAN
+  // 🔥 FETCH CSAK HA USER VAN
   useEffect(() => {
     if (!user) return;
-
     fetchPosts(user.uid);
   }, [user]);
 
-  // 🔥 FIRESTORE LEKÉRDEZÉS
+  // 🔥 FIRESTORE
   const fetchPosts = async (uid: string) => {
     try {
       const q = query(
@@ -65,7 +63,7 @@ export default function Dashboard() {
     }
   };
 
-  // 🔥 TÖRLÉS
+  // 🔥 DELETE
   const handleDelete = async (id: string) => {
     await deleteDoc(doc(db, "posts", id));
     setPosts((prev) => prev.filter((p) => p.id !== id));
@@ -73,50 +71,55 @@ export default function Dashboard() {
 
   // 🔄 LOADING
   if (loading) {
-    return (
-      <div className="text-white p-6">
-        Betöltés...
-      </div>
-    );
+    return <div className="text-white p-6">Betöltés...</div>;
   }
 
   return (
     <div className="p-6 text-white">
-      <h1 className="text-2xl mb-6">Dashboard</h1>
+      <h1 className="text-3xl mb-6 font-bold">Dashboard</h1>
 
       {posts.length === 0 && (
-        <p>Nincs még feltöltött ingatlanod.</p>
+        <p className="text-gray-400">
+          Nincs még feltöltött ingatlanod.
+        </p>
       )}
 
-      <div className="grid gap-6">
+      {/* 🔥 GRID */}
+      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg"
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition"
           >
+            {/* 🖼️ KÉP */}
             <img
               src={post.imageUrl}
-              className="w-full h-60 object-cover"
+              className="w-full h-48 object-cover"
             />
 
+            {/* 📦 TARTALOM */}
             <div className="p-4">
-              <h2 className="text-xl font-bold">{post.title}</h2>
-              <p className="text-gray-400">{post.city}</p>
+              <h2 className="text-lg font-bold">{post.title}</h2>
+
+              <p className="text-gray-400 text-sm">{post.city}</p>
 
               <p className="text-green-400 font-bold mt-2">
                 {post.price.toLocaleString()} Ft
               </p>
 
-              <p className="text-sm mt-2">{post.description}</p>
+              <p className="text-sm mt-2 line-clamp-2">
+                {post.description}
+              </p>
 
+              {/* 🔥 ACTIONS */}
               <div className="mt-4 flex gap-2">
-                <button className="bg-blue-600 px-3 py-1 rounded">
+                <button className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition">
                   Edit
                 </button>
 
                 <button
                   onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 px-3 py-1 rounded"
+                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition"
                 >
                   Törlés
                 </button>

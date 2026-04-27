@@ -20,42 +20,48 @@ export default function Navbar() {
   };
 
   return (
-    <div className="bg-black/80 backdrop-blur border-b text-white">
-      <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
-
+    <div className="bg-black/80 backdrop-blur border-b border-gray-800 text-white">
+      <div className="mx-auto flex items-center justify-between px-4 py-3">
         {/* LEFT */}
-        <div className="flex gap-4 items-center">
-          <Link href="/" className="font-bold text-lg">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="font-bold text-lg hover:text-green-400">
             🏠 Home
           </Link>
 
           {user && (
-            <Link href="/dashboard" className="text-gray-300 hover:text-white">
-              Dashboard
+            <Link
+              href="/dashboard"
+              className="text-gray-300 hover:text-green-400"
+            >
+              📊 Dashboard
             </Link>
           )}
         </div>
 
         {/* RIGHT */}
-        <div className="flex gap-4 items-center">
-
-          {/* CONTACT BUTTON (MODAL) */}
+        <div className="flex items-center gap-4">
           <ContactModal />
 
-          {!user ? (
-            <Link href="/login" className="text-gray-300 hover:text-white">
+          {user ? (
+            <>
+              <span className="text-sm text-gray-300">{user.email}</span>
+
+              <button
+                onClick={handleLogout}
+                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+            >
               Login
             </Link>
-          ) : (
-            <button
-              onClick={handleLogout}
-              className="text-red-400 hover:text-red-300"
-            >
-              Logout
-            </button>
           )}
         </div>
-
       </div>
     </div>
   );

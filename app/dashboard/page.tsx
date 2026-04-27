@@ -32,13 +32,11 @@ export default function Dashboard() {
   const [newImage, setNewImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // 🔥 USER
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
   }, []);
 
-  // 🔥 FETCH
   useEffect(() => {
     if (!user) return;
     fetchPosts(user.uid);
@@ -61,13 +59,11 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  // 🔥 DELETE
   const handleDelete = async (id: string) => {
     await deleteDoc(doc(db, "posts", id));
     setPosts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // 🔥 UPDATE
   const handleUpdate = async () => {
     if (!editingPost) return;
 
@@ -108,12 +104,11 @@ export default function Dashboard() {
     <div className="p-6 text-white">
       <h1 className="text-3xl mb-6 font-bold">Dashboard</h1>
 
-      {/* GRID */}
       <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] transition"
+            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition duration-300"
           >
             <img
               src={post.imageUrl}
@@ -131,12 +126,12 @@ export default function Dashboard() {
               {/* 🔥 GOMBOK */}
               <div className="flex gap-2 mt-3">
 
-                {/* 🔥 DETAIL PAGE */}
+                {/* 🟢 ZÖLD MEGNÉZEM */}
                 <a
                   href={`/post/${post.id}`}
-                  className="bg-purple-600 px-3 py-1 rounded hover:bg-purple-700 transition"
+                  className="bg-green-600 px-3 py-1 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
                 >
-                  Megnézem
+                  👁 Megnézem
                 </a>
 
                 <button
@@ -160,8 +155,8 @@ export default function Dashboard() {
 
       {/* 🔥 MODAL */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-2xl">
 
             <h2 className="text-xl mb-4">Szerkesztés</h2>
 
@@ -204,7 +199,7 @@ export default function Dashboard() {
               }
             />
 
-            {/* 🔥 IMAGE EDIT */}
+            {/* 🔥 KÉP CSERE */}
             <input
               type="file"
               onChange={(e) => {
@@ -226,13 +221,17 @@ export default function Dashboard() {
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleUpdate}
-                className="bg-green-600 px-4 py-2 rounded"
+                className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
               >
                 Mentés
               </button>
 
               <button
-                onClick={() => setEditingPost(null)}
+                onClick={() => {
+                  setEditingPost(null);
+                  setPreview(null);
+                  setNewImage(null);
+                }}
                 className="bg-gray-600 px-4 py-2 rounded"
               >
                 Mégse

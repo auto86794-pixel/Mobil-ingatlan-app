@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import ContactModal from "./ContactModal";
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -19,44 +20,42 @@ export default function Navbar() {
   };
 
   return (
-    <div className="bg-black/80 backdrop-blur border-b border-gray-800 px-6 py-3 flex justify-between items-center text-white">
+    <div className="bg-black/80 backdrop-blur border-b text-white">
+      <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
 
-      {/* LEFT */}
-      <div className="flex gap-4 items-center">
-        <Link href="/" className="font-bold text-lg">
-          🏠 Home
-        </Link>
-
-        {user && (
-          <Link href="/dashboard" className="text-gray-300 hover:text-white">
-            📊 Dashboard
+        {/* LEFT */}
+        <div className="flex gap-4 items-center">
+          <Link href="/" className="font-bold text-lg">
+            🏠 Home
           </Link>
-        )}
-      </div>
 
-      {/* RIGHT */}
-      <div className="flex items-center gap-3">
-        {!user ? (
-          <Link
-            href="/login"
-            className="bg-green-600 px-3 py-1 rounded hover:bg-green-700"
-          >
-            Login
-          </Link>
-        ) : (
-          <>
-            <span className="text-gray-400 text-sm">
-              {user.email}
-            </span>
+          {user && (
+            <Link href="/dashboard" className="text-gray-300 hover:text-white">
+              Dashboard
+            </Link>
+          )}
+        </div>
 
+        {/* RIGHT */}
+        <div className="flex gap-4 items-center">
+
+          {/* CONTACT BUTTON (MODAL) */}
+          <ContactModal />
+
+          {!user ? (
+            <Link href="/login" className="text-gray-300 hover:text-white">
+              Login
+            </Link>
+          ) : (
             <button
               onClick={handleLogout}
-              className="bg-red-600 px-3 py-1 rounded hover:bg-red-700"
+              className="text-red-400 hover:text-red-300"
             >
               Logout
             </button>
-          </>
-        )}
+          )}
+        </div>
+
       </div>
     </div>
   );

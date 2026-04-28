@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import Navbar from "./components/Navbar";
 
 export const metadata = {
   title: "Debrecen Homes",
@@ -21,6 +22,9 @@ export default function RootLayout({
             duration: 3000,
           }}
         />
+
+        {/* NAVBAR */}
+        <Navbar />
 
         {/* APP */}
         {children}

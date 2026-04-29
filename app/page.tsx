@@ -43,7 +43,9 @@ export default function Home() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const snapshot = await getDocs(collection(db, "posts"));
+        const snapshot = await getDocs(
+          collection(db, "posts")
+        );
 
         const data: Post[] = [];
 
@@ -56,7 +58,10 @@ export default function Home() {
 
         setPosts(data);
       } catch (error) {
-        console.error("Hiba a betöltésnél:", error);
+        console.error(
+          "Hiba a betöltésnél:",
+          error
+        );
       } finally {
         setLoading(false);
       }
@@ -74,7 +79,10 @@ export default function Home() {
         (fav) => fav !== id
       );
     } else {
-      updatedFavorites = [...favorites, id];
+      updatedFavorites = [
+        ...favorites,
+        id,
+      ];
     }
 
     setFavorites(updatedFavorites);
@@ -165,7 +173,7 @@ export default function Home() {
     <>
       <MobileBottomNav />
 
-      <main className="min-h-screen bg-black text-white px-6 py-10">
+      <main className="min-h-screen bg-black text-white px-4 py-6 md:px-6 md:py-10">
 
         {/* HERO */}
         <section
@@ -188,19 +196,24 @@ export default function Home() {
                 h-full
                 w-full
                 object-cover
+                object-center
               "
             />
 
-            <div className="absolute inset-0 bg-black/70" />
+            <div className="absolute inset-0 bg-black/75" />
 
             <div
               className="
                 absolute
                 inset-0
-                bg-gradient-to-r
-                from-black
+                bg-gradient-to-b
+                from-black/80
                 via-black/60
-                to-transparent
+                to-black/90
+                md:bg-gradient-to-r
+                md:from-black
+                md:via-black/60
+                md:to-transparent
               "
             />
 
@@ -211,18 +224,21 @@ export default function Home() {
             className="
               relative
               z-10
-              px-8
-              py-20
+              px-6
+              py-14
               md:px-14
+              md:py-20
             "
           >
 
             <div className="max-w-3xl">
 
+              {/* BADGE */}
               <div
                 className="
                   mb-4
-                  inline-flex
+                  hidden
+                  sm:inline-flex
                   items-center
                   gap-2
                   rounded-full
@@ -238,27 +254,31 @@ export default function Home() {
                 ✨ Premium Ingatlanplatform
               </div>
 
+              {/* TITLE */}
               <h1
                 className="
                   max-w-2xl
-                  text-5xl
+                  text-4xl
                   font-black
                   leading-tight
                   tracking-tight
                   text-white
+                  sm:text-5xl
                   md:text-7xl
                 "
               >
                 Találd meg álmaid otthonát Debrecenben
               </h1>
 
+              {/* DESCRIPTION */}
               <p
                 className="
                   mt-6
                   max-w-2xl
-                  text-lg
+                  text-base
                   leading-relaxed
                   text-zinc-300
+                  sm:text-lg
                 "
               >
                 Modern, prémium ingatlanok egy helyen.
@@ -269,7 +289,7 @@ export default function Home() {
             </div>
 
             {/* FILTER BOX */}
-            <div className="mt-10 max-w-5xl">
+            <div className="mt-8 max-w-5xl md:mt-10">
 
               <PropertyFilters
                 city={city}
@@ -294,7 +314,7 @@ export default function Home() {
 
             <div className="mb-6 flex items-center justify-between">
 
-              <h2 className="text-3xl font-bold">
+              <h2 className="text-2xl font-bold md:text-3xl">
                 ⭐ Kiemelt ingatlanok
               </h2>
 
@@ -344,11 +364,11 @@ export default function Home() {
 
           <div className="mb-6 flex items-center justify-between">
 
-            <h2 className="text-3xl font-bold">
+            <h2 className="text-2xl font-bold md:text-3xl">
               🏡 Összes ingatlan
             </h2>
 
-            <span className="text-zinc-400">
+            <span className="text-sm text-zinc-400 md:text-base">
               {normalPosts.length} találat
             </span>
 

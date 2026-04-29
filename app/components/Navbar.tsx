@@ -35,6 +35,8 @@ export default function Navbar() {
   return (
     <nav
       className="
+        hidden
+        md:block
         z-50
         border-b
         border-zinc-800
@@ -126,18 +128,16 @@ export default function Navbar() {
             "
           >
 
-            {/* HOME - ONLY DESKTOP */}
+            {/* HOME */}
             <Link
               href="/"
               className="
-                hidden
-                md:block
                 text-zinc-300
                 transition
                 hover:text-emerald-400
               "
             >
-              Főoldal
+              Home
             </Link>
 
             {/* DASHBOARD */}
@@ -152,12 +152,10 @@ export default function Navbar() {
               Dashboard
             </Link>
 
-            {/* FAVORITES - ONLY DESKTOP */}
+            {/* FAVORITES */}
             <Link
               href="/favorites"
               className="
-                hidden
-                md:block
                 text-zinc-300
                 transition
                 hover:text-emerald-400
@@ -179,7 +177,7 @@ export default function Navbar() {
           "
         >
 
-          {/* USER EMAIL - ONLY LARGE DESKTOP */}
+          {/* USER EMAIL */}
           {user && (
             <div
               className="
@@ -213,7 +211,7 @@ export default function Navbar() {
                   hover:border-emerald-500
                 "
               >
-                Belépés
+                Login
               </button>
 
             </Link>

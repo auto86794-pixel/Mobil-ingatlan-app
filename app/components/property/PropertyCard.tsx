@@ -17,7 +17,7 @@ type PropertyCardProps = {
 export default function PropertyCard({
   id,
   title,
- city,
+  city,
   price,
   imageUrl,
   featured = false,
@@ -60,8 +60,7 @@ export default function PropertyCard({
         {/* OVERLAY */}
         <div
           className="
-            absolute
-            inset-0
+            absolute inset-0
             bg-gradient-to-t
             from-black/80
             via-black/20
@@ -74,8 +73,8 @@ export default function PropertyCard({
           <div
             className="
               absolute
-              left-4
               top-4
+              left-4
               rounded-full
               bg-emerald-500
               px-3
@@ -95,8 +94,8 @@ export default function PropertyCard({
           onClick={onToggleFavorite}
           className="
             absolute
-            right-4
             top-4
+            right-4
             flex
             h-11
             w-11
@@ -143,9 +142,9 @@ export default function PropertyCard({
 
           <p
             className="
-              text-2xl
-              font-extrabold
-              tracking-tight
+              text-xl
+              font-semibold
+              tracking-wide
               text-emerald-400
             "
           >

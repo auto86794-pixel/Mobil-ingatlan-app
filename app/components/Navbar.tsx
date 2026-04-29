@@ -59,7 +59,8 @@ export default function Navbar() {
           className="
             flex
             items-center
-            gap-8
+            gap-4
+            md:gap-8
           "
         >
 
@@ -89,7 +90,7 @@ export default function Navbar() {
             </div>
 
             {/* LOGO TEXT */}
-            <div className="hidden sm:block">
+            <div className="hidden lg:block">
 
               <h1
                 className="
@@ -114,19 +115,23 @@ export default function Navbar() {
 
           </Link>
 
-          {/* DESKTOP MENU */}
+          {/* MENU */}
           <div
             className="
-              hidden
+              flex
               items-center
-              gap-8
-              md:flex
+              gap-4
+              text-sm
+              md:gap-8
             "
           >
 
+            {/* HOME - ONLY DESKTOP */}
             <Link
               href="/"
               className="
+                hidden
+                md:block
                 text-zinc-300
                 transition
                 hover:text-emerald-400
@@ -135,6 +140,7 @@ export default function Navbar() {
               Főoldal
             </Link>
 
+            {/* DASHBOARD */}
             <Link
               href="/dashboard"
               className="
@@ -146,9 +152,12 @@ export default function Navbar() {
               Dashboard
             </Link>
 
+            {/* FAVORITES - ONLY DESKTOP */}
             <Link
               href="/favorites"
               className="
+                hidden
+                md:block
                 text-zinc-300
                 transition
                 hover:text-emerald-400
@@ -170,7 +179,7 @@ export default function Navbar() {
           "
         >
 
-          {/* USER EMAIL - ONLY DESKTOP */}
+          {/* USER EMAIL - ONLY LARGE DESKTOP */}
           {user && (
             <div
               className="

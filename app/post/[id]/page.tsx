@@ -7,7 +7,6 @@ import dynamic from "next/dynamic";
 import { db } from "../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-import Navbar from "../../components/Navbar";
 import MobileBottomNav from "../../components/MobileBottomNav";
 
 // MAP IMPORT
@@ -107,7 +106,6 @@ export default function PropertyDetailPage() {
 
   return (
     <>
-      
       <MobileBottomNav />
 
       <main className="min-h-screen bg-black text-white">
@@ -191,7 +189,7 @@ export default function PropertyDetailPage() {
 
                     ${
                       selectedImage === image
-                        ? "border-yellow-500 scale-105"
+                        ? "border-emerald-500 scale-105"
                         : "border-zinc-800 opacity-70 hover:opacity-100"
                     }
                   `}
@@ -280,11 +278,11 @@ export default function PropertyDetailPage() {
                   <div
                     className="
                       rounded-2xl
-                      bg-yellow-500
+                      bg-emerald-500
                       px-5
                       py-2
                       font-bold
-                      text-black
+                      text-white
                     "
                   >
                     {post.price.toLocaleString()} Ft
@@ -485,13 +483,13 @@ export default function PropertyDetailPage() {
                     mb-3
                     w-full
                     rounded-2xl
-                    bg-yellow-500
+                    bg-emerald-500
                     px-5
                     py-4
                     font-semibold
-                    text-black
+                    text-white
                     transition
-                    hover:bg-yellow-400
+                    hover:bg-emerald-400
                   "
                 >
                   📞 Hívás
@@ -507,7 +505,7 @@ export default function PropertyDetailPage() {
                     py-4
                     text-white
                     transition
-                    hover:border-yellow-500
+                    hover:border-emerald-500
                   "
                 >
                   ✉️ Üzenet küldése

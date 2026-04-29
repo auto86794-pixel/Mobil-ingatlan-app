@@ -142,9 +142,9 @@ export default function PropertyCard({
 
           <p
             className="
-              text-xl
-              font-semibold
-              tracking-wide
+              text-lg
+              font-medium
+              tracking-normal
               text-emerald-400
             "
           >
@@ -174,7 +174,7 @@ export default function PropertyCard({
             hover:shadow-emerald-500/20
           "
         >
-          Megnézem
+          👁 Megnézem
         </Link>
 
       </div>

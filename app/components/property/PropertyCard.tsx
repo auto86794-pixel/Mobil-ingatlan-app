@@ -43,7 +43,7 @@ export default function PropertyCard({
     >
 
       {/* IMAGE */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-56 overflow-hidden md:h-64">
 
         <Image
           src={imageUrl}
@@ -116,9 +116,10 @@ export default function PropertyCard({
       </div>
 
       {/* CONTENT */}
-      <div className="p-5">
+      <div className="p-6">
 
-        <div className="mb-4">
+        {/* TITLE + CITY */}
+        <div className="mb-5">
 
           <h2
             className="
@@ -131,14 +132,14 @@ export default function PropertyCard({
             {title}
           </h2>
 
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-400">
             📍 {city}
           </p>
 
         </div>
 
         {/* PRICE */}
-        <div className="mb-5">
+        <div className="mb-6">
 
           <p
             className="
@@ -164,8 +165,10 @@ export default function PropertyCard({
             bg-emerald-500
             px-5
             py-3
-            text-sm
+            text-xs
             font-semibold
+            uppercase
+            tracking-wide
             text-white
             transition-all
             duration-300

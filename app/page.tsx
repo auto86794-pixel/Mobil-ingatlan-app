@@ -365,7 +365,7 @@ export default function Home() {
           <div className="mb-6 flex items-center justify-between">
 
             <h2 className="text-2xl font-bold md:text-3xl">
-              🏡 Összes ingatlan
+              🏡 Ingatlan Kinálatunk
             </h2>
 
             <span className="text-sm text-zinc-400 md:text-base">

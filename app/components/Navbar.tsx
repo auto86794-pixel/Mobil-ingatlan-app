@@ -2,67 +2,257 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import { auth } from "../lib/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import ContactModal from "./ContactModal";
+
+import {
+  onAuthStateChanged,
+  signOut,
+  User,
+} from "firebase/auth";
 
 export default function Navbar() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsub();
+    const unsubscribe =
+      onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+      });
+
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    window.location.href = "/";
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
-    <div className="bg-black/80 backdrop-blur border-b border-gray-800 text-white">
-      <div className="mx-auto flex items-center justify-between px-4 py-3">
+    <nav
+      className="
+        z-50
+        border-b
+        border-zinc-800
+        bg-zinc-900/95
+        backdrop-blur-xl
+      "
+    >
+      <div
+        className="
+          mx-auto
+          flex
+          max-w-7xl
+          items-center
+          justify-between
+          px-4
+          py-4
+        "
+      >
+
         {/* LEFT */}
-        <div className="flex items-center gap-4">
-          <Link href="/" className="font-bold text-lg hover:text-green-400">
-            🏠 Home
+        <div
+          className="
+            flex
+            items-center
+            gap-8
+          "
+        >
+
+          {/* LOGO */}
+          <Link
+            href="/"
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
+
+            <div
+              className="
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-2xl
+                bg-emerald-500
+                text-2xl
+              "
+            >
+              🏠
+            </div>
+
+            {/* LOGO TEXT */}
+            <div className="hidden sm:block">
+
+              <h1
+                className="
+                  text-lg
+                  font-black
+                  text-white
+                "
+              >
+                Debrecen Homes
+              </h1>
+
+              <p
+                className="
+                  text-xs
+                  text-zinc-400
+                "
+              >
+                Premium Real Estate
+              </p>
+
+            </div>
+
           </Link>
 
-          {user && (
+          {/* DESKTOP MENU */}
+          <div
+            className="
+              hidden
+              items-center
+              gap-8
+              md:flex
+            "
+          >
+
+            <Link
+              href="/"
+              className="
+                text-zinc-300
+                transition
+                hover:text-emerald-400
+              "
+            >
+              Főoldal
+            </Link>
+
             <Link
               href="/dashboard"
-              className="text-gray-300 hover:text-green-400"
+              className="
+                text-zinc-300
+                transition
+                hover:text-emerald-400
+              "
             >
-              📊 Dashboard
+              Dashboard
             </Link>
-          )}
+
+            <Link
+              href="/favorites"
+              className="
+                text-zinc-300
+                transition
+                hover:text-emerald-400
+              "
+            >
+              Kedvencek
+            </Link>
+
+          </div>
+
         </div>
 
-        {/* RIGHT */}
-        <div className="flex items-center gap-4">
-          <ContactModal />
+        {/* RIGHT SIDE */}
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+          "
+        >
 
-          {user ? (
-            <>
-              <span className="text-sm text-gray-300">{user.email}</span>
+          {/* USER EMAIL - ONLY DESKTOP */}
+          {user && (
+            <div
+              className="
+                hidden
+                xl:block
+                max-w-[180px]
+                truncate
+                text-sm
+                text-zinc-400
+              "
+            >
+              {user.email}
+            </div>
+          )}
+
+          {/* LOGIN */}
+          {!user && (
+            <Link href="/login">
 
               <button
-                onClick={handleLogout}
-                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                className="
+                  rounded-full
+                  border
+                  border-zinc-700
+                  bg-zinc-900
+                  px-3
+                  py-2
+                  text-sm
+                  text-white
+                  transition
+                  hover:border-emerald-500
+                "
               >
-                Logout
+                Belépés
               </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-            >
-              Login
+
             </Link>
           )}
+
+          {/* CREATE */}
+          <Link href="/create">
+
+            <button
+              className="
+                rounded-full
+                bg-emerald-500
+                px-3
+                py-2
+                text-sm
+                font-semibold
+                text-white
+                transition
+                hover:bg-emerald-400
+              "
+            >
+              Hirdetés
+            </button>
+
+          </Link>
+
+          {/* LOGOUT */}
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="
+                rounded-full
+                bg-red-500
+                px-3
+                py-2
+                text-sm
+                text-white
+                transition
+                hover:bg-red-400
+              "
+            >
+              Kilépés
+            </button>
+          )}
+
         </div>
+
       </div>
-    </div>
+    </nav>
   );
 }

@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { db } from "./lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
+import MobileBottomNav from "./components/MobileBottomNav";
+
+import PropertyCard from "./components/property/PropertyCard";
+import PropertyFilters from "./components/property/PropertyFilters";
+import PropertyCardSkeleton from "./components/property/PropertyCardSkeleton";
+
 type Post = {
   id: string;
   title: string;
@@ -17,33 +23,40 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔍 FILTER
+  // FILTERS
   const [city, setCity] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
-  // ❤️ FAVORITES
+  // FAVORITES
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // 🔥 LOAD FAVORITES
+  // LOAD FAVORITES
   useEffect(() => {
     const fav = localStorage.getItem("favorites");
-    if (fav) setFavorites(JSON.parse(fav));
+
+    if (fav) {
+      setFavorites(JSON.parse(fav));
+    }
   }, []);
 
-  // 🔥 FETCH
+  // FETCH POSTS
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const snapshot = await getDocs(collection(db, "posts"));
 
         const data: Post[] = [];
+
         snapshot.forEach((doc) => {
-          data.push({ id: doc.id, ...(doc.data() as any) });
+          data.push({
+            id: doc.id,
+            ...(doc.data() as Omit<Post, "id">),
+          });
         });
 
         setPosts(data);
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error("Hiba a betöltésnél:", error);
       } finally {
         setLoading(false);
       }
@@ -52,198 +65,318 @@ export default function Home() {
     fetchPosts();
   }, []);
 
-  // ❤️ TOGGLE FAVORITE
+  // FAVORITE TOGGLE
   const toggleFavorite = (id: string) => {
-    let updated;
+    let updatedFavorites: string[];
 
     if (favorites.includes(id)) {
-      updated = favorites.filter((f) => f !== id);
+      updatedFavorites = favorites.filter(
+        (fav) => fav !== id
+      );
     } else {
-      updated = [...favorites, id];
+      updatedFavorites = [...favorites, id];
     }
 
-    setFavorites(updated);
-    localStorage.setItem("favorites", JSON.stringify(updated));
+    setFavorites(updatedFavorites);
+
+    localStorage.setItem(
+      "favorites",
+      JSON.stringify(updatedFavorites)
+    );
   };
 
-  // 🔍 FILTER LOGIKA
+  // FILTER POSTS
   const filteredPosts = posts
     .filter(
       (post) =>
         post.title &&
+        post.city &&
         post.price &&
-        post.imageUrl &&
-        post.city
+        post.imageUrl
     )
     .filter((post) => {
-      const matchCity = post.city
-        ?.toLowerCase()
+      const cityMatch = post.city
+        .toLowerCase()
         .includes(city.toLowerCase());
 
-      const matchPrice = maxPrice
+      const priceMatch = maxPrice
         ? post.price <= Number(maxPrice)
         : true;
 
-      return matchCity && matchPrice;
+      return cityMatch && priceMatch;
     });
 
-  // ⭐ FEATURED
-  const featuredPosts = filteredPosts.filter((p) => p.featured);
-  const normalPosts = filteredPosts.filter((p) => !p.featured);
+  // FEATURED POSTS
+  const featuredPosts = filteredPosts.filter(
+    (post) => post.featured
+  );
 
-  // ⏳ LOADING
+  // NORMAL POSTS
+  const normalPosts = filteredPosts.filter(
+    (post) => !post.featured
+  );
+
+  // LOADING
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
-        Betöltés...
-      </div>
+      <>
+        <MobileBottomNav />
+
+        <main className="min-h-screen bg-black px-6 py-10">
+
+          {/* HERO SKELETON */}
+          <div
+            className="
+              mb-10
+              h-64
+              animate-pulse
+              rounded-[32px]
+              bg-zinc-900
+            "
+          />
+
+          {/* CARD SKELETONS */}
+          <div
+            className="
+              grid
+              gap-8
+              sm:grid-cols-1
+              md:grid-cols-2
+              xl:grid-cols-3
+            "
+          >
+
+            {Array.from({ length: 6 }).map(
+              (_, index) => (
+                <PropertyCardSkeleton
+                  key={index}
+                />
+              )
+            )}
+
+          </div>
+
+        </main>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <>
+      <MobileBottomNav />
 
-      <h1 className="text-3xl font-bold mb-6">
-        🏠 Elérhető ingatlanok
-      </h1>
+      <main className="min-h-screen bg-black text-white px-6 py-10">
 
-      {/* 🔍 SEARCH */}
-      <div className="flex flex-col md:flex-row gap-3 mb-6">
-
-        <input
-          placeholder="🔍 Város"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="bg-gray-800 p-2 rounded w-full md:w-1/3"
-        />
-
-        <input
-          type="number"
-          placeholder="💰 Max ár"
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-          className="bg-gray-800 p-2 rounded w-full md:w-1/3"
-        />
-
-        <button
-          onClick={() => {
-            setCity("");
-            setMaxPrice("");
-          }}
-          className="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600"
+        {/* HERO */}
+        <section
+          className="
+            relative
+            mb-12
+            overflow-hidden
+            rounded-[32px]
+            border border-zinc-800
+            bg-zinc-900
+          "
         >
-          Reset
-        </button>
 
-      </div>
+          {/* BACKGROUND IMAGE */}
+          <div className="absolute inset-0">
 
-      {/* ⭐ FEATURED */}
-      {featuredPosts.length > 0 && (
-        <>
-          <h2 className="text-2xl font-bold mb-4">
-            ⭐ Kiemelt ingatlanok
-          </h2>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {featuredPosts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-gray-800 border border-yellow-400 rounded-xl overflow-hidden shadow-xl"
-              >
-                <img
-                  src={post.imageUrl}
-                  className="h-56 w-full object-cover"
-                />
-
-                <div className="p-4">
-
-                  <div className="flex justify-between items-center mb-1">
-                    <h2 className="text-xl font-bold">
-                      {post.title}
-                    </h2>
-
-                    <button
-                      onClick={() => toggleFavorite(post.id)}
-                      className="text-2xl"
-                    >
-                      {favorites.includes(post.id) ? "❤️" : "🤍"}
-                    </button>
-                  </div>
-
-                  <p className="text-gray-400">
-                    {post.city}
-                  </p>
-
-                  <p className="text-yellow-400 text-lg font-bold">
-                    {post.price.toLocaleString()} Ft
-                  </p>
-
-                  <a
-                    href={`/post/${post.id}`}
-                    className="inline-block mt-2 bg-yellow-500 px-3 py-1 rounded hover:bg-yellow-600"
-                  >
-                    Megnézem
-                  </a>
-
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* EMPTY */}
-      {filteredPosts.length === 0 && (
-        <p className="text-gray-400">Nincs találat 😢</p>
-      )}
-
-      {/* GRID */}
-      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {normalPosts.map((post) => (
-          <div
-            key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.03] hover:shadow-2xl transition"
-          >
             <img
-              src={post.imageUrl}
-              className="h-48 w-full object-cover"
+              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2070&auto=format&fit=crop"
+              className="
+                h-full
+                w-full
+                object-cover
+              "
             />
 
-            <div className="p-4">
+            <div className="absolute inset-0 bg-black/70" />
 
-              <div className="flex justify-between items-center mb-1">
-                <h2 className="text-xl font-bold">
-                  {post.title}
-                </h2>
+            <div
+              className="
+                absolute
+                inset-0
+                bg-gradient-to-r
+                from-black
+                via-black/60
+                to-transparent
+              "
+            />
 
-                <button
-                  onClick={() => toggleFavorite(post.id)}
-                  className="text-2xl"
-                >
-                  {favorites.includes(post.id) ? "❤️" : "🤍"}
-                </button>
+          </div>
+
+          {/* CONTENT */}
+          <div
+            className="
+              relative
+              z-10
+              px-8
+              py-20
+              md:px-14
+            "
+          >
+
+            <div className="max-w-3xl">
+
+              <div
+                className="
+                  mb-4
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-full
+                  border border-emerald-500/20
+                  bg-emerald-500/10
+                  px-4
+                  py-2
+                  text-sm
+                  text-emerald-400
+                  backdrop-blur-xl
+                "
+              >
+                ✨ Premium Ingatlanplatform
               </div>
 
-              <p className="text-gray-400">
-                {post.city}
-              </p>
-
-              <p className="text-green-400 text-lg mb-2">
-                {post.price.toLocaleString()} Ft
-              </p>
-
-              <a
-                href={`/post/${post.id}`}
-                className="inline-block bg-green-600 px-3 py-1 rounded hover:bg-green-700 transition"
+              <h1
+                className="
+                  max-w-2xl
+                  text-5xl
+                  font-black
+                  leading-tight
+                  tracking-tight
+                  text-white
+                  md:text-7xl
+                "
               >
-                👁 Megnézem
-              </a>
+                Találd meg álmaid otthonát Debrecenben
+              </h1>
+
+              <p
+                className="
+                  mt-6
+                  max-w-2xl
+                  text-lg
+                  leading-relaxed
+                  text-zinc-300
+                "
+              >
+                Modern, prémium ingatlanok egy helyen.
+                Gyors keresés, intelligens szűrés és
+                exkluzív ajánlatok.
+              </p>
 
             </div>
-          </div>
-        ))}
-      </div>
 
-    </div>
+            {/* FILTER BOX */}
+            <div className="mt-10 max-w-5xl">
+
+              <PropertyFilters
+                city={city}
+                maxPrice={maxPrice}
+                setCity={setCity}
+                setMaxPrice={setMaxPrice}
+                onReset={() => {
+                  setCity("");
+                  setMaxPrice("");
+                }}
+              />
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* FEATURED */}
+        {featuredPosts.length > 0 && (
+          <section className="mb-14">
+
+            <div className="mb-6 flex items-center justify-between">
+
+              <h2 className="text-3xl font-bold">
+                ⭐ Kiemelt ingatlanok
+              </h2>
+
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+
+              {featuredPosts.map((post) => (
+                <PropertyCard
+                  key={post.id}
+                  id={post.id}
+                  title={post.title}
+                  city={post.city}
+                  price={post.price}
+                  imageUrl={post.imageUrl}
+                  featured={post.featured}
+                  isFavorite={favorites.includes(post.id)}
+                  onToggleFavorite={() =>
+                    toggleFavorite(post.id)
+                  }
+                />
+              ))}
+
+            </div>
+
+          </section>
+        )}
+
+        {/* EMPTY */}
+        {filteredPosts.length === 0 && (
+          <div
+            className="
+              rounded-3xl
+              border border-zinc-800
+              bg-zinc-900
+              p-10
+              text-center
+              text-zinc-400
+            "
+          >
+            Nincs találat 😢
+          </div>
+        )}
+
+        {/* NORMAL POSTS */}
+        <section>
+
+          <div className="mb-6 flex items-center justify-between">
+
+            <h2 className="text-3xl font-bold">
+              🏡 Összes ingatlan
+            </h2>
+
+            <span className="text-zinc-400">
+              {normalPosts.length} találat
+            </span>
+
+          </div>
+
+          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+
+            {normalPosts.map((post) => (
+              <PropertyCard
+                key={post.id}
+                id={post.id}
+                title={post.title}
+                city={post.city}
+                price={post.price}
+                imageUrl={post.imageUrl}
+                featured={post.featured}
+                isFavorite={favorites.includes(post.id)}
+                onToggleFavorite={() =>
+                  toggleFavorite(post.id)
+                }
+              />
+            ))}
+
+          </div>
+
+        </section>
+
+      </main>
+    </>
   );
 }

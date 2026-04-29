@@ -1,6 +1,9 @@
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+
 import Navbar from "./components/Navbar";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 export const metadata = {
   title: "Debrecen Homes",
@@ -26,8 +29,11 @@ export default function RootLayout({
         {/* NAVBAR */}
         <Navbar />
 
-        {/* APP */}
-        {children}
+        {/* PAGE CONTENT */}
+        <main>{children}</main>
+
+        {/* MOBILE NAV */}
+        <MobileBottomNav />
       </body>
     </html>
   );

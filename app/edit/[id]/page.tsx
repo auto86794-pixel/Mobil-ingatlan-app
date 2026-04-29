@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   db,
   storage,
-  auth,
-} from "../lib/firebase";
+} from "../../lib/firebase";
 
 import {
-  collection,
-  addDoc,
+  doc,
+  getDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 import {
@@ -20,13 +20,34 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
-export default function Create() {
+type Post = {
+  title: string;
+  city: string;
+  price: number;
+  description?: string;
+
+  imageUrl?: string;
+  images?: string[];
+
+  lat?: number;
+  lng?: number;
+};
+
+export default function EditPropertyPage() {
+  const params = useParams();
   const router = useRouter();
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
 
   // FORM
   const [title, setTitle] = useState("");
   const [city, setCity] = useState("");
   const [price, setPrice] = useState("");
+
   const [description, setDescription] =
     useState("");
 
@@ -35,9 +56,53 @@ export default function Create() {
     string[]
   >([]);
 
-  // LOADING
-  const [uploading, setUploading] =
-    useState(false);
+  // LOAD PROPERTY
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const docRef = doc(
+          db,
+          "posts",
+          params.id as string
+        );
+
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+          const data =
+            snapshot.data() as Post;
+
+          setTitle(data.title || "");
+          setCity(data.city || "");
+
+          setPrice(
+            data.price?.toString() || ""
+          );
+
+          setDescription(
+            data.description || ""
+          );
+
+          // IMAGES
+          if (
+            data.images &&
+            data.images.length > 0
+          ) {
+            setImages(data.images);
+          } else if (data.imageUrl) {
+            setImages([data.imageUrl]);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Hiba betöltés közben");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [params.id]);
 
   // IMAGE UPLOAD
   const handleImageUpload = async (
@@ -45,13 +110,9 @@ export default function Create() {
   ) => {
     const files = e.target.files;
 
-    console.log(files);
-
     if (!files) return;
 
     try {
-      setUploading(true);
-
       const uploadedUrls: string[] = [];
 
       for (const file of Array.from(files)) {
@@ -64,17 +125,14 @@ export default function Create() {
           `properties/${safeName}`
         );
 
-        // UPLOAD
         await uploadBytes(imageRef, file);
 
-        // URL
         const downloadURL =
           await getDownloadURL(imageRef);
 
         uploadedUrls.push(downloadURL);
       }
 
-      // ADD NEW IMAGES
       setImages((prev) => [
         ...prev,
         ...uploadedUrls,
@@ -82,45 +140,66 @@ export default function Create() {
 
     } catch (err) {
       console.error(err);
-      alert("Hiba a képfeltöltés során");
-    } finally {
-      setUploading(false);
+      alert("Hiba képfeltöltés közben");
     }
   };
 
-  // SUBMIT
-  const handleSubmit = async () => {
+  // SAVE
+  const handleSave = async () => {
     try {
-      await addDoc(collection(db, "posts"), {
+      setSaving(true);
+
+      const docRef = doc(
+        db,
+        "posts",
+        params.id as string
+      );
+
+      await updateDoc(docRef, {
         title,
         city,
         price: Number(price),
 
         description,
 
-        // COVER
+        // COVER IMAGE
         imageUrl: images[0] || "",
 
         // ALL IMAGES
         images,
 
-        userId: auth.currentUser?.uid,
-
-        createdAt: new Date(),
-
-        // MAP COORDS
-        lat: 47.5316,
-        lng: 21.6273,
+        updatedAt: new Date(),
       });
 
-      alert("Ingatlan feltöltve! 🚀");
+      alert("Ingatlan frissítve 😄🔥");
 
       router.push("/dashboard");
+
     } catch (err) {
       console.error(err);
-      alert("Hiba történt");
+      alert("Hiba mentés közben");
+    } finally {
+      setSaving(false);
     }
   };
+
+  // LOADING
+  if (loading) {
+    return (
+      <div
+        className="
+          min-h-screen
+          flex
+          items-center
+          justify-center
+          bg-black
+          text-white
+        "
+      >
+        Betöltés...
+      </div>
+    );
+  }
 
   return (
     <div
@@ -130,7 +209,6 @@ export default function Create() {
         text-white
         flex
         justify-center
-        items-center
         p-6
       "
     >
@@ -138,7 +216,7 @@ export default function Create() {
       <div
         className="
           w-full
-          max-w-2xl
+          max-w-3xl
           rounded-[32px]
           border border-zinc-800
           bg-zinc-900
@@ -154,10 +232,9 @@ export default function Create() {
             className="
               text-4xl
               font-black
-              tracking-tight
             "
           >
-            ➕ Új ingatlan
+            ✏️ Ingatlan szerkesztése
           </h1>
 
           <p
@@ -166,7 +243,7 @@ export default function Create() {
               text-zinc-400
             "
           >
-            Modern prémium ingatlan feltöltés.
+            Módosítsd az ingatlan adatait.
           </p>
 
         </div>
@@ -174,19 +251,11 @@ export default function Create() {
         {/* TITLE */}
         <div className="mb-4">
 
-          <label
-            className="
-              mb-2
-              block
-              text-sm
-              text-zinc-400
-            "
-          >
+          <label className="mb-2 block text-zinc-400">
             Ingatlan neve
           </label>
 
           <input
-            placeholder="Modern lakás"
             value={title}
             onChange={(e) =>
               setTitle(e.target.value)
@@ -199,8 +268,6 @@ export default function Create() {
               px-5
               py-4
               outline-none
-              transition
-              focus:border-yellow-500
             "
           />
 
@@ -209,19 +276,11 @@ export default function Create() {
         {/* CITY */}
         <div className="mb-4">
 
-          <label
-            className="
-              mb-2
-              block
-              text-sm
-              text-zinc-400
-            "
-          >
+          <label className="mb-2 block text-zinc-400">
             Város
           </label>
 
           <input
-            placeholder="Debrecen"
             value={city}
             onChange={(e) =>
               setCity(e.target.value)
@@ -234,8 +293,6 @@ export default function Create() {
               px-5
               py-4
               outline-none
-              transition
-              focus:border-yellow-500
             "
           />
 
@@ -244,20 +301,12 @@ export default function Create() {
         {/* PRICE */}
         <div className="mb-4">
 
-          <label
-            className="
-              mb-2
-              block
-              text-sm
-              text-zinc-400
-            "
-          >
+          <label className="mb-2 block text-zinc-400">
             Ár
           </label>
 
           <input
             type="number"
-            placeholder="95000000"
             value={price}
             onChange={(e) =>
               setPrice(e.target.value)
@@ -270,8 +319,6 @@ export default function Create() {
               px-5
               py-4
               outline-none
-              transition
-              focus:border-yellow-500
             "
           />
 
@@ -280,20 +327,12 @@ export default function Create() {
         {/* DESCRIPTION */}
         <div className="mb-6">
 
-          <label
-            className="
-              mb-2
-              block
-              text-sm
-              text-zinc-400
-            "
-          >
+          <label className="mb-2 block text-zinc-400">
             Leírás
           </label>
 
           <textarea
             rows={6}
-            placeholder="Modern prémium lakás..."
             value={description}
             onChange={(e) =>
               setDescription(e.target.value)
@@ -306,8 +345,6 @@ export default function Create() {
               px-5
               py-4
               outline-none
-              transition
-              focus:border-yellow-500
             "
           />
 
@@ -316,58 +353,31 @@ export default function Create() {
         {/* IMAGE UPLOAD */}
         <div className="mb-6">
 
-          <label
-            className="
-              mb-3
-              block
-              text-sm
-              text-zinc-400
-            "
-          >
-            Képek feltöltése
+          <label className="mb-3 block text-zinc-400">
+            Új képek hozzáadása
           </label>
 
           <input
             type="file"
-            multiple={true}
+            multiple
             accept="image/*"
-            onChange={(e) => {
-              console.log(e.target.files);
-
-              handleImageUpload(e);
-            }}
+            onChange={handleImageUpload}
             className="
               w-full
               rounded-2xl
               border border-zinc-700
               bg-zinc-900
               p-4
-              text-white
             "
           />
 
         </div>
 
-        {/* LOADING */}
-        {uploading && (
-          <div
-            className="
-              mb-6
-              rounded-2xl
-              bg-yellow-500/10
-              p-4
-              text-yellow-400
-            "
-          >
-            Képek feltöltése...
-          </div>
-        )}
-
         {/* IMAGE PREVIEW */}
         {images.length > 0 && (
           <div
             className="
-              mb-6
+              mb-8
               grid
               gap-4
               sm:grid-cols-2
@@ -383,7 +393,6 @@ export default function Create() {
                   overflow-hidden
                   rounded-2xl
                   border border-zinc-800
-                  bg-zinc-900
                 "
               >
 
@@ -416,16 +425,42 @@ export default function Create() {
                   </div>
                 )}
 
+                {/* DELETE */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated =
+                      images.filter(
+                        (_, i) =>
+                          i !== index
+                      );
+
+                    setImages(updated);
+                  }}
+                  className="
+                    absolute
+                    right-3
+                    top-3
+                    rounded-full
+                    bg-red-500
+                    px-3
+                    py-2
+                    text-white
+                  "
+                >
+                  ✕
+                </button>
+
               </div>
             ))}
 
           </div>
         )}
 
-        {/* SUBMIT */}
+        {/* SAVE BUTTON */}
         <button
-          onClick={handleSubmit}
-          disabled={uploading}
+          onClick={handleSave}
+          disabled={saving}
           className="
             w-full
             rounded-2xl
@@ -440,9 +475,9 @@ export default function Create() {
             disabled:opacity-50
           "
         >
-          {uploading
-            ? "Feltöltés..."
-            : "🚀 Ingatlan létrehozása"}
+          {saving
+            ? "Mentés..."
+            : "💾 Mentés"}
         </button>
 
       </div>

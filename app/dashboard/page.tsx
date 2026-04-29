@@ -58,8 +58,12 @@ export default function Dashboard() {
       const snap = await getDocs(q);
 
       const data: Post[] = [];
+
       snap.forEach((docSnap) => {
-        data.push({ id: docSnap.id, ...(docSnap.data() as any) });
+        data.push({
+          id: docSnap.id,
+          ...(docSnap.data() as any),
+        });
       });
 
       setPosts(data);
@@ -77,7 +81,11 @@ export default function Dashboard() {
 
     try {
       await deleteDoc(doc(db, "posts", id));
-      setPosts((prev) => prev.filter((p) => p.id !== id));
+
+      setPosts((prev) =>
+        prev.filter((p) => p.id !== id)
+      );
+
       toast.success("Törölve ✅");
     } catch (err) {
       console.error(err);
@@ -94,13 +102,22 @@ export default function Dashboard() {
 
       if (newImage) {
         const fileName = `${Date.now()}-${newImage.name}`;
-        const imageRef = ref(storage, `images/${fileName}`);
+
+        const imageRef = ref(
+          storage,
+          `images/${fileName}`
+        );
 
         await uploadBytes(imageRef, newImage);
+
         imageUrl = await getDownloadURL(imageRef);
       }
 
-      const refDoc = doc(db, "posts", editingPost.id);
+      const refDoc = doc(
+        db,
+        "posts",
+        editingPost.id
+      );
 
       await updateDoc(refDoc, {
         title: editingPost.title,
@@ -130,87 +147,225 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="p-6 text-white">Betöltés...</div>;
+    return (
+      <div className="p-6 text-white">
+        Betöltés...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">📊 Dashboard</h1>
+    <div className="min-h-screen bg-black text-white p-6">
 
-      {user && (
-        <p className="mb-6 text-gray-400">
-          Bejelentkezve: {user.email}
-        </p>
-      )}
+      {/* HEADER */}
+      <div className="mb-10">
 
+        <div
+          className="
+            inline-flex
+            items-center
+            gap-2
+            rounded-full
+            border border-emerald-500/20
+            bg-emerald-500/10
+            px-4
+            py-2
+            text-sm
+            text-emerald-400
+            backdrop-blur-xl
+          "
+        >
+          📊 Dashboard
+        </div>
+
+        <h1 className="mt-4 text-4xl font-black">
+          Saját ingatlanjaid kezelése
+        </h1>
+
+        {user && (
+          <p className="mt-3 text-zinc-400">
+            Bejelentkezve: {user.email}
+          </p>
+        )}
+
+      </div>
+
+      {/* EMPTY */}
       {posts.length === 0 && (
-        <p className="text-gray-500">
+        <div
+          className="
+            rounded-3xl
+            border border-zinc-800
+            bg-zinc-900
+            p-10
+            text-center
+            text-zinc-400
+          "
+        >
           Nincs még ingatlanod 😢
-        </p>
+        </div>
       )}
 
       {/* GRID */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+
         {posts.map((post) => (
           <div
             key={post.id}
-            className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition"
+            className="
+              overflow-hidden
+              rounded-3xl
+              border border-zinc-800
+              bg-zinc-900
+              shadow-xl
+              transition
+              hover:-translate-y-1
+              hover:border-emerald-500/40
+            "
           >
-            <img
-              src={post.imageUrl}
-              className="h-48 w-full object-cover"
-            />
 
-            <div className="p-4">
-              <h2 className="text-xl font-bold">
+            {/* IMAGE */}
+            <div className="relative">
+
+              <img
+                src={post.imageUrl}
+                className="
+                  h-56
+                  w-full
+                  object-cover
+                "
+              />
+
+            </div>
+
+            {/* CONTENT */}
+            <div className="p-5">
+
+              <h2 className="text-2xl font-bold">
                 {post.title}
               </h2>
 
-              <p className="text-gray-400">{post.city}</p>
+              <p className="mt-1 text-zinc-400">
+                📍 {post.city}
+              </p>
 
-              <p className="text-green-400">
+              <p
+                className="
+                  mt-4
+                  text-2xl
+                  font-black
+                  text-emerald-400
+                "
+              >
                 {post.price.toLocaleString()} Ft
               </p>
 
-              {/* GOMBOK */}
-              <div className="flex gap-2 mt-3">
+              {/* BUTTONS */}
+              <div className="mt-5 flex flex-wrap gap-2">
 
                 <a
                   href={`/post/${post.id}`}
-                  className="bg-green-600 px-3 py-1 rounded hover:bg-green-700"
+                  className="
+                    rounded-xl
+                    bg-emerald-500
+                    px-4
+                    py-2
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-emerald-400
+                  "
                 >
                   👁 Megnézem
                 </a>
 
                 <button
-                  onClick={() => setEditingPost(post)}
-                  className="bg-blue-600 px-3 py-1 rounded"
+                  onClick={() =>
+                    setEditingPost(post)
+                  }
+                  className="
+                    rounded-xl
+                    bg-blue-600
+                    px-4
+                    py-2
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-blue-500
+                  "
                 >
-                  Edit
+                  Szerkesztés
                 </button>
 
                 <button
-                  onClick={() => handleDelete(post.id)}
-                  className="bg-red-600 px-3 py-1 rounded"
+                  onClick={() =>
+                    handleDelete(post.id)
+                  }
+                  className="
+                    rounded-xl
+                    bg-red-600
+                    px-4
+                    py-2
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-red-500
+                  "
                 >
                   Törlés
                 </button>
 
               </div>
+
             </div>
+
           </div>
         ))}
+
       </div>
 
       {/* 🔥 MODAL */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md">
+        <div
+          className="
+            fixed
+            inset-0
+            z-50
+            flex
+            items-center
+            justify-center
+            bg-black/70
+            backdrop-blur-sm
+            p-4
+          "
+        >
 
-            <h2 className="text-xl mb-4">Szerkesztés</h2>
+          <div
+            className="
+              w-full
+              max-w-md
+              rounded-3xl
+              border border-zinc-800
+              bg-zinc-900
+              p-6
+            "
+          >
+
+            <h2 className="mb-5 text-2xl font-bold">
+              ✏️ Szerkesztés
+            </h2>
 
             <input
-              className="w-full p-2 mb-2 bg-gray-800"
+              className="
+                mb-3
+                w-full
+                rounded-xl
+                border border-zinc-700
+                bg-zinc-800
+                p-3
+                outline-none
+                focus:border-emerald-500
+              "
               value={editingPost.title}
               onChange={(e) =>
                 setEditingPost({
@@ -218,10 +373,20 @@ export default function Dashboard() {
                   title: e.target.value,
                 })
               }
+              placeholder="Cím"
             />
 
             <input
-              className="w-full p-2 mb-2 bg-gray-800"
+              className="
+                mb-3
+                w-full
+                rounded-xl
+                border border-zinc-700
+                bg-zinc-800
+                p-3
+                outline-none
+                focus:border-emerald-500
+              "
               value={editingPost.city}
               onChange={(e) =>
                 setEditingPost({
@@ -229,11 +394,21 @@ export default function Dashboard() {
                   city: e.target.value,
                 })
               }
+              placeholder="Város"
             />
 
             <input
               type="number"
-              className="w-full p-2 mb-2 bg-gray-800"
+              className="
+                mb-3
+                w-full
+                rounded-xl
+                border border-zinc-700
+                bg-zinc-800
+                p-3
+                outline-none
+                focus:border-emerald-500
+              "
               value={editingPost.price}
               onChange={(e) =>
                 setEditingPost({
@@ -241,10 +416,20 @@ export default function Dashboard() {
                   price: Number(e.target.value),
                 })
               }
+              placeholder="Ár"
             />
 
             <textarea
-              className="w-full p-2 mb-2 bg-gray-800"
+              className="
+                mb-3
+                w-full
+                rounded-xl
+                border border-zinc-700
+                bg-zinc-800
+                p-3
+                outline-none
+                focus:border-emerald-500
+              "
               value={editingPost.description}
               onChange={(e) =>
                 setEditingPost({
@@ -252,16 +437,22 @@ export default function Dashboard() {
                   description: e.target.value,
                 })
               }
+              placeholder="Leírás"
             />
 
             {/* IMAGE */}
             <input
               type="file"
+              className="mb-3"
               onChange={(e) => {
-                const file = e.target.files?.[0];
+                const file =
+                  e.target.files?.[0];
+
                 if (file) {
                   setNewImage(file);
-                  setPreview(URL.createObjectURL(file));
+                  setPreview(
+                    URL.createObjectURL(file)
+                  );
                 }
               }}
             />
@@ -269,27 +460,57 @@ export default function Dashboard() {
             {preview && (
               <img
                 src={preview}
-                className="w-full h-40 object-cover mt-2"
+                className="
+                  mt-2
+                  h-44
+                  w-full
+                  rounded-xl
+                  object-cover
+                "
               />
             )}
 
-            <div className="flex gap-2 mt-3">
+            {/* ACTIONS */}
+            <div className="mt-5 flex gap-3">
+
               <button
                 onClick={handleUpdate}
-                className="bg-green-600 px-4 py-2 rounded"
+                className="
+                  rounded-xl
+                  bg-emerald-500
+                  px-5
+                  py-3
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-emerald-400
+                "
               >
                 Mentés
               </button>
 
               <button
-                onClick={() => setEditingPost(null)}
-                className="bg-gray-600 px-4 py-2 rounded"
+                onClick={() =>
+                  setEditingPost(null)
+                }
+                className="
+                  rounded-xl
+                  bg-zinc-700
+                  px-5
+                  py-3
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-zinc-600
+                "
               >
                 Mégse
               </button>
+
             </div>
 
           </div>
+
         </div>
       )}
     </div>

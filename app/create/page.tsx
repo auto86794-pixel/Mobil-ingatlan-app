@@ -12,6 +12,7 @@ import {
 import {
   collection,
   addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import {
@@ -21,6 +22,7 @@ import {
 } from "firebase/storage";
 
 export default function Create() {
+
   const router = useRouter();
 
   // FORM
@@ -43,18 +45,19 @@ export default function Create() {
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const files = e.target.files;
 
-    console.log(files);
+    const files = e.target.files;
 
     if (!files) return;
 
     try {
+
       setUploading(true);
 
       const uploadedUrls: string[] = [];
 
       for (const file of Array.from(files)) {
+
         const safeName = `${Date.now()}-${Math.random()
           .toString(36)
           .substring(2)}-${file.name}`;
@@ -72,54 +75,72 @@ export default function Create() {
           await getDownloadURL(imageRef);
 
         uploadedUrls.push(downloadURL);
+
       }
 
-      // ADD NEW IMAGES
+      // SAVE IMAGES
       setImages((prev) => [
         ...prev,
         ...uploadedUrls,
       ]);
 
     } catch (err) {
+
       console.error(err);
-      alert("Hiba a képfeltöltés során");
+      alert("Hiba a képfeltöltés során 😢");
+
     } finally {
+
       setUploading(false);
+
     }
+
   };
 
   // SUBMIT
   const handleSubmit = async () => {
+
     try {
-      await addDoc(collection(db, "posts"), {
-        title,
-        city,
-        price: Number(price),
 
-        description,
+      await addDoc(
+        collection(db, "posts"),
+        {
+          title,
+          city,
+          price: Number(price),
 
-        // COVER
-        imageUrl: images[0] || "",
+          description,
 
-        // ALL IMAGES
-        images,
+          // COVER IMAGE
+          imageUrl: images[0] || "",
 
-        userId: auth.currentUser?.uid,
+          // ALL IMAGES
+          images,
 
-        createdAt: new Date(),
+          // USER
+          userId:
+            auth.currentUser?.uid || null,
 
-        // MAP COORDS
-        lat: 47.5316,
-        lng: 21.6273,
-      });
+          // DATE
+          createdAt: serverTimestamp(),
 
-      alert("Ingatlan feltöltve! 🚀");
+          // MAP
+          lat: 47.5316,
+          lng: 21.6273,
+        }
+      );
+
+      alert("Ingatlan feltöltve 🚀");
 
       router.push("/dashboard");
+
     } catch (err) {
+
       console.error(err);
-      alert("Hiba történt");
+      alert("Hiba történt 😢");
+
     }
+
   };
 
   return (
@@ -292,7 +313,7 @@ export default function Create() {
           </label>
 
           <textarea
-            rows={6}
+            rows={8}
             placeholder="Modern prémium lakás..."
             value={description}
             onChange={(e) =>
@@ -329,13 +350,9 @@ export default function Create() {
 
           <input
             type="file"
-            multiple={true}
+            multiple
             accept="image/*"
-            onChange={(e) => {
-              console.log(e.target.files);
-
-              handleImageUpload(e);
-            }}
+            onChange={handleImageUpload}
             className="
               w-full
               rounded-2xl
@@ -389,6 +406,7 @@ export default function Create() {
 
                 <img
                   src={image}
+                  alt="preview"
                   className="
                     h-44
                     w-full

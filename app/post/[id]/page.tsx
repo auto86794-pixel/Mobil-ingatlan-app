@@ -1,491 +1,225 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import dynamic from "next/dynamic";
 
-import { db } from "../../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc
+} from "firebase/firestore";
 
-import MobileBottomNav from "../../components/MobileBottomNav";
+import { db } from "@/app/lib/firebase";
 
-// MAP IMPORT
-const PropertyMap = dynamic(
-  () => import("../../components/map/PropertyMap"),
-  {
-    ssr: false,
-  }
-);
+import ContactModal from "@/app/components/ContactModal";
 
-type Post = {
+type Property = {
   id: string;
   title: string;
   city: string;
   price: number;
   imageUrl: string;
-
-  images?: string[];
-
-  size?: number;
-  rooms?: number;
-  bathrooms?: number;
-  garage?: boolean;
-  floor?: number;
-  landSize?: number;
-
-  lat?: number;
-  lng?: number;
-
   description?: string;
+  phone?: string;
+  featured?: boolean;
 };
 
-export default function PropertyDetailPage() {
-  const params = useParams();
+type PropertyPageProps = {
+  params: {
+    id: string;
+  };
+};
 
-  const [post, setPost] = useState<Post | null>(null);
+export default function PropertyPage({
+  params
+}: PropertyPageProps) {
 
-  const [loading, setLoading] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
 
-  const [selectedImage, setSelectedImage] =
-    useState("");
+  const [property, setProperty] =
+    useState<Property | null>(null);
 
-  const [lightboxOpen, setLightboxOpen] =
-    useState(false);
+  const [loading, setLoading] =
+    useState(true);
 
   // FETCH PROPERTY
   useEffect(() => {
-    const fetchPost = async () => {
+
+    const fetchProperty = async () => {
+
       try {
+
         const docRef = doc(
           db,
           "posts",
-          params.id as string
+          params.id
         );
 
         const snapshot = await getDoc(docRef);
 
         if (snapshot.exists()) {
-          const data = {
+
+          setProperty({
             id: snapshot.id,
-            ...(snapshot.data() as Omit<Post, "id">),
-          };
+            ...(snapshot.data() as Omit<
+              Property,
+              "id"
+            >),
+          });
 
-          setPost(data);
-
-          setSelectedImage(
-            data.images?.[0] || data.imageUrl
-          );
         }
+
       } catch (error) {
-        console.error(error);
+
+        console.error(
+          "Hiba property betöltésnél:",
+          error
+        );
+
       } finally {
+
         setLoading(false);
+
       }
+
     };
 
-    fetchPost();
+    fetchProperty();
+
   }, [params.id]);
 
   // LOADING
   if (loading) {
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
         Betöltés...
       </div>
     );
+
   }
 
   // NOT FOUND
-  if (!post) {
+  if (!property) {
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        Az ingatlan nem található.
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+        Az ingatlan nem található 😢
       </div>
     );
+
   }
 
   return (
-    <>
-      <MobileBottomNav />
+    <div className="min-h-screen bg-black text-white p-6">
 
-      <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_320px]">
 
-        {/* GALLERY */}
-        <section className="mx-auto max-w-7xl px-6 pt-10">
+        {/* LEFT SIDE */}
+        <div>
 
-          {/* BACK BUTTON */}
-          <button
-            onClick={() => history.back()}
-            className="
-              mb-6
-              text-zinc-400
-              transition
-              hover:text-white
-            "
-          >
-            ← Vissza
-          </button>
+          {/* IMAGE */}
+          <div className="overflow-hidden rounded-3xl border border-zinc-800">
 
-          <div className="grid gap-5 lg:grid-cols-5">
+            <img
+              src={property.imageUrl}
+              alt={property.title}
+              className="h-[500px] w-full object-cover"
+            />
 
-            {/* MAIN IMAGE */}
-            <div className="lg:col-span-4">
+          </div>
+
+          {/* TITLE */}
+          <div className="mt-8">
+
+            <h1 className="text-5xl font-black tracking-tight">
+              {property.title}
+            </h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-4">
 
               <div
                 className="
-                  overflow-hidden
-                  rounded-[32px]
-                  border border-zinc-800
+                  rounded-full
                   bg-zinc-900
+                  px-4
+                  py-2
+                  text-zinc-300
                 "
               >
-
-                <img
-                  src={selectedImage}
-                  onClick={() =>
-                    setLightboxOpen(true)
-                  }
-                  className="
-                    h-[65vh]
-                    w-full
-                    cursor-zoom-in
-                    object-cover
-                    transition
-                    duration-500
-                    hover:scale-[1.02]
-                  "
-                />
-
+                📍 {property.city}
               </div>
 
-            </div>
-
-            {/* THUMBNAILS */}
-            <div
-              className="
-                flex
-                gap-4
-                overflow-x-auto
-                lg:flex-col
-              "
-            >
-
-              {(post.images?.length
-                ? post.images
-                : [post.imageUrl]
-              ).map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() =>
-                    setSelectedImage(image)
-                  }
-                  className={`
-                    overflow-hidden
-                    rounded-2xl
-                    border-2
-                    transition-all
-                    min-w-[110px]
-                    lg:min-w-0
-
-                    ${
-                      selectedImage === image
-                        ? "border-emerald-500 scale-105"
-                        : "border-zinc-800 opacity-70 hover:opacity-100"
-                    }
-                  `}
-                >
-
-                  <img
-                    src={image}
-                    className="
-                      h-28
-                      w-full
-                      object-cover
-                    "
-                  />
-
-                </button>
-              ))}
+              <div
+                className="
+                  rounded-full
+                  bg-emerald-500
+                  px-6
+                  py-2
+                  text-xl
+                  font-bold
+                  text-white
+                "
+              >
+                {property.price.toLocaleString()} Ft
+              </div>
 
             </div>
 
           </div>
 
-        </section>
+          {/* DESCRIPTION */}
+          <div className="mt-12">
 
-        {/* CONTENT */}
-        <section
-          className="
-            mx-auto
-            max-w-7xl
-            px-6
-            py-14
-            pb-32
-            md:pb-14
-          "
-        >
+            <h2 className="mb-5 text-3xl font-bold">
+              Ingatlan leírás
+            </h2>
 
-          <div className="grid gap-10 lg:grid-cols-3">
+            <p className="max-w-3xl text-lg leading-8 text-zinc-300">
 
-            {/* LEFT COLUMN */}
-            <div className="lg:col-span-2">
+              {property.description ||
+                "Nincs leírás megadva."}
 
-              <div
-                className="
-                  rounded-3xl
-                  border border-zinc-800
-                  bg-zinc-900
-                  p-8
-                "
-              >
+            </p>
 
-                {/* TITLE */}
-                <h1
+          </div>
+
+        </div>
+
+        {/* RIGHT SIDE */}
+        <div>
+
+          {/* CONTACT CARD */}
+          <div
+            className="
+              sticky
+              top-24
+              rounded-3xl
+              border
+              border-zinc-800
+              bg-zinc-900
+              p-6
+              shadow-xl
+            "
+          >
+
+            <h2 className="mb-6 text-3xl font-bold text-white">
+              Kapcsolat
+            </h2>
+
+            <div className="flex flex-col gap-4">
+
+              {/* HÍVÁS */}
+              {property.phone && (
+                <a
+                  href={`tel:${property.phone}`}
                   className="
-                    mb-3
-                    text-5xl
-                    font-black
-                    tracking-tight
-                  "
-                >
-                  {post.title}
-                </h1>
-
-                {/* LOCATION + PRICE */}
-                <div
-                  className="
-                    mb-6
                     flex
-                    flex-wrap
                     items-center
-                    gap-4
-                  "
-                >
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800
-                      px-4
-                      py-2
-                      text-zinc-300
-                    "
-                  >
-                    📍 {post.city}
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      bg-emerald-500
-                      px-5
-                      py-2
-                      font-bold
-                      text-white
-                    "
-                  >
-                    {post.price.toLocaleString()} Ft
-                  </div>
-
-                </div>
-
-                {/* STATS */}
-                <div
-                  className="
-                    mb-8
-                    grid
-                    gap-4
-                    sm:grid-cols-2
-                    lg:grid-cols-3
-                  "
-                >
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Alapterület
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.size || 94} m²
-                    </h3>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Szobák
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.rooms || 3}
-                    </h3>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Fürdőszobák
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.bathrooms || 2}
-                    </h3>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Garázs
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.garage
-                        ? "Van"
-                        : "Nincs"}
-                    </h3>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Emelet
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.floor || 1}
-                    </h3>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border border-zinc-800
-                      bg-zinc-800/60
-                      p-5
-                    "
-                  >
-                    <p className="text-sm text-zinc-500">
-                      Telek
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-bold">
-                      {post.landSize || 420} m²
-                    </h3>
-                  </div>
-
-                </div>
-
-                {/* DESCRIPTION */}
-                <h2
-                  className="
-                    mb-6
-                    text-2xl
-                    font-bold
-                  "
-                >
-                  Ingatlan leírás
-                </h2>
-
-                <p
-                  className="
-                    leading-8
-                    text-zinc-300
-                  "
-                >
-                  {post.description ||
-                    "Modern prémium ingatlan kiváló lokációval, modern kialakítással és exkluzív megjelenéssel."}
-                </p>
-
-                {/* MAP */}
-                <div className="mt-10">
-
-                  <h2
-                    className="
-                      mb-6
-                      text-3xl
-                      font-bold
-                    "
-                  >
-                    📍 Lokáció
-                  </h2>
-
-                  <PropertyMap
-                    lat={post.lat || 47.5316}
-                    lng={post.lng || 21.6273}
-                    title={post.title}
-                    city={post.city}
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* RIGHT SIDEBAR */}
-            <div>
-
-              <div
-                className="
-                  sticky
-                  top-28
-                  rounded-3xl
-                  border border-zinc-800
-                  bg-zinc-900
-                  p-6
-                "
-              >
-
-                <h3
-                  className="
-                    mb-5
-                    text-2xl
-                    font-bold
-                  "
-                >
-                  Kapcsolat
-                </h3>
-
-                <button
-                  className="
-                    mb-3
-                    w-full
+                    justify-center
                     rounded-2xl
                     bg-emerald-500
                     px-5
                     py-4
+                    text-lg
                     font-semibold
                     text-white
                     transition
@@ -493,84 +227,49 @@ export default function PropertyDetailPage() {
                   "
                 >
                   📞 Hívás
-                </button>
+                </a>
+              )}
 
-                <button
-                  className="
-                    w-full
-                    rounded-2xl
-                    border border-zinc-700
-                    bg-zinc-800
-                    px-5
-                    py-4
-                    text-white
-                    transition
-                    hover:border-emerald-500
-                  "
-                >
-                  ✉️ Üzenet küldése
-                </button>
-
-              </div>
+              {/* ÜZENET */}
+              <button
+                onClick={() =>
+                  setOpenModal(true)
+                }
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  border
+                  border-zinc-700
+                  bg-zinc-800
+                  px-5
+                  py-4
+                  text-lg
+                  font-semibold
+                  text-white
+                  transition
+                  hover:border-emerald-500
+                  hover:bg-zinc-700
+                "
+              >
+                ✉️ Üzenet küldése
+              </button>
 
             </div>
 
           </div>
 
-        </section>
+        </div>
 
-        {/* LIGHTBOX */}
-        {lightboxOpen && (
-          <div
-            className="
-              fixed
-              inset-0
-              z-[999]
-              flex
-              items-center
-              justify-center
-              bg-black/95
-              backdrop-blur-xl
-            "
-          >
+      </div>
 
-            <button
-              onClick={() =>
-                setLightboxOpen(false)
-              }
-              className="
-                absolute
-                right-6
-                top-6
-                z-10
-                rounded-full
-                bg-white/10
-                px-4
-                py-2
-                text-white
-                backdrop-blur-xl
-                transition
-                hover:bg-white/20
-              "
-            >
-              ✕
-            </button>
+      {/* CONTACT MODAL */}
+      <ContactModal
+        open={openModal}
+        setOpen={setOpenModal}
+      />
 
-            <img
-              src={selectedImage}
-              className="
-                max-h-[90vh]
-                max-w-[92vw]
-                rounded-3xl
-                object-contain
-                shadow-2xl
-              "
-            />
-
-          </div>
-        )}
-
-      </main>
-    </>
+    </div>
   );
 }

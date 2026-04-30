@@ -8,8 +8,16 @@ const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE!;
 const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE!;
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_KEY!;
 
-export default function ContactModal() {
-  const [open, setOpen] = useState(false);
+type ContactModalProps = {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+};
+
+export default function ContactModal({
+  open,
+  setOpen
+}: ContactModalProps) {
+
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -24,11 +32,15 @@ export default function ContactModal() {
   }, []);
 
   const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
   };
 
   const sendEmail = async (e: any) => {
     e.preventDefault();
+
     setLoading(true);
 
     try {
@@ -44,11 +56,20 @@ export default function ContactModal() {
       );
 
       alert("Üzenet elküldve! 🎉");
-      setForm({ name: "", email: "", message: "" });
+
+      setForm({
+        name: "",
+        email: "",
+        message: ""
+      });
+
       setOpen(false);
+
     } catch (err) {
+
       console.error(err);
       alert("Hiba történt 😢");
+
     }
 
     setLoading(false);
@@ -56,30 +77,74 @@ export default function ContactModal() {
 
   const modal = open ? (
     <div
-      className="fixed inset-0 bg-black/70 z-[9999] flex items-start justify-center overflow-y-auto"
+      className="
+        fixed
+        inset-0
+        z-[9999]
+        flex
+        items-start
+        justify-center
+        overflow-y-auto
+        bg-black/70
+        p-4
+      "
       onClick={() => setOpen(false)}
     >
+
       <div
-        className="bg-white w-full max-w-md rounded-xl p-6 mt-20 shadow-xl relative"
+        className="
+          relative
+          mt-20
+          w-full
+          max-w-md
+          rounded-2xl
+          bg-white
+          p-6
+          shadow-2xl
+        "
         onClick={(e) => e.stopPropagation()}
       >
+
         {/* CLOSE */}
         <button
           onClick={() => setOpen(false)}
-          className="absolute top-2 right-2 text-gray-500 hover:text-black"
+          className="
+            absolute
+            top-3
+            right-3
+            text-gray-500
+            transition
+            hover:text-black
+          "
         >
           ✕
         </button>
 
-        <h2 className="text-xl font-semibold mb-4 text-black">Kapcsolat</h2>
+        <h2 className="mb-5 text-2xl font-bold text-black">
+          Kapcsolatfelvétel
+        </h2>
 
-        <form onSubmit={sendEmail} className="flex flex-col gap-3">
+        <form
+          onSubmit={sendEmail}
+          className="flex flex-col gap-4"
+        >
+
           <input
             name="name"
             placeholder="Név"
             value={form.name}
             onChange={handleChange}
-            className="border p-2 rounded text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="
+              rounded-xl
+              border
+              border-gray-300
+              bg-white
+              p-3
+              text-black
+              focus:outline-none
+              focus:ring-2
+              focus:ring-emerald-500
+            "
             required
           />
 
@@ -89,7 +154,17 @@ export default function ContactModal() {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="border p-2 rounded text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="
+              rounded-xl
+              border
+              border-gray-300
+              bg-white
+              p-3
+              text-black
+              focus:outline-none
+              focus:ring-2
+              focus:ring-emerald-500
+            "
             required
           />
 
@@ -98,32 +173,43 @@ export default function ContactModal() {
             placeholder="Üzenet"
             value={form.message}
             onChange={handleChange}
-            className="border p-2 rounded text-black bg-white min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="
+              min-h-[140px]
+              rounded-xl
+              border
+              border-gray-300
+              bg-white
+              p-3
+              text-black
+              focus:outline-none
+              focus:ring-2
+              focus:ring-emerald-500
+            "
             required
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="bg-black text-white p-2 rounded hover:bg-gray-800 transition"
+            className="
+              rounded-xl
+              bg-emerald-500
+              p-3
+              font-semibold
+              text-white
+              transition
+              hover:bg-emerald-400
+            "
           >
-            {loading ? "Küldés..." : "Küldés"}
+            {loading ? "Küldés..." : "Üzenet küldése"}
           </button>
+
         </form>
       </div>
     </div>
   ) : null;
 
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-      >
-        Kapcsolat
-      </button>
+  if (!mounted) return null;
 
-      {mounted && createPortal(modal, document.body)}
-    </>
-  );
+  return createPortal(modal, document.body);
 }

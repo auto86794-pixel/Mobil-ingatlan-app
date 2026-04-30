@@ -16,10 +16,13 @@ type Post = {
   city: string;
   price: number;
   imageUrl: string;
+  phone?: string;
+  description?: string;
   featured?: boolean;
 };
 
 export default function Home() {
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,49 +35,76 @@ export default function Home() {
 
   // LOAD FAVORITES
   useEffect(() => {
+
     const fav = localStorage.getItem("favorites");
 
     if (fav) {
       setFavorites(JSON.parse(fav));
     }
+
   }, []);
 
   // FETCH POSTS
   useEffect(() => {
+
     const fetchPosts = async () => {
+
       try {
-        const snapshot = await getDocs(collection(db, "posts"));
+
+        const snapshot = await getDocs(
+          collection(db, "posts")
+        );
 
         const data: Post[] = [];
 
         snapshot.forEach((doc) => {
+
           data.push({
             id: doc.id,
             ...(doc.data() as Omit<Post, "id">),
           });
+
         });
 
         setPosts(data);
+
       } catch (error) {
-        console.error("Hiba a betöltésnél:", error);
+
+        console.error(
+          "Hiba a betöltésnél:",
+          error
+        );
+
       } finally {
+
         setLoading(false);
+
       }
+
     };
 
     fetchPosts();
+
   }, []);
 
   // FAVORITE TOGGLE
   const toggleFavorite = (id: string) => {
+
     let updatedFavorites: string[];
 
     if (favorites.includes(id)) {
+
       updatedFavorites = favorites.filter(
         (fav) => fav !== id
       );
+
     } else {
-      updatedFavorites = [...favorites, id];
+
+      updatedFavorites = [
+        ...favorites,
+        id
+      ];
+
     }
 
     setFavorites(updatedFavorites);
@@ -83,6 +113,7 @@ export default function Home() {
       "favorites",
       JSON.stringify(updatedFavorites)
     );
+
   };
 
   // FILTER POSTS
@@ -95,6 +126,7 @@ export default function Home() {
         post.imageUrl
     )
     .filter((post) => {
+
       const cityMatch = post.city
         .toLowerCase()
         .includes(city.toLowerCase());
@@ -104,6 +136,7 @@ export default function Home() {
         : true;
 
       return cityMatch && priceMatch;
+
     });
 
   // FEATURED POSTS
@@ -118,6 +151,7 @@ export default function Home() {
 
   // LOADING
   if (loading) {
+
     return (
       <>
         <MobileBottomNav />
@@ -159,6 +193,7 @@ export default function Home() {
         </main>
       </>
     );
+
   }
 
   return (
@@ -247,7 +282,7 @@ export default function Home() {
                   md:text-sm
                 "
               >
-                ✨ Premium Ingatlanplatform
+                ✨ Prémium Ingatlanplatform
               </div>
 
               {/* TITLE */}
@@ -327,6 +362,7 @@ export default function Home() {
                   city={post.city}
                   price={post.price}
                   imageUrl={post.imageUrl}
+                  phone={post.phone}
                   featured={post.featured}
                   isFavorite={favorites.includes(post.id)}
                   onToggleFavorite={() =>
@@ -381,6 +417,7 @@ export default function Home() {
                 city={post.city}
                 price={post.price}
                 imageUrl={post.imageUrl}
+                phone={post.phone}
                 featured={post.featured}
                 isFavorite={favorites.includes(post.id)}
                 onToggleFavorite={() =>

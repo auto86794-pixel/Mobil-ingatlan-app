@@ -43,9 +43,7 @@ export default function Home() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const snapshot = await getDocs(
-          collection(db, "posts")
-        );
+        const snapshot = await getDocs(collection(db, "posts"));
 
         const data: Post[] = [];
 
@@ -58,10 +56,7 @@ export default function Home() {
 
         setPosts(data);
       } catch (error) {
-        console.error(
-          "Hiba a betöltésnél:",
-          error
-        );
+        console.error("Hiba a betöltésnél:", error);
       } finally {
         setLoading(false);
       }
@@ -79,10 +74,7 @@ export default function Home() {
         (fav) => fav !== id
       );
     } else {
-      updatedFavorites = [
-        ...favorites,
-        id,
-      ];
+      updatedFavorites = [...favorites, id];
     }
 
     setFavorites(updatedFavorites);
@@ -179,11 +171,13 @@ export default function Home() {
         <section
           className="
             relative
-            mb-12
+            mb-10
             overflow-hidden
-            rounded-[32px]
+            rounded-[28px]
             border border-zinc-800
             bg-zinc-900
+            min-h-[460px]
+            md:min-h-[650px]
           "
         >
 
@@ -196,7 +190,8 @@ export default function Home() {
                 h-full
                 w-full
                 object-cover
-                object-center
+                object-[65%_center]
+                md:object-center
               "
             />
 
@@ -206,14 +201,10 @@ export default function Home() {
               className="
                 absolute
                 inset-0
-                bg-gradient-to-b
-                from-black/80
-                via-black/60
-                to-black/90
-                md:bg-gradient-to-r
-                md:from-black
-                md:via-black/60
-                md:to-transparent
+                bg-gradient-to-r
+                from-black
+                via-black/70
+                to-transparent
               "
             />
 
@@ -224,8 +215,13 @@ export default function Home() {
             className="
               relative
               z-10
-              px-6
-              py-14
+              flex
+              min-h-[460px]
+              flex-col
+              justify-center
+              px-5
+              py-12
+              md:min-h-[650px]
               md:px-14
               md:py-20
             "
@@ -236,9 +232,8 @@ export default function Home() {
               {/* BADGE */}
               <div
                 className="
-                  mb-4
-                  hidden
-                  sm:inline-flex
+                  mb-5
+                  inline-flex
                   items-center
                   gap-2
                   rounded-full
@@ -246,9 +241,10 @@ export default function Home() {
                   bg-emerald-500/10
                   px-4
                   py-2
-                  text-sm
+                  text-xs
                   text-emerald-400
                   backdrop-blur-xl
+                  md:text-sm
                 "
               >
                 ✨ Premium Ingatlanplatform
@@ -258,12 +254,12 @@ export default function Home() {
               <h1
                 className="
                   max-w-2xl
-                  text-4xl
+                  text-5xl
                   font-black
-                  leading-tight
+                  leading-[0.95]
                   tracking-tight
                   text-white
-                  sm:text-5xl
+                  sm:text-6xl
                   md:text-7xl
                 "
               >
@@ -274,11 +270,12 @@ export default function Home() {
               <p
                 className="
                   mt-6
-                  max-w-2xl
+                  max-w-xl
                   text-base
-                  leading-relaxed
+                  leading-7
                   text-zinc-300
-                  sm:text-lg
+                  md:text-lg
+                  md:leading-8
                 "
               >
                 Modern, prémium ingatlanok egy helyen.
@@ -289,7 +286,7 @@ export default function Home() {
             </div>
 
             {/* FILTER BOX */}
-            <div className="mt-8 max-w-5xl md:mt-10">
+            <div className="mt-10 max-w-5xl">
 
               <PropertyFilters
                 city={city}
@@ -365,7 +362,7 @@ export default function Home() {
           <div className="mb-6 flex items-center justify-between">
 
             <h2 className="text-2xl font-bold md:text-3xl">
-              🏡 Ingatlan Kinálatunk
+              🏡 Ingatlan kínálatunk
             </h2>
 
             <span className="text-sm text-zinc-400 md:text-base">

@@ -1,281 +1,338 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import Link from "next/link";
+
+import {
+  Heart,
+  MapPin,
+} from "lucide-react";
+
+import {
+  auth,
+  db,
+} from "@/app/lib/firebase";
 
 import {
   collection,
   getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 
-import { db } from "../lib/firebase";
-
-import Navbar from "../components/Navbar";
-import MobileBottomNav from "../components/MobileBottomNav";
-
-import PropertyCard from "../components/property/PropertyCard";
-
-type Post = {
+interface Property {
   id: string;
   title: string;
   city: string;
   price: number;
   imageUrl: string;
-  featured?: boolean;
-};
+}
 
 export default function FavoritesPage() {
-  const [posts, setPosts] = useState<Post[]>([]);
 
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] =
+    useState<Property[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  // LOAD FAVORITES
   useEffect(() => {
-    const fav = localStorage.getItem("favorites");
 
-    if (fav) {
-      setFavorites(JSON.parse(fav));
-    }
-  }, []);
+    const fetchFavorites = async () => {
 
-  // FETCH POSTS
-  useEffect(() => {
-    const fetchPosts = async () => {
       try {
-        const snapshot = await getDocs(
-          collection(db, "posts")
+
+        if (!auth.currentUser) {
+
+          setLoading(false);
+          return;
+
+        }
+
+        // FAVORITES
+        const favoritesQuery = query(
+          collection(db, "favorites"),
+
+          where(
+            "userId",
+            "==",
+            auth.currentUser.uid
+          )
         );
 
-        const data: Post[] = [];
+        const favoritesSnapshot =
+          await getDocs(favoritesQuery);
 
-        snapshot.forEach((doc) => {
-          data.push({
-            id: doc.id,
-            ...(doc.data() as Omit<Post, "id">),
+        const postIds =
+          favoritesSnapshot.docs.map(
+            (doc) => doc.data().postId
+          );
+
+        // EMPTY
+        if (postIds.length === 0) {
+
+          setFavorites([]);
+          setLoading(false);
+
+          return;
+
+        }
+
+        // LOAD POSTS
+        const loadedPosts: Property[] = [];
+
+        for (const postId of postIds) {
+
+          const postQuery = query(
+            collection(db, "posts"),
+
+            where(
+              "__name__",
+              "==",
+              postId
+            )
+          );
+
+          const postSnapshot =
+            await getDocs(postQuery);
+
+          postSnapshot.forEach((doc) => {
+
+            loadedPosts.push({
+              id: doc.id,
+              ...doc.data(),
+            } as Property);
+
           });
-        });
 
-        setPosts(data);
-      } catch (error) {
-        console.error(error);
+        }
+
+        setFavorites(loadedPosts);
+
+      } catch (err) {
+
+        console.error(err);
+
       } finally {
+
         setLoading(false);
+
       }
+
     };
 
-    fetchPosts();
+    fetchFavorites();
+
   }, []);
-
-  // TOGGLE FAVORITE
-  const toggleFavorite = (id: string) => {
-    let updated: string[];
-
-    if (favorites.includes(id)) {
-      updated = favorites.filter(
-        (fav) => fav !== id
-      );
-    } else {
-      updated = [...favorites, id];
-    }
-
-    setFavorites(updated);
-
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(updated)
-    );
-  };
-
-  // FILTERED FAVORITES
-  const favoritePosts = posts.filter((post) =>
-    favorites.includes(post.id)
-  );
 
   // LOADING
   if (loading) {
+
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        Betöltés...
-      </div>
-    );
-  }
-
-  return (
-    <>
-      
-      <MobileBottomNav />
-
-      <main
+      <div
         className="
           min-h-screen
           bg-black
           text-white
-          px-6
-          py-10
-          pb-32
+          flex
+          items-center
+          justify-center
         "
       >
+        Betöltés...
+      </div>
+    );
 
-        {/* HERO */}
-        <section
+  }
+
+  return (
+    <div
+      className="
+        min-h-screen
+        bg-black
+        text-white
+        p-6
+      "
+    >
+
+      {/* TITLE */}
+      <div className="mb-10">
+
+        <div
           className="
-            mb-12
-            rounded-[32px]
-            border border-zinc-800
-            bg-gradient-to-br
-            from-zinc-900
-            to-black
-            p-10
+            inline-flex
+            items-center
+            gap-2
+            rounded-full
+            border border-pink-500/20
+            bg-pink-500/10
+            px-5
+            py-2
+            text-pink-400
           "
         >
 
-          <div
-            className="
-              inline-flex
-              items-center
-              gap-2
-              rounded-full
-              border border-pink-500/20
-              bg-pink-500/10
-              px-4
-              py-2
-              text-sm
-              text-pink-400
-            "
-          >
-            ❤️ Kedvenc ingatlanok
-          </div>
+          <Heart className="h-4 w-4 fill-pink-500" />
 
-          <h1
+          Kedvencek
+
+        </div>
+
+        <h1
+          className="
+            mt-6
+            text-5xl
+            font-black
+          "
+        >
+          Mentett ingatlanok
+        </h1>
+
+      </div>
+
+      {/* EMPTY */}
+      {favorites.length === 0 ? (
+
+        <div
+          className="
+            rounded-[32px]
+            border border-zinc-800
+            bg-zinc-900
+            p-20
+            text-center
+          "
+        >
+
+          <Heart
+            className="
+              mx-auto
+              h-16
+              w-16
+              text-pink-500
+            "
+          />
+
+          <h2
             className="
               mt-6
-              text-5xl
+              text-4xl
               font-black
-              tracking-tight
             "
           >
-            Mentett ingatlanjaid
-          </h1>
+            Nincsenek kedvencek
+          </h2>
 
-          <p
-            className="
-              mt-4
-              max-w-2xl
-              text-lg
-              text-zinc-400
-            "
-          >
-            Gyors hozzáférés a kedvenc
-            prémium ingatlanjaidhoz.
-          </p>
+        </div>
 
-        </section>
+      ) : (
 
-        {/* EMPTY */}
-        {favoritePosts.length === 0 && (
-          <div
-            className="
-              flex
-              flex-col
-              items-center
-              justify-center
-              rounded-3xl
-              border border-zinc-800
-              bg-zinc-900
-              p-16
-              text-center
-            "
-          >
+        <div
+          className="
+            grid
+            gap-8
+            md:grid-cols-2
+            xl:grid-cols-3
+          "
+        >
 
-            <div className="text-7xl">
-              💔
-            </div>
-
-            <h2
-              className="
-                mt-6
-                text-3xl
-                font-bold
-              "
-            >
-              Nincsenek mentett ingatlanok
-            </h2>
-
-            <p
-              className="
-                mt-4
-                max-w-md
-                text-zinc-400
-              "
-            >
-              Jelölj meg ingatlanokat
-              kedvencként és itt jelennek meg.
-            </p>
-
-          </div>
-        )}
-
-        {/* FAVORITES GRID */}
-        {favoritePosts.length > 0 && (
-          <section>
+          {favorites.map((post) => (
 
             <div
+              key={post.id}
               className="
-                mb-6
-                flex
-                items-center
-                justify-between
+                overflow-hidden
+                rounded-[32px]
+                border border-zinc-800
+                bg-zinc-900
               "
             >
 
-              <h2
+              {/* IMAGE */}
+              <img
+                src={post.imageUrl}
+                alt={post.title}
                 className="
-                  text-3xl
-                  font-bold
+                  h-64
+                  w-full
+                  object-cover
                 "
-              >
-                ❤️ Mentett ingatlanok
-              </h2>
+              />
 
-              <span className="text-zinc-400">
-                {favoritePosts.length} mentett
-              </span>
+              {/* CONTENT */}
+              <div className="p-6">
+
+                {/* TITLE */}
+                <h2
+                  className="
+                    text-3xl
+                    font-black
+                  "
+                >
+                  {post.title}
+                </h2>
+
+                {/* CITY */}
+                <div
+                  className="
+                    mt-3
+                    flex
+                    items-center
+                    gap-2
+                    text-zinc-400
+                  "
+                >
+
+                  <MapPin className="h-4 w-4 text-pink-500" />
+
+                  {post.city}
+
+                </div>
+
+                {/* PRICE */}
+                <div
+                  className="
+                    mt-6
+                    text-4xl
+                    font-black
+                    text-emerald-400
+                  "
+                >
+                  {post.price.toLocaleString()} Ft
+                </div>
+
+                {/* BUTTON */}
+                <Link
+                  href={`/post/${post.id}`}
+                  className="
+                    mt-8
+                    inline-flex
+                    rounded-2xl
+                    bg-emerald-500
+                    px-6
+                    py-4
+                    font-bold
+                    text-white
+                    transition
+                    hover:bg-emerald-400
+                  "
+                >
+                  Megnézem
+                </Link>
+
+              </div>
 
             </div>
 
-            <div
-              className="
-                grid
-                gap-8
-                sm:grid-cols-1
-                md:grid-cols-2
-                xl:grid-cols-3
-              "
-            >
+          ))}
 
-              {favoritePosts.map((post) => (
-                <PropertyCard
-                  key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  city={post.city}
-                  price={post.price}
-                  imageUrl={post.imageUrl}
-                  featured={post.featured}
-                  isFavorite={favorites.includes(post.id)}
-                  onToggleFavorite={() =>
-                    toggleFavorite(post.id)
-                  }
-                />
-              ))}
+        </div>
 
-            </div>
+      )}
 
-          </section>
-        )}
-
-      </main>
-    </>
+    </div>
   );
 }

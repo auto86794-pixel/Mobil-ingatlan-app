@@ -2,81 +2,68 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  doc,
-  getDoc
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 import { db } from "@/app/lib/firebase";
 
-import ContactModal from "@/app/components/ContactModal";
+import { useParams } from "next/navigation";
 
-type Property = {
+interface Property {
   id: string;
   title: string;
   city: string;
   price: number;
+  description: string;
+
   imageUrl: string;
-  description?: string;
+  images: string[];
+
   phone?: string;
-  featured?: boolean;
-};
+  email?: string;
 
-type PropertyPageProps = {
-  params: {
-    id: string;
-  };
-};
+  lat?: number;
+  lng?: number;
+}
 
-export default function PropertyPage({
-  params
-}: PropertyPageProps) {
+export default function PropertyPage() {
 
-  const [openModal, setOpenModal] = useState(false);
+  const params = useParams();
 
   const [property, setProperty] =
     useState<Property | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  // FETCH PROPERTY
   useEffect(() => {
 
     const fetchProperty = async () => {
+
+      if (!params?.id) return;
 
       try {
 
         const docRef = doc(
           db,
           "posts",
-          params.id
+          params.id as string
         );
 
-        const snapshot = await getDoc(docRef);
+        const docSnap = await getDoc(docRef);
 
-        if (snapshot.exists()) {
+        if (docSnap.exists()) {
 
           setProperty({
-            id: snapshot.id,
-            ...(snapshot.data() as Omit<
-              Property,
-              "id"
-            >),
-          });
+            id: docSnap.id,
+            ...docSnap.data(),
+          } as Property);
+
+        } else {
+
+          console.log("Nincs ilyen ingatlan");
 
         }
 
       } catch (error) {
 
-        console.error(
-          "Hiba property betöltésnél:",
-          error
-        );
-
-      } finally {
-
-        setLoading(false);
+        console.error(error);
 
       }
 
@@ -84,191 +71,210 @@ export default function PropertyPage({
 
     fetchProperty();
 
-  }, [params.id]);
+  }, [params]);
 
-  // LOADING
-  if (loading) {
+  if (!property) {
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+      <div
+        className="
+          min-h-screen
+          flex
+          items-center
+          justify-center
+          bg-black
+          text-white
+          text-2xl
+        "
+      >
         Betöltés...
       </div>
     );
 
   }
 
-  // NOT FOUND
-  if (!property) {
-
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
-        Az ingatlan nem található 😢
-      </div>
-    );
-
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div
+      className="
+        min-h-screen
+        bg-black
+        text-white
+        p-6
+      "
+    >
 
-      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_320px]">
+      <div
+        className="
+          mx-auto
+          max-w-6xl
+        "
+      >
 
-        {/* LEFT SIDE */}
-        <div>
+        {/* MAIN IMAGE */}
+        <img
+          src={property.imageUrl}
+          alt={property.title}
+          className="
+            h-[500px]
+            w-full
+            rounded-3xl
+            object-cover
+            border border-zinc-800
+          "
+        />
 
-          {/* IMAGE */}
-          <div className="overflow-hidden rounded-3xl border border-zinc-800">
+        {/* GALLERY */}
+        {property.images &&
+          property.images.length > 1 && (
 
-            <img
-              src={property.imageUrl}
-              alt={property.title}
-              className="h-[500px] w-full object-cover"
-            />
+          <div
+            className="
+              mt-6
+              grid
+              gap-4
+              sm:grid-cols-2
+              md:grid-cols-3
+            "
+          >
+
+            {property.images.map(
+              (image, index) => (
+
+                <img
+                  key={index}
+                  src={image}
+                  alt="gallery"
+                  className="
+                    h-48
+                    w-full
+                    rounded-2xl
+                    object-cover
+                    border border-zinc-800
+                  "
+                />
+
+              )
+            )}
 
           </div>
 
-          {/* TITLE */}
-          <div className="mt-8">
+        )}
 
-            <h1 className="text-5xl font-black tracking-tight">
-              {property.title}
-            </h1>
+        {/* CONTENT */}
+        <div className="mt-10">
 
-            <div className="mt-4 flex flex-wrap items-center gap-4">
+          <h1
+            className="
+              text-5xl
+              font-black
+            "
+          >
+            {property.title}
+          </h1>
 
-              <div
-                className="
-                  rounded-full
-                  bg-zinc-900
-                  px-4
-                  py-2
-                  text-zinc-300
-                "
-              >
-                📍 {property.city}
-              </div>
+          <p
+            className="
+              mt-3
+              text-xl
+              text-zinc-400
+            "
+          >
+            📍 {property.city}
+          </p>
 
-              <div
-                className="
-                  rounded-full
-                  bg-emerald-500
-                  px-6
-                  py-2
-                  text-xl
-                  font-bold
-                  text-white
-                "
-              >
-                {property.price.toLocaleString()} Ft
-              </div>
+          <p
+            className="
+              mt-6
+              text-4xl
+              font-bold
+              text-yellow-400
+            "
+          >
+            {property.price.toLocaleString()} Ft
+          </p>
 
-            </div>
+          <div
+            className="
+              mt-8
+              rounded-3xl
+              border border-zinc-800
+              bg-zinc-900
+              p-8
+            "
+          >
 
-          </div>
-
-          {/* DESCRIPTION */}
-          <div className="mt-12">
-
-            <h2 className="mb-5 text-3xl font-bold">
-              Ingatlan leírás
+            <h2
+              className="
+                mb-4
+                text-2xl
+                font-bold
+              "
+            >
+              Leírás
             </h2>
 
-            <p className="max-w-3xl text-lg leading-8 text-zinc-300">
-
-              {property.description ||
-                "Nincs leírás megadva."}
-
+            <p
+              className="
+                leading-8
+                text-zinc-300
+              "
+            >
+              {property.description}
             </p>
 
           </div>
 
-        </div>
-
-        {/* RIGHT SIDE */}
-        <div>
-
-          {/* CONTACT CARD */}
+          {/* CONTACT */}
           <div
             className="
-              sticky
-              top-24
-              rounded-3xl
-              border
-              border-zinc-800
-              bg-zinc-900
-              p-6
-              shadow-xl
+              mt-8
+              flex
+              flex-wrap
+              gap-4
             "
           >
 
-            <h2 className="mb-6 text-3xl font-bold text-white">
-              Kapcsolat
-            </h2>
-
-            <div className="flex flex-col gap-4">
-
-              {/* HÍVÁS */}
-              {property.phone && (
-                <a
-                  href={`tel:${property.phone}`}
-                  className="
-                    flex
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    bg-emerald-500
-                    px-5
-                    py-4
-                    text-lg
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-emerald-400
-                  "
-                >
-                  📞 Hívás
-                </a>
-              )}
-
-              {/* ÜZENET */}
-              <button
-                onClick={() =>
-                  setOpenModal(true)
-                }
+            {property.phone && (
+              <a
+                href={`tel:${property.phone}`}
                 className="
-                  flex
-                  items-center
-                  justify-center
                   rounded-2xl
-                  border
-                  border-zinc-700
-                  bg-zinc-800
-                  px-5
+                  bg-green-500
+                  px-6
                   py-4
-                  text-lg
-                  font-semibold
+                  font-bold
                   text-white
                   transition
-                  hover:border-emerald-500
-                  hover:bg-zinc-700
+                  hover:bg-green-400
                 "
               >
-                ✉️ Üzenet küldése
-              </button>
+                📞 Hívás
+              </a>
+            )}
 
-            </div>
+            {property.email && (
+              <a
+                href={`mailto:${property.email}`}
+                className="
+                  rounded-2xl
+                  bg-blue-500
+                  px-6
+                  py-4
+                  font-bold
+                  text-white
+                  transition
+                  hover:bg-blue-400
+                "
+              >
+                ✉️ Email
+              </a>
+            )}
 
           </div>
 
         </div>
 
       </div>
-
-      {/* CONTACT MODAL */}
-      <ContactModal
-        open={openModal}
-        setOpen={setOpenModal}
-      />
 
     </div>
   );

@@ -32,6 +32,10 @@ export default function Create() {
   const [description, setDescription] =
     useState("");
 
+  // CONTACT
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
   // IMAGES
   const [images, setImages] = useState<
     string[]
@@ -110,6 +114,10 @@ export default function Create() {
           price: Number(price),
 
           description,
+
+          // CONTACT
+          phone,
+          email,
 
           // COVER IMAGE
           imageUrl: images[0] || "",
@@ -318,6 +326,78 @@ export default function Create() {
             value={description}
             onChange={(e) =>
               setDescription(e.target.value)
+            }
+            className="
+              w-full
+              rounded-2xl
+              border border-zinc-700
+              bg-zinc-800
+              px-5
+              py-4
+              outline-none
+              transition
+              focus:border-yellow-500
+            "
+          />
+
+        </div>
+
+        {/* PHONE */}
+        <div className="mb-4">
+
+          <label
+            className="
+              mb-2
+              block
+              text-sm
+              text-zinc-400
+            "
+          >
+            Telefonszám
+          </label>
+
+          <input
+            type="text"
+            placeholder="+36 30 123 4567"
+            value={phone}
+            onChange={(e) =>
+              setPhone(e.target.value)
+            }
+            className="
+              w-full
+              rounded-2xl
+              border border-zinc-700
+              bg-zinc-800
+              px-5
+              py-4
+              outline-none
+              transition
+              focus:border-yellow-500
+            "
+          />
+
+        </div>
+
+        {/* EMAIL */}
+        <div className="mb-6">
+
+          <label
+            className="
+              mb-2
+              block
+              text-sm
+              text-zinc-400
+            "
+          >
+            Email
+          </label>
+
+          <input
+            type="email"
+            placeholder="email@gmail.com"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
             }
             className="
               w-full

@@ -1,8 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "./lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+
+import {
+  auth,
+  db,
+} from "./lib/firebase";
+
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 import MobileBottomNav from "./components/MobileBottomNav";
 
@@ -31,16 +44,47 @@ export default function Home() {
   const [maxPrice, setMaxPrice] = useState("");
 
   // FAVORITES
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] =
+    useState<string[]>([]);
 
   // LOAD FAVORITES
   useEffect(() => {
 
-    const fav = localStorage.getItem("favorites");
+    const loadFavorites = async () => {
 
-    if (fav) {
-      setFavorites(JSON.parse(fav));
-    }
+      try {
+
+        if (!auth.currentUser) return;
+
+        const q = query(
+          collection(db, "favorites"),
+
+          where(
+            "userId",
+            "==",
+            auth.currentUser.uid
+          )
+        );
+
+        const snapshot =
+          await getDocs(q);
+
+        const favoriteIds =
+          snapshot.docs.map(
+            (doc) => doc.data().postId
+          );
+
+        setFavorites(favoriteIds);
+
+      } catch (error) {
+
+        console.error(error);
+
+      }
+
+    };
+
+    loadFavorites();
 
   }, []);
 
@@ -88,31 +132,92 @@ export default function Home() {
   }, []);
 
   // FAVORITE TOGGLE
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = async (
+    id: string
+  ) => {
 
-    let updatedFavorites: string[];
+    try {
 
-    if (favorites.includes(id)) {
+      if (!auth.currentUser) {
 
-      updatedFavorites = favorites.filter(
-        (fav) => fav !== id
+        alert(
+          "Először jelentkezz be!"
+        );
+
+        return;
+
+      }
+
+      const userId =
+        auth.currentUser.uid;
+
+      const favoritesRef = collection(
+        db,
+        "favorites"
       );
 
-    } else {
+      const q = query(
+        favoritesRef,
 
-      updatedFavorites = [
-        ...favorites,
-        id
-      ];
+        where(
+          "userId",
+          "==",
+          userId
+        ),
+
+        where(
+          "postId",
+          "==",
+          id
+        )
+      );
+
+      const snapshot =
+        await getDocs(q);
+
+      // REMOVE
+      if (!snapshot.empty) {
+
+        const docId =
+          snapshot.docs[0].id;
+
+        await deleteDoc(
+          doc(
+            db,
+            "favorites",
+            docId
+          )
+        );
+
+        setFavorites((prev) =>
+          prev.filter(
+            (fav) => fav !== id
+          )
+        );
+
+      } else {
+
+        // ADD
+        await addDoc(
+          favoritesRef,
+          {
+            userId,
+            postId: id,
+          }
+        );
+
+        setFavorites((prev) => [
+          ...prev,
+          id,
+        ]);
+
+      }
+
+    } catch (error) {
+
+      console.error(error);
 
     }
-
-    setFavorites(updatedFavorites);
-
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(updatedFavorites)
-    );
 
   };
 
@@ -129,25 +234,32 @@ export default function Home() {
 
       const cityMatch = post.city
         .toLowerCase()
-        .includes(city.toLowerCase());
+        .includes(
+          city.toLowerCase()
+        );
 
       const priceMatch = maxPrice
-        ? post.price <= Number(maxPrice)
+        ? post.price <=
+          Number(maxPrice)
         : true;
 
-      return cityMatch && priceMatch;
+      return (
+        cityMatch && priceMatch
+      );
 
     });
 
   // FEATURED POSTS
-  const featuredPosts = filteredPosts.filter(
-    (post) => post.featured
-  );
+  const featuredPosts =
+    filteredPosts.filter(
+      (post) => post.featured
+    );
 
   // NORMAL POSTS
-  const normalPosts = filteredPosts.filter(
-    (post) => !post.featured
-  );
+  const normalPosts =
+    filteredPosts.filter(
+      (post) => !post.featured
+    );
 
   // LOADING
   if (loading) {
@@ -180,13 +292,13 @@ export default function Home() {
             "
           >
 
-            {Array.from({ length: 6 }).map(
-              (_, index) => (
-                <PropertyCardSkeleton
-                  key={index}
-                />
-              )
-            )}
+            {Array.from({
+              length: 6,
+            }).map((_, index) => (
+              <PropertyCardSkeleton
+                key={index}
+              />
+            ))}
 
           </div>
 
@@ -347,7 +459,7 @@ export default function Home() {
             <div className="mb-6 flex items-center justify-between">
 
               <h2 className="text-2xl font-bold md:text-3xl">
-                ⭐ Kiemelt ingatlanok
+                Kiemelt ingatlanok
               </h2>
 
             </div>
@@ -388,7 +500,7 @@ export default function Home() {
               text-zinc-400
             "
           >
-            Nincs találat 😢
+            Nincs találat
           </div>
         )}
 
@@ -398,7 +510,7 @@ export default function Home() {
           <div className="mb-6 flex items-center justify-between">
 
             <h2 className="text-2xl font-bold md:text-3xl">
-              🏡 Ingatlan kínálatunk
+              Ingatlan kínálatunk
             </h2>
 
             <span className="text-sm text-zinc-400 md:text-base">

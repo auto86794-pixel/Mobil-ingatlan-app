@@ -1,5 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
+
 import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
@@ -17,8 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="hu">
-      <body>
-        {/* TOAST */}
+      <body className="bg-black text-white">
         <Toaster
           position="top-right"
           toastOptions={{
@@ -26,13 +26,10 @@ export default function RootLayout({
           }}
         />
 
-        {/* NAVBAR */}
         <Navbar />
 
-        {/* PAGE CONTENT */}
         <main>{children}</main>
 
-        {/* MOBILE NAV */}
         <MobileBottomNav />
       </body>
     </html>

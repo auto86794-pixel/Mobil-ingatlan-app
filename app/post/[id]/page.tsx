@@ -2,11 +2,27 @@
 
 import { useEffect, useState } from "react";
 
-import { doc, getDoc } from "firebase/firestore";
+import dynamic from "next/dynamic";
+
+import {
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
 import { db } from "@/app/lib/firebase";
 
 import { useParams } from "next/navigation";
+
+// MAP
+const PropertyMap = dynamic(
+  () =>
+    import(
+      "@/app/components/map/PropertyMap"
+    ),
+  {
+    ssr: false,
+  }
+);
 
 interface Property {
   id: string;
@@ -46,7 +62,8 @@ export default function PropertyPage() {
           params.id as string
         );
 
-        const docSnap = await getDoc(docRef);
+        const docSnap =
+          await getDoc(docRef);
 
         if (docSnap.exists()) {
 
@@ -57,7 +74,9 @@ export default function PropertyPage() {
 
         } else {
 
-          console.log("Nincs ilyen ingatlan");
+          console.log(
+            "Nincs ilyen ingatlan"
+          );
 
         }
 
@@ -73,6 +92,7 @@ export default function PropertyPage() {
 
   }, [params]);
 
+  // LOADING
   if (!property) {
 
     return (
@@ -118,8 +138,8 @@ export default function PropertyPage() {
             h-[500px]
             w-full
             rounded-3xl
-            object-cover
             border border-zinc-800
+            object-cover
           "
         />
 
@@ -138,7 +158,10 @@ export default function PropertyPage() {
           >
 
             {property.images.map(
-              (image, index) => (
+              (
+                image,
+                index
+              ) => (
 
                 <img
                   key={index}
@@ -148,8 +171,8 @@ export default function PropertyPage() {
                     h-48
                     w-full
                     rounded-2xl
-                    object-cover
                     border border-zinc-800
+                    object-cover
                   "
                 />
 
@@ -163,6 +186,7 @@ export default function PropertyPage() {
         {/* CONTENT */}
         <div className="mt-10">
 
+          {/* TITLE */}
           <h1
             className="
               text-5xl
@@ -172,6 +196,7 @@ export default function PropertyPage() {
             {property.title}
           </h1>
 
+          {/* CITY */}
           <p
             className="
               mt-3
@@ -182,6 +207,7 @@ export default function PropertyPage() {
             📍 {property.city}
           </p>
 
+          {/* PRICE */}
           <p
             className="
               mt-6
@@ -190,9 +216,12 @@ export default function PropertyPage() {
               text-yellow-400
             "
           >
-            {property.price.toLocaleString()} Ft
+            {property.price.toLocaleString()}
+            {" "}
+            Ft
           </p>
 
+          {/* DESCRIPTION */}
           <div
             className="
               mt-8
@@ -235,6 +264,7 @@ export default function PropertyPage() {
           >
 
             {property.phone && (
+
               <a
                 href={`tel:${property.phone}`}
                 className="
@@ -250,9 +280,11 @@ export default function PropertyPage() {
               >
                 📞 Hívás
               </a>
+
             )}
 
             {property.email && (
+
               <a
                 href={`mailto:${property.email}`}
                 className="
@@ -268,9 +300,37 @@ export default function PropertyPage() {
               >
                 ✉️ Email
               </a>
+
             )}
 
           </div>
+
+          {/* MAP */}
+          {property.lat &&
+            property.lng && (
+
+            <div className="mt-10">
+
+              <h2
+                className="
+                  mb-4
+                  text-3xl
+                  font-black
+                  text-white
+                "
+              >
+                📍 Elhelyezkedés
+              </h2>
+
+              <PropertyMap
+                lat={property.lat}
+                lng={property.lng}
+                title={property.title}
+              />
+
+            </div>
+
+          )}
 
         </div>
 

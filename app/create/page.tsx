@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
+import dynamic from "next/dynamic";
+
 import { useRouter } from "next/navigation";
 
 import {
@@ -21,25 +24,53 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
+// MAP
+const MapPicker = dynamic(
+  () =>
+    import(
+      "@/app/components/map/MapPicker"
+    ),
+  {
+    ssr: false,
+  }
+);
+
 export default function Create() {
 
   const router = useRouter();
 
   // FORM
-  const [title, setTitle] = useState("");
-  const [city, setCity] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] =
+  const [title, setTitle] =
     useState("");
 
+  const [city, setCity] =
+    useState("");
+
+  const [price, setPrice] =
+    useState("");
+
+  const [
+    description,
+    setDescription,
+  ] = useState("");
+
   // CONTACT
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  // MAP
+  const [lat, setLat] =
+    useState(47.5316);
+
+  const [lng, setLng] =
+    useState(21.6273);
 
   // IMAGES
-  const [images, setImages] = useState<
-    string[]
-  >([]);
+  const [images, setImages] =
+    useState<string[]>([]);
 
   // LOADING
   const [uploading, setUploading] =
@@ -58,13 +89,17 @@ export default function Create() {
 
       setUploading(true);
 
-      const uploadedUrls: string[] = [];
+      const uploadedUrls: string[] =
+        [];
 
-      for (const file of Array.from(files)) {
+      for (const file of Array.from(
+        files
+      )) {
 
-        const safeName = `${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2)}-${file.name}`;
+        const safeName =
+          `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2)}-${file.name}`;
 
         const imageRef = ref(
           storage,
@@ -72,13 +107,20 @@ export default function Create() {
         );
 
         // UPLOAD
-        await uploadBytes(imageRef, file);
+        await uploadBytes(
+          imageRef,
+          file
+        );
 
         // URL
         const downloadURL =
-          await getDownloadURL(imageRef);
+          await getDownloadURL(
+            imageRef
+          );
 
-        uploadedUrls.push(downloadURL);
+        uploadedUrls.push(
+          downloadURL
+        );
 
       }
 
@@ -91,7 +133,10 @@ export default function Create() {
     } catch (err) {
 
       console.error(err);
-      alert("Hiba a képfeltöltés során 😢");
+
+      alert(
+        "Hiba a képfeltöltés során 😢"
+      );
 
     } finally {
 
@@ -110,7 +155,9 @@ export default function Create() {
         collection(db, "posts"),
         {
           title,
+
           city,
+
           price: Number(price),
 
           description,
@@ -120,32 +167,40 @@ export default function Create() {
           email,
 
           // COVER IMAGE
-          imageUrl: images[0] || "",
+          imageUrl:
+            images[0] || "",
 
           // ALL IMAGES
           images,
 
           // USER
           userId:
-            auth.currentUser?.uid || null,
+            auth.currentUser
+              ?.uid || null,
 
           // DATE
-          createdAt: serverTimestamp(),
+          createdAt:
+            serverTimestamp(),
 
           // MAP
-          lat: 47.5316,
-          lng: 21.6273,
+          lat,
+          lng,
         }
       );
 
-      alert("Ingatlan feltöltve 🚀");
+      alert(
+        "Ingatlan feltöltve 🚀"
+      );
 
       router.push("/dashboard");
 
     } catch (err) {
 
       console.error(err);
-      alert("Hiba történt 😢");
+
+      alert(
+        "Hiba történt 😢"
+      );
 
     }
 
@@ -154,13 +209,13 @@ export default function Create() {
   return (
     <div
       className="
-        min-h-screen
-        bg-black
-        text-white
         flex
-        justify-center
+        min-h-screen
         items-center
+        justify-center
+        bg-black
         p-6
+        text-white
       "
     >
 
@@ -195,7 +250,8 @@ export default function Create() {
               text-zinc-400
             "
           >
-            Modern prémium ingatlan feltöltés.
+            Modern prémium ingatlan
+            feltöltés.
           </p>
 
         </div>
@@ -218,7 +274,9 @@ export default function Create() {
             placeholder="Modern lakás"
             value={title}
             onChange={(e) =>
-              setTitle(e.target.value)
+              setTitle(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -253,7 +311,9 @@ export default function Create() {
             placeholder="Debrecen"
             value={city}
             onChange={(e) =>
-              setCity(e.target.value)
+              setCity(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -289,7 +349,9 @@ export default function Create() {
             placeholder="95000000"
             value={price}
             onChange={(e) =>
-              setPrice(e.target.value)
+              setPrice(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -325,7 +387,9 @@ export default function Create() {
             placeholder="Modern prémium lakás..."
             value={description}
             onChange={(e) =>
-              setDescription(e.target.value)
+              setDescription(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -361,7 +425,9 @@ export default function Create() {
             placeholder="+36 30 123 4567"
             value={phone}
             onChange={(e) =>
-              setPhone(e.target.value)
+              setPhone(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -397,7 +463,9 @@ export default function Create() {
             placeholder="email@gmail.com"
             value={email}
             onChange={(e) =>
-              setEmail(e.target.value)
+              setEmail(
+                e.target.value
+              )
             }
             className="
               w-full
@@ -432,7 +500,9 @@ export default function Create() {
             type="file"
             multiple
             accept="image/*"
-            onChange={handleImageUpload}
+            onChange={
+              handleImageUpload
+            }
             className="
               w-full
               rounded-2xl
@@ -447,6 +517,7 @@ export default function Create() {
 
         {/* LOADING */}
         {uploading && (
+
           <div
             className="
               mb-6
@@ -458,10 +529,12 @@ export default function Create() {
           >
             Képek feltöltése...
           </div>
+
         )}
 
         {/* IMAGE PREVIEW */}
         {images.length > 0 && (
+
           <div
             className="
               mb-6
@@ -472,59 +545,114 @@ export default function Create() {
             "
           >
 
-            {images.map((image, index) => (
-              <div
-                key={index}
-                className="
-                  relative
-                  overflow-hidden
-                  rounded-2xl
-                  border border-zinc-800
-                  bg-zinc-900
-                "
-              >
+            {images.map(
+              (
+                image,
+                index
+              ) => (
 
-                <img
-                  src={image}
-                  alt="preview"
+                <div
+                  key={index}
                   className="
-                    h-44
-                    w-full
-                    object-cover
+                    relative
+                    overflow-hidden
+                    rounded-2xl
+                    border border-zinc-800
+                    bg-zinc-900
                   "
-                />
+                >
 
-                {/* COVER */}
-                {index === 0 && (
-                  <div
+                  <img
+                    src={image}
+                    alt="preview"
                     className="
-                      absolute
-                      left-3
-                      top-3
-                      rounded-full
-                      bg-yellow-500
-                      px-3
-                      py-1
-                      text-xs
-                      font-bold
-                      text-black
+                      h-44
+                      w-full
+                      object-cover
                     "
-                  >
-                    COVER
-                  </div>
-                )}
+                  />
 
-              </div>
-            ))}
+                  {/* COVER */}
+                  {index === 0 && (
+
+                    <div
+                      className="
+                        absolute
+                        left-3
+                        top-3
+                        rounded-full
+                        bg-yellow-500
+                        px-3
+                        py-1
+                        text-xs
+                        font-bold
+                        text-black
+                      "
+                    >
+                      COVER
+                    </div>
+
+                  )}
+
+                </div>
+
+              )
+            )}
 
           </div>
+
         )}
+
+        {/* MAP */}
+        <div className="mt-8">
+
+          <h2
+            className="
+              mb-4
+              text-2xl
+              font-bold
+              text-white
+            "
+          >
+            📍 Lokáció kiválasztása
+          </h2>
+
+          <MapPicker
+            lat={lat}
+            lng={lng}
+            setLat={setLat}
+            setLng={setLng}
+          />
+
+        </div>
+
+        {/* COORDINATES */}
+        <div
+          className="
+            mt-4
+            rounded-2xl
+            border border-zinc-800
+            bg-zinc-950
+            p-4
+            text-sm
+            text-zinc-400
+          "
+        >
+          Lat:
+          {" "}
+          {lat.toFixed(5)}
+          {" "}
+          | Lng:
+          {" "}
+          {lng.toFixed(5)}
+        </div>
 
         {/* SUBMIT */}
         <button
           onClick={handleSubmit}
           disabled={uploading}
           className="
+            mt-8
             w-full
             rounded-2xl
             bg-yellow-500

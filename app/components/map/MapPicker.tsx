@@ -4,17 +4,17 @@ import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
+  useMapEvents,
 } from "react-leaflet";
-
-
 
 import L from "leaflet";
 
-type PropertyMapProps = {
+type MapPickerProps = {
   lat: number;
   lng: number;
-  title?: string;
+
+  setLat: (lat: number) => void;
+  setLng: (lng: number) => void;
 };
 
 const icon = new L.Icon({
@@ -28,17 +28,42 @@ const icon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-export default function PropertyMap({
+function LocationMarker({
   lat,
   lng,
-  title,
-}: PropertyMapProps) {
+  setLat,
+  setLng,
+}: MapPickerProps) {
+
+  useMapEvents({
+    click(e) {
+
+      setLat(e.latlng.lat);
+      setLng(e.latlng.lng);
+
+    },
+  });
+
+  return (
+    <Marker
+      position={[lat, lng]}
+      icon={icon}
+    />
+  );
+}
+
+export default function MapPicker({
+  lat,
+  lng,
+  setLat,
+  setLng,
+}: MapPickerProps) {
 
   return (
     <div
       className="
         overflow-hidden
-        rounded-[32px]
+        rounded-3xl
         border border-zinc-800
       "
     >
@@ -51,24 +76,19 @@ export default function PropertyMap({
       >
 
         <TileLayer
-          attribution='&copy; OpenStreetMap'
+          attribution="&copy; OpenStreetMap"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <Marker
-          position={[lat, lng]}
-          icon={icon}
-        >
-
-          <Popup>
-            {title || "Ingatlan"}
-          </Popup>
-
-        </Marker>
+        <LocationMarker
+          lat={lat}
+          lng={lng}
+          setLat={setLat}
+          setLng={setLng}
+        />
 
       </MapContainer>
 
     </div>
   );
-
 }

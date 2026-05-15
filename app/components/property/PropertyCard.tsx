@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -16,7 +17,9 @@ type PropertyCardProps = {
   phone?: string;
 
   featured?: boolean;
+
   isFavorite?: boolean;
+
   onToggleFavorite?: () => void;
 };
 
@@ -32,26 +35,32 @@ export default function PropertyCard({
   onToggleFavorite,
 }: PropertyCardProps) {
 
-  const [openModal, setOpenModal] = useState(false);
+  const [openModal, setOpenModal] =
+    useState(false);
 
   return (
     <>
       <div
-        className="
+        className={`
           group
           relative
           overflow-hidden
           rounded-3xl
-          border border-zinc-800
+          border
           bg-zinc-900
           transition-all
           duration-300
           hover:-translate-y-1
-          hover:border-emerald-500/40
           hover:shadow-2xl
-          hover:shadow-emerald-500/10
-        "
+
+          ${
+            isFavorite
+              ? "border-pink-500/40 shadow-pink-500/10"
+              : "border-zinc-800 hover:border-emerald-500/40 hover:shadow-emerald-500/10"
+          }
+        `}
       >
+
         {/* IMAGE */}
         <div className="relative h-56 overflow-hidden md:h-64">
 
@@ -71,7 +80,8 @@ export default function PropertyCard({
           {/* OVERLAY */}
           <div
             className="
-              absolute inset-0
+              absolute
+              inset-0
               bg-gradient-to-t
               from-black/80
               via-black/20
@@ -84,8 +94,8 @@ export default function PropertyCard({
             <div
               className="
                 absolute
-                top-4
                 left-4
+                top-4
                 rounded-full
                 bg-emerald-500
                 px-3
@@ -100,13 +110,34 @@ export default function PropertyCard({
             </div>
           )}
 
-          {/* FAVORITE */}
+          {/* FAVORITE BADGE */}
+          {isFavorite && (
+            <div
+              className="
+                absolute
+                left-4
+                bottom-4
+                rounded-full
+                bg-yellow-500
+                px-3
+                py-1
+                text-xs
+                font-bold
+                text-white
+                shadow-lg
+              "
+            >
+              ❤️ Kedvenc
+            </div>
+          )}
+
+          {/* FAVORITE BUTTON */}
           <button
             onClick={onToggleFavorite}
             className="
               absolute
-              top-4
               right-4
+              top-4
               flex
               h-11
               w-11
@@ -119,9 +150,13 @@ export default function PropertyCard({
               hover:scale-110
             "
           >
+
             <span className="text-2xl">
-              {isFavorite ? "❤️" : "🤍"}
+              {isFavorite
+                ? "❤️"
+                : "🤍"}
             </span>
+
           </button>
 
         </div>
@@ -168,7 +203,7 @@ export default function PropertyCard({
           {/* ACTIONS */}
           <div className="flex flex-wrap gap-3">
 
-            {/* MEGNÉZEM */}
+            {/* VIEW */}
             <Link
               href={`/post/${id}`}
               className="
@@ -191,10 +226,10 @@ export default function PropertyCard({
                 hover:shadow-emerald-500/20
               "
             >
-              👁 Megnézem
+              Megnézem
             </Link>
 
-            {/* TELEFON */}
+            {/* PHONE */}
             {phone && (
               <a
                 href={`tel:${phone}`}
@@ -222,9 +257,11 @@ export default function PropertyCard({
               </a>
             )}
 
-            {/* ÜZENET */}
+            {/* MESSAGE */}
             <button
-              onClick={() => setOpenModal(true)}
+              onClick={() =>
+                setOpenModal(true)
+              }
               className="
                 inline-flex
                 items-center
@@ -251,6 +288,7 @@ export default function PropertyCard({
           </div>
 
         </div>
+
       </div>
 
       {/* CONTACT MODAL */}

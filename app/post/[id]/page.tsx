@@ -48,6 +48,10 @@ export default function PropertyPage() {
   const [property, setProperty] =
     useState<Property | null>(null);
 
+  // 🔥 ACTIVE IMAGE
+  const [selectedImage, setSelectedImage] =
+    useState("");
+
   useEffect(() => {
 
     const fetchProperty = async () => {
@@ -67,10 +71,15 @@ export default function PropertyPage() {
 
         if (docSnap.exists()) {
 
-          setProperty({
+          const data = {
             id: docSnap.id,
             ...docSnap.data(),
-          } as Property);
+          } as Property;
+
+          setProperty(data);
+
+          // 🔥 DEFAULT IMAGE
+          setSelectedImage(data.imageUrl);
 
         } else {
 
@@ -132,7 +141,7 @@ export default function PropertyPage() {
 
         {/* MAIN IMAGE */}
         <img
-          src={property.imageUrl}
+          src={selectedImage}
           alt={property.title}
           className="
             h-[500px]
@@ -140,6 +149,8 @@ export default function PropertyPage() {
             rounded-3xl
             border border-zinc-800
             object-cover
+            transition-all
+            duration-300
           "
         />
 
@@ -167,13 +178,25 @@ export default function PropertyPage() {
                   key={index}
                   src={image}
                   alt="gallery"
-                  className="
+                  onClick={() =>
+                    setSelectedImage(image)
+                  }
+                  className={`
                     h-48
                     w-full
+                    cursor-pointer
                     rounded-2xl
-                    border border-zinc-800
+                    border
                     object-cover
-                  "
+                    transition
+                    duration-300
+                    hover:scale-[1.02]
+                    ${
+                      selectedImage === image
+                        ? "border-yellow-500"
+                        : "border-zinc-800"
+                    }
+                  `}
                 />
 
               )

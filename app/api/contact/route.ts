@@ -79,11 +79,21 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // ADMIN EMAIL
+    // RECIPIENT
     // =========================
 
     const recipientEmail =
       process.env.CONTACT_TO_EMAIL;
+
+    console.log(
+      "CONTACT_TO_EMAIL:",
+      recipientEmail
+    );
+
+    console.log(
+      "RESEND_API_KEY_EXISTS:",
+      !!process.env.RESEND_API_KEY
+    );
 
     if (!recipientEmail) {
 
@@ -100,19 +110,13 @@ export async function POST(req: Request) {
 
     }
 
-    console.log(
-      "EMAIL RECIPIENT:",
-      recipientEmail
-    );
-
     // =========================
-    // SEND INQUIRY EMAIL
+    // SEND ADMIN EMAIL
     // =========================
 
     const inquiryEmail =
       await resend.emails.send({
 
-        // Stable Resend sender
         from:
           "onboarding@resend.dev",
 
@@ -134,9 +138,7 @@ export async function POST(req: Request) {
             line-height: 1.7;
           ">
 
-            <h2 style="
-              margin-bottom: 24px;
-            ">
+            <h2>
               New Property Inquiry
             </h2>
 
@@ -148,21 +150,15 @@ export async function POST(req: Request) {
               }
             </p>
 
-            <br/>
-
             <p>
               <strong>Name:</strong><br/>
               ${name}
             </p>
 
-            <br/>
-
             <p>
               <strong>Email:</strong><br/>
               ${email}
             </p>
-
-            <br/>
 
             <p>
               <strong>Message:</strong><br/>
@@ -185,7 +181,6 @@ export async function POST(req: Request) {
     const autoReply =
       await resend.emails.send({
 
-        // Stable Resend sender
         from:
           "onboarding@resend.dev",
 
@@ -205,17 +200,11 @@ export async function POST(req: Request) {
             margin: 0 auto;
           ">
 
-            <h1 style="
-              font-size: 28px;
-              font-weight: 600;
-              margin-bottom: 32px;
-            ">
+            <h1>
               Thank you, ${name}
             </h1>
 
-            <p style="
-              margin-bottom: 24px;
-            ">
+            <p>
               Your inquiry regarding
               <strong>
                 ${
@@ -226,17 +215,12 @@ export async function POST(req: Request) {
               has been received.
             </p>
 
-            <p style="
-              margin-bottom: 24px;
-            ">
+            <p>
               Our concierge team
-              will contact you shortly
-              with a personalized response.
+              will contact you shortly.
             </p>
 
-            <p style="
-              margin-top: 48px;
-            ">
+            <p>
               — DebHome
             </p>
 
@@ -256,8 +240,6 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: true,
-        message:
-          "Email sent successfully",
       },
       {
         status: 200,

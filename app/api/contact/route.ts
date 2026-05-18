@@ -117,8 +117,9 @@ export async function POST(req: Request) {
     const inquiryEmail =
       await resend.emails.send({
 
+        // VERIFIED DOMAIN SENDER
         from:
-          "onboarding@resend.dev",
+          "inquiries@debrecenhomes.hu",
 
         to: recipientEmail,
 
@@ -181,8 +182,9 @@ export async function POST(req: Request) {
     const autoReply =
       await resend.emails.send({
 
+        // VERIFIED DOMAIN SENDER
         from:
-          "onboarding@resend.dev",
+          "inquiries@debrecenhomes.hu",
 
         to: email,
 

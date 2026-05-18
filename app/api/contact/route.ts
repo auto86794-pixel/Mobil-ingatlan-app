@@ -3,12 +3,12 @@ import { Resend } from "resend";
 
 export async function POST(req: Request) {
 
-  // ✅ Runtime init (Vercel safe)
-  const resend = new Resend(
-    process.env.RESEND_API_KEY
-  );
-
   try {
+
+    // ✅ Runtime safe
+    const resend = new Resend(
+      process.env.RESEND_API_KEY
+    );
 
     const body = await req.json();
 
@@ -50,7 +50,10 @@ export async function POST(req: Request) {
 
     }
 
+    // =========================
     // EMAIL VALIDATION
+    // =========================
+
     const emailRegex =
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
         {
           success: false,
           error:
-            "Invalid email",
+            "Invalid email address",
         },
         {
           status: 400,
@@ -72,7 +75,7 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // STABLE RECIPIENT
+    // FALLBACK RECIPIENT
     // =========================
 
     const recipientEmail =
@@ -88,134 +91,147 @@ export async function POST(req: Request) {
             .CONTACT_TO_EMAIL!;
 
     // =========================
-    // OWNER / ADMIN EMAIL
+    // SEND OWNER EMAIL
     // =========================
 
-    await resend.emails.send({
+    const ownerEmail =
+      await resend.emails.send({
 
-      from:
-        "Luxury Concierge <onboarding@resend.dev>",
+        // ✅ Stable sandbox sender
+        from:
+          "onboarding@resend.dev",
 
-      to: recipientEmail,
+        to: recipientEmail,
 
-      replyTo: email,
+        replyTo: email,
 
-      subject:
-        `New Inquiry — ${
-          propertyTitle ||
-          "Luxury Property"
-        }`,
+        subject:
+          `New Inquiry — ${
+            propertyTitle ||
+            "Luxury Property"
+          }`,
 
-      html: `
-        <div style="
-          font-family: Arial, Helvetica, sans-serif;
-          padding: 32px;
-          color: #111111;
-          line-height: 1.7;
-        ">
-
-          <h2 style="
-            margin-bottom: 24px;
+        html: `
+          <div style="
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 32px;
+            color: #111111;
+            line-height: 1.7;
           ">
-            New Property Inquiry
-          </h2>
 
-          <p>
-            <strong>Property:</strong><br/>
-            ${
-              propertyTitle ||
-              "Luxury Property"
-            }
-          </p>
+            <h2 style="
+              margin-bottom: 24px;
+            ">
+              New Property Inquiry
+            </h2>
 
-          <br/>
-
-          <p>
-            <strong>Name:</strong><br/>
-            ${name}
-          </p>
-
-          <br/>
-
-          <p>
-            <strong>Email:</strong><br/>
-            ${email}
-          </p>
-
-          <br/>
-
-          <p>
-            <strong>Message:</strong><br/>
-            ${message}
-          </p>
-
-        </div>
-      `,
-    });
-
-    // =========================
-    // USER AUTO-REPLY
-    // =========================
-
-    await resend.emails.send({
-
-      from:
-        "Luxury Concierge <onboarding@resend.dev>",
-
-      to: email,
-
-      subject:
-        "We received your inquiry",
-
-      html: `
-        <div style="
-          background-color: #ffffff;
-          padding: 48px 24px;
-          font-family: Arial, Helvetica, sans-serif;
-          color: #111111;
-          line-height: 1.8;
-          max-width: 640px;
-          margin: 0 auto;
-        ">
-
-          <h1 style="
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 32px;
-          ">
-            Thank you, ${name}
-          </h1>
-
-          <p style="
-            margin-bottom: 24px;
-          ">
-            Your inquiry regarding
-            <strong>
+            <p>
+              <strong>Property:</strong><br/>
               ${
                 propertyTitle ||
-                "this property"
+                "Luxury Property"
               }
-            </strong>
-            has been received.
-          </p>
+            </p>
 
-          <p style="
-            margin-bottom: 24px;
+            <br/>
+
+            <p>
+              <strong>Name:</strong><br/>
+              ${name}
+            </p>
+
+            <br/>
+
+            <p>
+              <strong>Email:</strong><br/>
+              ${email}
+            </p>
+
+            <br/>
+
+            <p>
+              <strong>Message:</strong><br/>
+              ${message}
+            </p>
+
+          </div>
+        `,
+      });
+
+    console.log(
+      "OWNER EMAIL:",
+      ownerEmail
+    );
+
+    // =========================
+    // SEND AUTO REPLY
+    // =========================
+
+    const autoReply =
+      await resend.emails.send({
+
+        from:
+          "onboarding@resend.dev",
+
+        to: email,
+
+        subject:
+          "We received your inquiry",
+
+        html: `
+          <div style="
+            background-color: #ffffff;
+            padding: 48px 24px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111111;
+            line-height: 1.8;
+            max-width: 640px;
+            margin: 0 auto;
           ">
-            Our concierge team
-            will contact you shortly
-            with a personalized response.
-          </p>
 
-          <p style="
-            margin-top: 48px;
-          ">
-            — Luxury Concierge
-          </p>
+            <h1 style="
+              font-size: 28px;
+              font-weight: 600;
+              margin-bottom: 32px;
+            ">
+              Thank you, ${name}
+            </h1>
 
-        </div>
-      `,
-    });
+            <p style="
+              margin-bottom: 24px;
+            ">
+              Your inquiry regarding
+              <strong>
+                ${
+                  propertyTitle ||
+                  "this property"
+                }
+              </strong>
+              has been received.
+            </p>
+
+            <p style="
+              margin-bottom: 24px;
+            ">
+              Our concierge team
+              will contact you shortly
+              with a personalized response.
+            </p>
+
+            <p style="
+              margin-top: 48px;
+            ">
+              — Luxury Concierge
+            </p>
+
+          </div>
+        `,
+      });
+
+    console.log(
+      "AUTO REPLY:",
+      autoReply
+    );
 
     // =========================
     // SUCCESS

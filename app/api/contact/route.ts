@@ -3,7 +3,7 @@ import { Resend } from "resend";
 
 export async function POST(req: Request) {
 
-  // ✅ Runtime init (Vercel fix)
+  // ✅ Runtime init (Vercel safe)
   const resend = new Resend(
     process.env.RESEND_API_KEY
   );
@@ -27,7 +27,10 @@ export async function POST(req: Request) {
     const propertyTitle =
       body.propertyTitle?.trim();
 
+    // =========================
     // VALIDATION
+    // =========================
+
     if (
       !name ||
       !email ||
@@ -47,8 +50,45 @@ export async function POST(req: Request) {
 
     }
 
+    // EMAIL VALIDATION
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (
+      !emailRegex.test(email)
+    ) {
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid email",
+        },
+        {
+          status: 400,
+        }
+      );
+
+    }
+
     // =========================
-    // OWNER EMAIL
+    // STABLE RECIPIENT
+    // =========================
+
+    const recipientEmail =
+
+      propertyEmail &&
+      emailRegex.test(
+        propertyEmail
+      )
+
+        ? propertyEmail
+
+        : process.env
+            .CONTACT_TO_EMAIL!;
+
+    // =========================
+    // OWNER / ADMIN EMAIL
     // =========================
 
     await resend.emails.send({
@@ -56,14 +96,15 @@ export async function POST(req: Request) {
       from:
         "Luxury Concierge <onboarding@resend.dev>",
 
-      to:
-        propertyEmail ||
-        process.env.CONTACT_TO_EMAIL!,
+      to: recipientEmail,
 
       replyTo: email,
 
       subject:
-        `New Inquiry — ${propertyTitle || "Property"}`,
+        `New Inquiry — ${
+          propertyTitle ||
+          "Luxury Property"
+        }`,
 
       html: `
         <div style="
@@ -73,13 +114,18 @@ export async function POST(req: Request) {
           line-height: 1.7;
         ">
 
-          <h2 style="margin-bottom: 24px;">
+          <h2 style="
+            margin-bottom: 24px;
+          ">
             New Property Inquiry
           </h2>
 
           <p>
             <strong>Property:</strong><br/>
-            ${propertyTitle || "Luxury Property"}
+            ${
+              propertyTitle ||
+              "Luxury Property"
+            }
           </p>
 
           <br/>
@@ -108,7 +154,7 @@ export async function POST(req: Request) {
     });
 
     // =========================
-    // AUTO REPLY
+    // USER AUTO-REPLY
     // =========================
 
     await resend.emails.send({
@@ -140,25 +186,40 @@ export async function POST(req: Request) {
             Thank you, ${name}
           </h1>
 
-          <p style="margin-bottom: 24px;">
+          <p style="
+            margin-bottom: 24px;
+          ">
             Your inquiry regarding
             <strong>
-              ${propertyTitle || "this property"}
+              ${
+                propertyTitle ||
+                "this property"
+              }
             </strong>
             has been received.
           </p>
 
-          <p style="margin-bottom: 24px;">
-            Our concierge team will contact you shortly with a personalized response.
+          <p style="
+            margin-bottom: 24px;
+          ">
+            Our concierge team
+            will contact you shortly
+            with a personalized response.
           </p>
 
-          <p style="margin-top: 48px;">
+          <p style="
+            margin-top: 48px;
+          ">
             — Luxury Concierge
           </p>
 
         </div>
       `,
     });
+
+    // =========================
+    // SUCCESS
+    // =========================
 
     return NextResponse.json(
       {

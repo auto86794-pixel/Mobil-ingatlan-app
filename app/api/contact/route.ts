@@ -6,6 +6,48 @@ export async function POST(req: Request) {
   try {
 
     // =========================
+    // ENV VALIDATION
+    // =========================
+
+    if (!process.env.RESEND_API_KEY) {
+
+      console.error(
+        "Missing RESEND_API_KEY"
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Server configuration error",
+        },
+        {
+          status: 500,
+        }
+      );
+
+    }
+
+    if (!process.env.CONTACT_TO_EMAIL) {
+
+      console.error(
+        "Missing CONTACT_TO_EMAIL"
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Server configuration error",
+        },
+        {
+          status: 500,
+        }
+      );
+
+    }
+
+    // =========================
     // RESEND INIT
     // =========================
 
@@ -14,10 +56,11 @@ export async function POST(req: Request) {
     );
 
     // =========================
-    // BODY
+    // REQUEST BODY
     // =========================
 
-    const body = await req.json();
+    const body =
+      await req.json();
 
     const name =
       body.name?.trim();
@@ -89,7 +132,7 @@ export async function POST(req: Request) {
       process.env.CONTACT_TO_EMAIL!,
     ];
 
-    // Add property owner if valid
+    // Add property owner email
     if (
       propertyEmail &&
       emailRegex.test(
@@ -109,14 +152,11 @@ export async function POST(req: Request) {
     );
 
     // =========================
-    // SEND OWNER + ADMIN EMAIL
+    // SEND INQUIRY EMAIL
     // =========================
 
     const inquiryEmail =
       await resend.emails.send({
-
-        // Production:
-        // inquiries@debrecenhomes.hu
 
         from:
           process.env
@@ -187,90 +227,6 @@ export async function POST(req: Request) {
     );
 
     // =========================
-    // AUTO REPLY
-    // =========================
-
-    try {
-
-      const autoReply =
-        await resend.emails.send({
-
-          from:
-            process.env
-              .RESEND_FROM_EMAIL ||
-
-            "onboarding@resend.dev",
-
-          to: email,
-
-          subject:
-            "We received your inquiry",
-
-          html: `
-            <div style="
-              background-color: #ffffff;
-              padding: 48px 24px;
-              font-family: Arial, Helvetica, sans-serif;
-              color: #111111;
-              line-height: 1.8;
-              max-width: 640px;
-              margin: 0 auto;
-            ">
-
-              <h1 style="
-                font-size: 28px;
-                font-weight: 600;
-                margin-bottom: 32px;
-              ">
-                Thank you, ${name}
-              </h1>
-
-              <p style="
-                margin-bottom: 24px;
-              ">
-                Your inquiry regarding
-                <strong>
-                  ${
-                    propertyTitle ||
-                    "this property"
-                  }
-                </strong>
-                has been received.
-              </p>
-
-              <p style="
-                margin-bottom: 24px;
-              ">
-                Our concierge team
-                will contact you shortly
-                with a personalized response.
-              </p>
-
-              <p style="
-                margin-top: 48px;
-              ">
-                — Luxury Concierge
-              </p>
-
-            </div>
-          `,
-        });
-
-      console.log(
-        "AUTO REPLY:",
-        autoReply
-      );
-
-    } catch (autoReplyError) {
-
-      console.error(
-        "AUTO_REPLY_ERROR:",
-        autoReplyError
-      );
-
-    }
-
-    // =========================
     // SUCCESS
     // =========================
 
@@ -306,3 +262,4 @@ export async function POST(req: Request) {
   }
 
 }
+

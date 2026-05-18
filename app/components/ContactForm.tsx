@@ -1,46 +1,68 @@
 "use client";
 
 import { useState } from "react";
-import emailjs from "@emailjs/browser";
-
-const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE!;
-const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE!;
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_KEY!;
 
 export default function ContactForm() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    message: ""
+    message: "",
   });
 
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement
+    >
+  ) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const sendEmail = async (e: any) => {
+  const sendEmail = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
+
     setLoading(true);
 
     try {
-      await emailjs.send(
-        SERVICE_ID,
-        TEMPLATE_ID,
-        {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
           name: form.name,
           email: form.email,
-          message: form.message
-        },
-        PUBLIC_KEY
-      );
+          message: form.message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Something went wrong"
+        );
+      }
 
       alert("Üzenet elküldve! 🎉");
-      setForm({ name: "", email: "", message: "" });
+
+      setForm({
+        name: "",
+        email: "",
+        message: "",
+      });
 
     } catch (error) {
       console.error(error);
+
       alert("Hiba történt 😢");
     }
 
@@ -48,23 +70,39 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={sendEmail} className="flex flex-col gap-3 max-w-md">
+    <form
+      onSubmit={sendEmail}
+      className="flex flex-col gap-4 max-w-md"
+    >
       <input
+        type="text"
         name="name"
         placeholder="Név"
         value={form.name}
         onChange={handleChange}
-        className="border p-2"
+        className="
+          border
+          border-gray-300
+          p-3
+          rounded-md
+          outline-none
+        "
         required
       />
 
       <input
-        name="email"
         type="email"
+        name="email"
         placeholder="Email"
         value={form.email}
         onChange={handleChange}
-        className="border p-2"
+        className="
+          border
+          border-gray-300
+          p-3
+          rounded-md
+          outline-none
+        "
         required
       />
 
@@ -73,14 +111,29 @@ export default function ContactForm() {
         placeholder="Üzenet"
         value={form.message}
         onChange={handleChange}
-        className="border p-2"
+        className="
+          border
+          border-gray-300
+          p-3
+          rounded-md
+          outline-none
+          min-h-[140px]
+        "
         required
       />
 
       <button
         type="submit"
         disabled={loading}
-        className="bg-black text-white p-2 rounded"
+        className="
+          bg-black
+          text-white
+          p-3
+          rounded-md
+          transition
+          hover:opacity-90
+          disabled:opacity-50
+        "
       >
         {loading ? "Küldés..." : "Küldés"}
       </button>

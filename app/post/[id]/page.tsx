@@ -48,9 +48,13 @@ export default function PropertyPage() {
   const [property, setProperty] =
     useState<Property | null>(null);
 
-  // 🔥 ACTIVE IMAGE
+  // ACTIVE IMAGE
   const [selectedImage, setSelectedImage] =
     useState("");
+
+  // CONTACT FORM
+  const [loading, setLoading] =
+    useState(false);
 
   useEffect(() => {
 
@@ -78,7 +82,6 @@ export default function PropertyPage() {
 
           setProperty(data);
 
-          // 🔥 DEFAULT IMAGE
           setSelectedImage(data.imageUrl);
 
         } else {
@@ -281,16 +284,18 @@ export default function PropertyPage() {
             className="
               mt-8
               flex
-              flex-wrap
-              gap-4
+              flex-col
+              gap-6
             "
           >
 
+            {/* PHONE */}
             {property.phone && (
 
               <a
                 href={`tel:${property.phone}`}
                 className="
+                  w-fit
                   rounded-2xl
                   bg-green-500
                   px-6
@@ -306,23 +311,186 @@ export default function PropertyPage() {
 
             )}
 
+            {/* CONTACT FORM */}
             {property.email && (
 
-              <a
-                href={`mailto:${property.email}`}
+              <div
                 className="
-                  rounded-2xl
-                  bg-blue-500
-                  px-6
-                  py-4
-                  font-bold
-                  text-white
-                  transition
-                  hover:bg-blue-400
+                  w-full
+                  max-w-2xl
+                  rounded-3xl
+                  border border-zinc-800
+                  bg-zinc-900
+                  p-8
                 "
               >
-                ✉️ Email
-              </a>
+
+                <h2
+                  className="
+                    mb-6
+                    text-3xl
+                    font-black
+                  "
+                >
+                  ✉️ Kapcsolatfelvétel
+                </h2>
+
+                <form
+                  onSubmit={async (e) => {
+
+                    e.preventDefault();
+
+                    setLoading(true);
+
+                    const formData =
+                      new FormData(
+                        e.currentTarget
+                      );
+
+                    const name =
+                      formData.get("name");
+
+                    const email =
+                      formData.get("email");
+
+                    const message =
+                      formData.get("message");
+
+                    try {
+
+                      const response =
+                        await fetch(
+                          "/api/contact",
+                          {
+                            method: "POST",
+
+                            headers: {
+                              "Content-Type":
+                                "application/json",
+                            },
+
+                            body: JSON.stringify({
+                              name,
+                              email,
+                              message,
+
+                              // PROPERTY OWNER
+                              propertyEmail:
+                                property.email,
+
+                              propertyTitle:
+                                property.title,
+                            }),
+                          }
+                        );
+
+                      const data =
+                        await response.json();
+
+                      if (!response.ok) {
+
+                        throw new Error(
+                          data.error
+                        );
+
+                      }
+
+                      alert(
+                        "Üzenet sikeresen elküldve! 🎉"
+                      );
+
+                      (
+                        e.target as HTMLFormElement
+                      ).reset();
+
+                    } catch (error) {
+
+                      console.error(error);
+
+                      alert(
+                        "Hiba történt 😢"
+                      );
+
+                    }
+
+                    setLoading(false);
+
+                  }}
+                  className="
+                    flex
+                    flex-col
+                    gap-4
+                  "
+                >
+
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Név"
+                    required
+                    className="
+                      rounded-2xl
+                      border border-zinc-700
+                      bg-black
+                      p-4
+                      text-white
+                      outline-none
+                    "
+                  />
+
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    required
+                    className="
+                      rounded-2xl
+                      border border-zinc-700
+                      bg-black
+                      p-4
+                      text-white
+                      outline-none
+                    "
+                  />
+
+                  <textarea
+                    name="message"
+                    placeholder="Üzenet"
+                    required
+                    className="
+                      min-h-[160px]
+                      rounded-2xl
+                      border border-zinc-700
+                      bg-black
+                      p-4
+                      text-white
+                      outline-none
+                    "
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="
+                      rounded-2xl
+                      bg-blue-500
+                      px-6
+                      py-4
+                      font-bold
+                      text-white
+                      transition
+                      hover:bg-blue-400
+                      disabled:opacity-50
+                    "
+                  >
+                    {loading
+                      ? "Küldés..."
+                      : "✉️ Üzenet küldése"}
+                  </button>
+
+                </form>
+
+              </div>
 
             )}
 

@@ -5,10 +5,17 @@ export async function POST(req: Request) {
 
   try {
 
-    // ✅ Runtime safe
+    // =========================
+    // RESEND INIT
+    // =========================
+
     const resend = new Resend(
       process.env.RESEND_API_KEY
     );
+
+    // =========================
+    // BODY
+    // =========================
 
     const body = await req.json();
 
@@ -75,33 +82,49 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // FALLBACK RECIPIENT
+    // RECIPIENTS
     // =========================
 
-    const recipientEmail =
+    const recipients = [
+      process.env.CONTACT_TO_EMAIL!,
+    ];
 
+    // Add property owner if valid
+    if (
       propertyEmail &&
       emailRegex.test(
         propertyEmail
       )
+    ) {
 
-        ? propertyEmail
+      recipients.push(
+        propertyEmail
+      );
 
-        : process.env
-            .CONTACT_TO_EMAIL!;
+    }
+
+    console.log(
+      "EMAIL RECIPIENTS:",
+      recipients
+    );
 
     // =========================
-    // SEND OWNER EMAIL
+    // SEND OWNER + ADMIN EMAIL
     // =========================
 
-    const ownerEmail =
+    const inquiryEmail =
       await resend.emails.send({
 
-        // ✅ Stable sandbox sender
+        // Production:
+        // inquiries@debrecenhomes.hu
+
         from:
+          process.env
+            .RESEND_FROM_EMAIL ||
+
           "onboarding@resend.dev",
 
-        to: recipientEmail,
+        to: recipients,
 
         replyTo: email,
 
@@ -159,79 +182,93 @@ export async function POST(req: Request) {
       });
 
     console.log(
-      "OWNER EMAIL:",
-      ownerEmail
+      "INQUIRY EMAIL:",
+      inquiryEmail
     );
 
     // =========================
-    // SEND AUTO REPLY
+    // AUTO REPLY
     // =========================
 
-    const autoReply =
-      await resend.emails.send({
+    try {
 
-        from:
-          "onboarding@resend.dev",
+      const autoReply =
+        await resend.emails.send({
 
-        to: email,
+          from:
+            process.env
+              .RESEND_FROM_EMAIL ||
 
-        subject:
-          "We received your inquiry",
+            "onboarding@resend.dev",
 
-        html: `
-          <div style="
-            background-color: #ffffff;
-            padding: 48px 24px;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #111111;
-            line-height: 1.8;
-            max-width: 640px;
-            margin: 0 auto;
-          ">
+          to: email,
 
-            <h1 style="
-              font-size: 28px;
-              font-weight: 600;
-              margin-bottom: 32px;
+          subject:
+            "We received your inquiry",
+
+          html: `
+            <div style="
+              background-color: #ffffff;
+              padding: 48px 24px;
+              font-family: Arial, Helvetica, sans-serif;
+              color: #111111;
+              line-height: 1.8;
+              max-width: 640px;
+              margin: 0 auto;
             ">
-              Thank you, ${name}
-            </h1>
 
-            <p style="
-              margin-bottom: 24px;
-            ">
-              Your inquiry regarding
-              <strong>
-                ${
-                  propertyTitle ||
-                  "this property"
-                }
-              </strong>
-              has been received.
-            </p>
+              <h1 style="
+                font-size: 28px;
+                font-weight: 600;
+                margin-bottom: 32px;
+              ">
+                Thank you, ${name}
+              </h1>
 
-            <p style="
-              margin-bottom: 24px;
-            ">
-              Our concierge team
-              will contact you shortly
-              with a personalized response.
-            </p>
+              <p style="
+                margin-bottom: 24px;
+              ">
+                Your inquiry regarding
+                <strong>
+                  ${
+                    propertyTitle ||
+                    "this property"
+                  }
+                </strong>
+                has been received.
+              </p>
 
-            <p style="
-              margin-top: 48px;
-            ">
-              — Luxury Concierge
-            </p>
+              <p style="
+                margin-bottom: 24px;
+              ">
+                Our concierge team
+                will contact you shortly
+                with a personalized response.
+              </p>
 
-          </div>
-        `,
-      });
+              <p style="
+                margin-top: 48px;
+              ">
+                — Luxury Concierge
+              </p>
 
-    console.log(
-      "AUTO REPLY:",
-      autoReply
-    );
+            </div>
+          `,
+        });
+
+      console.log(
+        "AUTO REPLY:",
+        autoReply
+      );
+
+    } catch (autoReplyError) {
+
+      console.error(
+        "AUTO_REPLY_ERROR:",
+        autoReplyError
+      );
+
+    }
 
     // =========================
     // SUCCESS
@@ -267,4 +304,5 @@ export async function POST(req: Request) {
     );
 
   }
+
 }

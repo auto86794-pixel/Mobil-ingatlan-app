@@ -6,49 +6,7 @@ export async function POST(req: Request) {
   try {
 
     // =========================
-    // ENV VALIDATION
-    // =========================
-
-    if (!process.env.RESEND_API_KEY) {
-
-      console.error(
-        "Missing RESEND_API_KEY"
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Server configuration error",
-        },
-        {
-          status: 500,
-        }
-      );
-
-    }
-
-    if (!process.env.CONTACT_TO_EMAIL) {
-
-      console.error(
-        "Missing CONTACT_TO_EMAIL"
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Server configuration error",
-        },
-        {
-          status: 500,
-        }
-      );
-
-    }
-
-    // =========================
-    // RESEND INIT
+    // RESEND
     // =========================
 
     const resend = new Resend(
@@ -56,11 +14,10 @@ export async function POST(req: Request) {
     );
 
     // =========================
-    // REQUEST BODY
+    // BODY
     // =========================
 
-    const body =
-      await req.json();
+    const body = await req.json();
 
     const name =
       body.name?.trim();
@@ -70,9 +27,6 @@ export async function POST(req: Request) {
 
     const message =
       body.message?.trim();
-
-    const propertyEmail =
-      body.propertyEmail?.trim();
 
     const propertyTitle =
       body.propertyTitle?.trim();
@@ -125,30 +79,30 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // RECIPIENTS
+    // ADMIN EMAIL
     // =========================
 
-    const recipients = [
-      process.env.CONTACT_TO_EMAIL!,
-    ];
+    const recipientEmail =
+      process.env.CONTACT_TO_EMAIL;
 
-    // Add property owner email
-    if (
-      propertyEmail &&
-      emailRegex.test(
-        propertyEmail
-      )
-    ) {
+    if (!recipientEmail) {
 
-      recipients.push(
-        propertyEmail
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Missing CONTACT_TO_EMAIL",
+        },
+        {
+          status: 500,
+        }
       );
 
     }
 
     console.log(
-      "EMAIL RECIPIENTS:",
-      recipients
+      "EMAIL RECIPIENT:",
+      recipientEmail
     );
 
     // =========================
@@ -159,12 +113,9 @@ export async function POST(req: Request) {
       await resend.emails.send({
 
         from:
-          process.env
-            .RESEND_FROM_EMAIL ||
+          "inquiries@debrecenhomes.hu",
 
-          "onboarding@resend.dev",
-
-        to: recipients,
+        to: recipientEmail,
 
         replyTo: email,
 
@@ -227,6 +178,76 @@ export async function POST(req: Request) {
     );
 
     // =========================
+    // AUTO REPLY
+    // =========================
+
+    const autoReply =
+      await resend.emails.send({
+
+        from:
+          "inquiries@debrecenhomes.hu",
+
+        to: email,
+
+        subject:
+          "We received your inquiry",
+
+        html: `
+          <div style="
+            background-color: #ffffff;
+            padding: 48px 24px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111111;
+            line-height: 1.8;
+            max-width: 640px;
+            margin: 0 auto;
+          ">
+
+            <h1 style="
+              font-size: 28px;
+              font-weight: 600;
+              margin-bottom: 32px;
+            ">
+              Thank you, ${name}
+            </h1>
+
+            <p style="
+              margin-bottom: 24px;
+            ">
+              Your inquiry regarding
+              <strong>
+                ${
+                  propertyTitle ||
+                  "this property"
+                }
+              </strong>
+              has been received.
+            </p>
+
+            <p style="
+              margin-bottom: 24px;
+            ">
+              Our concierge team
+              will contact you shortly
+              with a personalized response.
+            </p>
+
+            <p style="
+              margin-top: 48px;
+            ">
+              — Luxury Concierge
+            </p>
+
+          </div>
+        `,
+      });
+
+    console.log(
+      "AUTO REPLY:",
+      autoReply
+    );
+
+    // =========================
     // SUCCESS
     // =========================
 
@@ -262,4 +283,3 @@ export async function POST(req: Request) {
   }
 
 }
-

@@ -112,8 +112,9 @@ export async function POST(req: Request) {
     const inquiryEmail =
       await resend.emails.send({
 
+        // Stable Resend sender
         from:
-          "inquiries@debrecenhomes.hu",
+          "onboarding@resend.dev",
 
         to: recipientEmail,
 
@@ -184,8 +185,9 @@ export async function POST(req: Request) {
     const autoReply =
       await resend.emails.send({
 
+        // Stable Resend sender
         from:
-          "inquiries@debrecenhomes.hu",
+          "onboarding@resend.dev",
 
         to: email,
 
@@ -235,7 +237,7 @@ export async function POST(req: Request) {
             <p style="
               margin-top: 48px;
             ">
-              — Luxury Concierge
+              — DebHome
             </p>
 
           </div>

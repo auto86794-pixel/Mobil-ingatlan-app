@@ -1,264 +1,85 @@
 "use client";
 
 import Link from "next/link";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { auth } from "../lib/firebase";
 
-import {
-  onAuthStateChanged,
-  signOut,
-  User,
-} from "firebase/auth";
+const navLink =
+  "rounded-full px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-white/5 hover:text-white";
 
 export default function Navbar() {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const unsubscribe =
-      onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-      });
-
-    return () => unsubscribe();
-  }, []);
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Kijelentkezési hiba:", error);
     }
   };
 
   return (
-    <nav
-      className="
-        hidden
-        md:block
-        z-50
-        border-b
-        border-zinc-800
-        bg-zinc-900/95
-        backdrop-blur-xl
-      "
-    >
-      <div
-        className="
-          mx-auto
-          flex
-          max-w-7xl
-          items-center
-          justify-between
-          px-4
-          py-4
-        "
-      >
-
-        {/* LEFT */}
-        <div
-          className="
-            flex
-            items-center
-            gap-4
-            md:gap-8
-          "
-        >
-
-          {/* LOGO */}
-          <Link
-            href="/"
-            className="
-              flex
-              items-center
-              gap-3
-            "
-          >
-
-            <div
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-2xl
-                bg-emerald-500
-                text-2xl
-              "
-            >
-              🏠
+    <nav className="sticky top-0 z-50 hidden border-b border-white/10 bg-zinc-950/88 backdrop-blur-2xl md:block">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="group flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-300 transition group-hover:bg-emerald-400/15">
+              <Building2 size={22} strokeWidth={1.8} />
             </div>
-
-            {/* LOGO TEXT */}
-            <div className="hidden lg:block">
-
-              <h1
-                className="
-                  text-lg
-                  font-black
-                  text-white
-                "
-              >
-                Debrecen Homes
-              </h1>
-
-              <p
-                className="
-                  text-xs
-                  text-zinc-400
-                "
-              >
-                Premium Real Estate
-              </p>
-
+            <div>
+              <div className="text-base font-black tracking-tight text-white">DebrecenHomes</div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Debreceni ingatlanok</div>
             </div>
-
           </Link>
 
-          {/* MENU */}
-          <div
-            className="
-              flex
-              items-center
-              gap-4
-              text-sm
-              md:gap-8
-            "
-          >
-
-            {/* HOME */}
-            <Link
-              href="/"
-              className="
-                text-zinc-300
-                transition
-                hover:text-emerald-400
-              "
-            >
-              Home
+          <div className="flex items-center gap-1">
+            <Link href="/" className={navLink}>Ingatlanok</Link>
+            {user && (
+              <Link href="/dashboard" className={navLink}>
+                <span className="inline-flex items-center gap-2"><LayoutDashboard size={15} /> Saját hirdetések</span>
+              </Link>
+            )}
+            <Link href="/favorites" className={navLink}>
+              <span className="inline-flex items-center gap-2"><Heart size={15} /> Kedvencek</span>
             </Link>
-
-            {/* DASHBOARD */}
-            <Link
-              href="/dashboard"
-              className="
-                text-zinc-300
-                transition
-                hover:text-emerald-400
-              "
-            >
-              Dashboard
-            </Link>
-
-            {/* FAVORITES */}
-            <Link
-              href="/favorites"
-              className="
-                text-zinc-300
-                transition
-                hover:text-emerald-400
-              "
-            >
-              Kedvencek
-            </Link>
-
           </div>
-
         </div>
 
-        {/* RIGHT SIDE */}
-        <div
-          className="
-            flex
-            items-center
-            gap-2
-          "
-        >
-
-          {/* USER EMAIL */}
+        <div className="flex items-center gap-2">
           {user && (
-            <div
-              className="
-                hidden
-                xl:block
-                max-w-[180px]
-                truncate
-                text-sm
-                text-zinc-400
-              "
-            >
-              {user.email}
-            </div>
+            <span className="hidden max-w-[190px] truncate px-2 text-xs text-zinc-500 xl:block">{user.email}</span>
           )}
 
-          {/* LOGIN */}
-          {!user && (
-            <Link href="/login">
-
-              <button
-                className="
-                  rounded-full
-                  border
-                  border-zinc-700
-                  bg-zinc-900
-                  px-3
-                  py-2
-                  text-sm
-                  text-white
-                  transition
-                  hover:border-emerald-500
-                "
-              >
-                Login
-              </button>
-
+          {!user ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white transition hover:border-emerald-400/30 hover:bg-white/[0.07]"
+            >
+              <LogIn size={16} /> Belépés
             </Link>
+          ) : (
+            <>
+              <Link
+                href="/create"
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400"
+              >
+                <Plus size={16} /> Új hirdetés
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/[0.07] hover:text-white"
+              >
+                <LogOut size={16} /> Kilépés
+              </button>
+            </>
           )}
-
-          {/* CREATE */}
-          <Link href="/create">
-
-            <button
-              className="
-                rounded-full
-                bg-emerald-500
-                px-3
-                py-2
-                text-sm
-                font-semibold
-                text-white
-                transition
-                hover:bg-emerald-400
-              "
-            >
-              Hirdetés
-            </button>
-
-          </Link>
-
-          {/* LOGOUT */}
-          {user && (
-            <button
-              onClick={handleLogout}
-              className="
-                rounded-full
-                bg-red-500
-                px-3
-                py-2
-                text-sm
-                text-white
-                transition
-                hover:bg-red-400
-              "
-            >
-              Kilépés
-            </button>
-          )}
-
         </div>
-
       </div>
     </nav>
   );

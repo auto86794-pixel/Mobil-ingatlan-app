@@ -1,106 +1,52 @@
 "use client";
 
 import Link from "next/link";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { Heart, Home, LayoutDashboard, LogIn, Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { auth } from "../lib/firebase";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
 
-  const navItems = [
-    {
-      href: "/",
-      label: "Home",
-      icon: "🏠",
-    },
-    {
-      href: "/favorites",
-      label: "Kedvencek",
-      icon: "❤️",
-    },
-    {
-      href: "/create",
-      label: "Create",
-      icon: "➕",
-    },
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      icon: "📊",
-    },
-  ];
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
+
+  const navItems = user
+    ? [
+        { href: "/", label: "Ingatlanok", icon: Home },
+        { href: "/favorites", label: "Kedvencek", icon: Heart },
+        { href: "/create", label: "Hirdetés", icon: Plus },
+        { href: "/dashboard", label: "Saját", icon: LayoutDashboard },
+      ]
+    : [
+        { href: "/", label: "Ingatlanok", icon: Home },
+        { href: "/favorites", label: "Kedvencek", icon: Heart },
+        { href: "/login", label: "Belépés", icon: LogIn },
+      ];
 
   return (
-    <div
-      className="
-        fixed
-        bottom-0
-        left-0
-        right-0
-        z-50
-        border-t
-        border-zinc-800
-        bg-black/95
-        backdrop-blur-xl
-        md:hidden
-      "
-    >
-
-      <div
-        className="
-          grid
-          grid-cols-4
-        "
-      >
-
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-zinc-950/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-2xl md:hidden">
+      <div className={`mx-auto grid max-w-md ${user ? "grid-cols-4" : "grid-cols-3"} gap-1`}>
         {navItems.map((item) => {
-          const active =
-            pathname === item.href;
-
+          const active = pathname === item.href;
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="
-                flex
-                flex-col
-                items-center
-                justify-center
-                gap-1
-                py-3
-                text-xs
-                transition
-              "
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition ${
+                active ? "bg-emerald-400/10 text-emerald-300" : "text-zinc-500"
+              }`}
             >
-
-              <div
-                className={`
-                  text-2xl
-                  ${
-                    active
-                      ? "scale-110"
-                      : "opacity-70"
-                  }
-                `}
-              >
-                {item.icon}
-              </div>
-
-              <span
-                className={
-                  active
-                    ? "text-yellow-400"
-                    : "text-zinc-400"
-                }
-              >
-                {item.label}
-              </span>
-
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+              <span>{item.label}</span>
             </Link>
           );
         })}
-
       </div>
-
     </div>
   );
 }

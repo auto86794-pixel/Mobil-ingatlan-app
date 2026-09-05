@@ -1,121 +1,91 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import emailjs from "@emailjs/browser";
-
-const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE!;
-const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE!;
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_KEY!;
 
 type ContactModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
+  propertyTitle?: string;
 };
 
 export default function ContactModal({
   open,
-  setOpen
+  setOpen,
+  propertyTitle,
 }: ContactModalProps) {
-
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
-    message: ""
+    message: "",
   });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleChange = (e: any) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setForm((current) => ({
+      ...current,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const sendEmail = async (e: any) => {
+  const sendEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     setLoading(true);
 
     try {
-      await emailjs.send(
-        SERVICE_ID,
-        TEMPLATE_ID,
-        {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name: form.name,
           email: form.email,
-          message: form.message
-        },
-        PUBLIC_KEY
-      );
-
-      alert("Üzenet elküldve! 🎉");
-
-      setForm({
-        name: "",
-        email: "",
-        message: ""
+          message: form.message,
+          propertyTitle,
+        }),
       });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Hiba történt az üzenet küldésekor.");
+      }
+
+      alert("Üzenet elküldve! 🎉");
+      setForm({ name: "", email: "", message: "" });
       setOpen(false);
-
-    } catch (err) {
-
-      console.error(err);
-      alert("Hiba történt 😢");
-
+    } catch (error) {
+      console.error(error);
+      alert("Hiba történt az üzenet küldésekor.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const modal = open ? (
+  if (!mounted || !open) return null;
+
+  return createPortal(
     <div
-      className="
-        fixed
-        inset-0
-        z-[9999]
-        flex
-        items-start
-        justify-center
-        overflow-y-auto
-        bg-black/70
-        p-4
-      "
+      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
       onClick={() => setOpen(false)}
     >
-
       <div
-        className="
-          relative
-          mt-20
-          w-full
-          max-w-md
-          rounded-2xl
-          bg-white
-          p-6
-          shadow-2xl
-        "
+        className="relative mt-20 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-
-        {/* CLOSE */}
         <button
+          type="button"
           onClick={() => setOpen(false)}
-          className="
-            absolute
-            top-3
-            right-3
-            text-gray-500
-            transition
-            hover:text-black
-          "
+          className="absolute right-3 top-3 text-gray-500 transition hover:text-black"
+          aria-label="Bezárás"
         >
           ✕
         </button>
@@ -124,47 +94,29 @@ export default function ContactModal({
           Kapcsolatfelvétel
         </h2>
 
-        <form
-          onSubmit={sendEmail}
-          className="flex flex-col gap-4"
-        >
+        {propertyTitle && (
+          <p className="mb-4 text-sm text-gray-600">
+            Érdeklődés: <strong>{propertyTitle}</strong>
+          </p>
+        )}
 
+        <form onSubmit={sendEmail} className="flex flex-col gap-4">
           <input
             name="name"
             placeholder="Név"
             value={form.name}
             onChange={handleChange}
-            className="
-              rounded-xl
-              border
-              border-gray-300
-              bg-white
-              p-3
-              text-black
-              focus:outline-none
-              focus:ring-2
-              focus:ring-emerald-500
-            "
+            className="rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
           <input
             name="email"
             type="email"
-            placeholder="Email"
+            placeholder="E-mail"
             value={form.email}
             onChange={handleChange}
-            className="
-              rounded-xl
-              border
-              border-gray-300
-              bg-white
-              p-3
-              text-black
-              focus:outline-none
-              focus:ring-2
-              focus:ring-emerald-500
-            "
+            className="rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
@@ -173,43 +125,20 @@ export default function ContactModal({
             placeholder="Üzenet"
             value={form.message}
             onChange={handleChange}
-            className="
-              min-h-[140px]
-              rounded-xl
-              border
-              border-gray-300
-              bg-white
-              p-3
-              text-black
-              focus:outline-none
-              focus:ring-2
-              focus:ring-emerald-500
-            "
+            className="min-h-[140px] rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="
-              rounded-xl
-              bg-emerald-500
-              p-3
-              font-semibold
-              text-white
-              transition
-              hover:bg-emerald-400
-            "
+            className="rounded-xl bg-emerald-500 p-3 font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Küldés..." : "Üzenet küldése"}
           </button>
-
         </form>
       </div>
-    </div>
-  ) : null;
-
-  if (!mounted) return null;
-
-  return createPortal(modal, document.body);
+    </div>,
+    document.body
+  );
 }

@@ -1,830 +1,338 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import {
-  auth,
-  db,
-  storage,
-} from "../lib/firebase";
-
-import { onAuthStateChanged } from "firebase/auth";
-
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
-  query,
-  where,
-  getDocs,
   deleteDoc,
   doc,
+  getDocs,
+  query,
+  serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
-
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-
+import { deleteObject, ref } from "firebase/storage";
 import toast from "react-hot-toast";
-
 import {
+  CirclePlus,
+  Eye,
+  Pencil,
   Star,
   Trash2,
-  Pencil,
-  Eye,
 } from "lucide-react";
 
-type Post = {
-  id: string;
-  title: string;
-  city: string;
-  price: number;
-  description: string;
-  imageUrl: string;
-  featured?: boolean;
+import { auth, db, storage } from "../lib/firebase";
+import {
+  propertyFromFirestore,
+  type PropertyStatus,
+  type PropertyWithId,
+} from "../lib/types";
+
+type Post = PropertyWithId;
+
+type StatusOption = {
+  value: PropertyStatus;
+  label: string;
+};
+
+const STATUS_OPTIONS: StatusOption[] = [
+  { value: "active", label: "Aktív" },
+  { value: "draft", label: "Piszkozat" },
+  { value: "sold", label: "Eladva" },
+  { value: "inactive", label: "Inaktív" },
+];
+
+const statusClass: Record<PropertyStatus, string> = {
+  active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  sold: "border-blue-500/30 bg-blue-500/10 text-blue-300",
+  inactive: "border-zinc-600 bg-zinc-800 text-zinc-300",
 };
 
 export default function Dashboard() {
+  const [user, setUser] = useState<User | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const [user, setUser] =
-    useState<any>(null);
-
-  const [posts, setPosts] =
-    useState<Post[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [editingPost, setEditingPost] =
-    useState<Post | null>(null);
-
-  const [newImage, setNewImage] =
-    useState<File | null>(null);
-
-  const [preview, setPreview] =
-    useState<string | null>(null);
-
-  // 🔥 USER
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
+        window.location.href = "/login";
+        return;
+      }
+      setUser(currentUser);
+      void fetchPosts(currentUser.uid);
+    });
 
-    const unsub =
-      onAuthStateChanged(
-        auth,
-        (u) => {
-
-          if (u) {
-
-            setUser(u);
-
-            fetchPosts(u.uid);
-
-          } else {
-
-            window.location.href =
-              "/login";
-
-          }
-
-        }
-      );
-
-    return () => unsub();
-
+    return () => unsubscribe();
   }, []);
 
-  // 🔥 FETCH POSTS
-  const fetchPosts = async (
-    uid: string
-  ) => {
-
+  const fetchPosts = async (uid: string) => {
     try {
-
-      const q = query(
+      setLoading(true);
+      const propertyQuery = query(
         collection(db, "posts"),
-
-        where(
-          "userId",
-          "==",
-          uid
-        )
+        where("userId", "==", uid)
       );
-
-      const snap =
-        await getDocs(q);
-
-      const data: Post[] = [];
-
-      snap.forEach((docSnap) => {
-
-        data.push({
-          id: docSnap.id,
-          ...(docSnap.data() as any),
-        });
-
-      });
-
+      const snapshot = await getDocs(propertyQuery);
+      const data = snapshot.docs.map((item) =>
+        propertyFromFirestore(item.id, item.data())
+      );
       setPosts(data);
-
-    } catch (err) {
-
-      console.error(err);
-
-      toast.error(
-        "Hiba betöltéskor ❌"
-      );
-
+    } catch (error) {
+      console.error(error);
+      toast.error("Nem sikerült betölteni az ingatlanokat.");
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-  // ⭐ FEATURED
-  const toggleFeatured = async (
-    id: string,
-    current: boolean | undefined
-  ) => {
+  const stats = useMemo(
+    () => ({
+      all: posts.length,
+      active: posts.filter((post) => post.status === "active").length,
+      draft: posts.filter((post) => post.status === "draft").length,
+      sold: posts.filter((post) => post.status === "sold").length,
+    }),
+    [posts]
+  );
+
+  const handleStatusChange = async (post: Post, nextStatus: PropertyStatus) => {
+    if (post.status === nextStatus) return;
 
     try {
-
-      await updateDoc(
-        doc(db, "posts", id),
-        {
-          featured: !current,
-        }
-      );
-
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === id
-            ? {
-                ...post,
-                featured: !current,
-              }
-            : post
-        )
-      );
-
-      toast.success(
-        !current
-          ? "Kiemelve ⭐"
-          : "Kiemelés levéve"
-      );
-
-    } catch (err) {
-
-      console.error(err);
-
-      toast.error(
-        "Hiba kiemeléskor ❌"
-      );
-
-    }
-
-  };
-
-  // 🗑️ DELETE
-  const handleDelete = async (
-    id: string
-  ) => {
-
-    if (
-      !confirm(
-        "Biztos törlöd?"
-      )
-    ) return;
-
-    try {
-
-      await deleteDoc(
-        doc(db, "posts", id)
-      );
-
-      setPosts((prev) =>
-        prev.filter(
-          (p) => p.id !== id
-        )
-      );
-
-      toast.success(
-        "Törölve ✅"
-      );
-
-    } catch (err) {
-
-      console.error(err);
-
-      toast.error(
-        "Hiba törléskor ❌"
-      );
-
-    }
-
-  };
-
-  // ✏️ UPDATE
-  const handleUpdate = async () => {
-
-    if (!editingPost) return;
-
-    try {
-
-      let imageUrl =
-        editingPost.imageUrl;
-
-      // NEW IMAGE
-      if (newImage) {
-
-        const fileName =
-          `${Date.now()}-${newImage.name}`;
-
-        const imageRef = ref(
-          storage,
-          `images/${fileName}`
-        );
-
-        await uploadBytes(
-          imageRef,
-          newImage
-        );
-
-        imageUrl =
-          await getDownloadURL(
-            imageRef
-          );
-
-      }
-
-      const refDoc = doc(
-        db,
-        "posts",
-        editingPost.id
-      );
-
-      await updateDoc(refDoc, {
-        title:
-          editingPost.title,
-        city:
-          editingPost.city,
-        price:
-          editingPost.price,
-        description:
-          editingPost.description,
-        imageUrl,
+      setBusyId(post.id);
+      await updateDoc(doc(db, "posts", post.id), {
+        status: nextStatus,
+        updatedAt: serverTimestamp(),
       });
-
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id ===
-          editingPost.id
-            ? {
-                ...editingPost,
-                imageUrl,
-              }
-            : p
+      setPosts((current) =>
+        current.map((item) =>
+          item.id === post.id ? { ...item, status: nextStatus } : item
         )
       );
-
-      setEditingPost(null);
-
-      setNewImage(null);
-
-      setPreview(null);
-
-      toast.success(
-        "Frissítve ✨"
-      );
-
-    } catch (err) {
-
-      console.error(err);
-
-      toast.error(
-        "Hiba frissítéskor ❌"
-      );
-
+      toast.success("Státusz frissítve.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Nem sikerült módosítani a státuszt.");
+    } finally {
+      setBusyId(null);
     }
-
   };
 
-  // LOADING
-  if (loading) {
-
-    return (
-      <div
-        className="
-          flex
-          min-h-screen
-          items-center
-          justify-center
-          bg-black
-          text-white
-        "
-      >
-        Betöltés...
-      </div>
+  const removeStoredImages = async (post: Post) => {
+    const urls = Array.from(
+      new Set([post.imageUrl, ...post.images].filter(Boolean))
     );
 
+    await Promise.allSettled(
+      urls.map(async (url) => {
+        try {
+          await deleteObject(ref(storage, url));
+        } catch (error) {
+          // Régi, más struktúrában tárolt képnél a fájl törlése meghiúsulhat.
+          // Ettől a hirdetés Firestore törlése még biztonságosan végrehajtható.
+          console.warn("Kép nem törölhető a Storage-ból:", url, error);
+        }
+      })
+    );
+  };
+
+  const handleDelete = async (post: Post) => {
+    const confirmed = window.confirm(
+      `Biztosan végleg törlöd ezt a hirdetést?\n\n${post.title}`
+    );
+    if (!confirmed) return;
+
+    try {
+      setBusyId(post.id);
+      await deleteDoc(doc(db, "posts", post.id));
+      await removeStoredImages(post);
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+      toast.success("A hirdetés törölve.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Nem sikerült törölni a hirdetést.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+        Ingatlanok betöltése...
+      </div>
+    );
   }
 
   return (
-    <div
-      className="
-        min-h-screen
-        bg-black
-        p-6
-        text-white
-      "
-    >
-
-      {/* HEADER */}
-      <div className="mb-10">
-
-        <div
-          className="
-            inline-flex
-            items-center
-            gap-2
-            rounded-full
-            border border-emerald-500/20
-            bg-emerald-500/10
-            px-4
-            py-2
-            text-sm
-            text-emerald-400
-            backdrop-blur-xl
-          "
-        >
-          📊 Dashboard
-        </div>
-
-        <h1
-          className="
-            mt-4
-            text-4xl
-            font-black
-          "
-        >
-          Saját ingatlanjaid kezelése
-        </h1>
-
-        {user && (
-          <p className="mt-3 text-zinc-400">
-            Bejelentkezve:
-            {" "}
-            {user.email}
-          </p>
-        )}
-
-      </div>
-
-      {/* EMPTY */}
-      {posts.length === 0 && (
-
-        <div
-          className="
-            rounded-3xl
-            border border-zinc-800
-            bg-zinc-900
-            p-10
-            text-center
-            text-zinc-400
-          "
-        >
-          Nincs még ingatlanod 😢
-        </div>
-
-      )}
-
-      {/* GRID */}
-      <div
-        className="
-          grid
-          gap-8
-          md:grid-cols-2
-          xl:grid-cols-3
-        "
-      >
-
-        {posts.map((post) => (
-
-          <div
-            key={post.id}
-            className="
-              overflow-hidden
-              rounded-3xl
-              border border-zinc-800
-              bg-zinc-900
-              shadow-xl
-              transition
-              hover:-translate-y-1
-              hover:border-emerald-500/40
-            "
-          >
-
-            {/* IMAGE */}
-            <div className="relative">
-
-              <img
-                src={post.imageUrl}
-                className="
-                  h-56
-                  w-full
-                  object-cover
-                "
-              />
-
-              {/* FEATURED */}
-              {post.featured && (
-                <div
-                  className="
-                    absolute
-                    left-4
-                    top-4
-                    rounded-full
-                    bg-yellow-400
-                    px-3
-                    py-1
-                    text-xs
-                    font-bold
-                    text-black
-                    shadow-lg
-                  "
-                >
-                  ⭐ KIEMELT
-                </div>
-              )}
-
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">
+              Saját hirdetések
             </div>
-
-            {/* CONTENT */}
-            <div className="p-5">
-
-              <h2
-                className="
-                  text-2xl
-                  font-bold
-                "
-              >
-                {post.title}
-              </h2>
-
-              <p className="mt-1 text-zinc-400">
-                📍 {post.city}
-              </p>
-
-              <p
-                className="
-                  mt-4
-                  text-2xl
-                  font-black
-                  text-emerald-400
-                "
-              >
-                {post.price.toLocaleString()}
-                {" "}
-                Ft
-              </p>
-
-              {/* BUTTONS */}
-              <div className="mt-5 flex flex-wrap gap-2">
-
-                <a
-                  href={`/post/${post.id}`}
-                  className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    bg-emerald-500
-                    px-4
-                    py-2
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-emerald-400
-                  "
-                >
-                  <Eye size={18} />
-                  Megnézem
-                </a>
-
-                <button
-                  onClick={() =>
-                    setEditingPost(post)
-                  }
-                  className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    bg-blue-600
-                    px-4
-                    py-2
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-blue-500
-                  "
-                >
-                  <Pencil size={18} />
-                  Szerkesztés
-                </button>
-
-                <button
-                  onClick={() =>
-                    toggleFeatured(
-                      post.id,
-                      post.featured
-                    )
-                  }
-                  className={`
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    px-4
-                    py-2
-                    font-semibold
-                    text-white
-                    transition
-
-                    ${
-                      post.featured
-                        ? "bg-yellow-500 hover:bg-yellow-400"
-                        : "bg-zinc-700 hover:bg-zinc-600"
-                    }
-                  `}
-                >
-                  <Star size={18} />
-
-                  {post.featured
-                    ? "Kiemelt"
-                    : "Kiemelés"}
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleDelete(post.id)
-                  }
-                  className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    bg-red-600
-                    px-4
-                    py-2
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-red-500
-                  "
-                >
-                  <Trash2 size={18} />
-                  Törlés
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        ))}
-
-      </div>
-
-      {/* ✏️ MODAL */}
-      {editingPost && (
-
-        <div
-          className="
-            fixed
-            inset-0
-            z-50
-            flex
-            items-center
-            justify-center
-            bg-black/70
-            p-4
-            backdrop-blur-sm
-          "
-        >
-
-          <div
-            className="
-              w-full
-              max-w-md
-              rounded-3xl
-              border border-zinc-800
-              bg-zinc-900
-              p-6
-            "
-          >
-
-            <h2
-              className="
-                mb-5
-                text-2xl
-                font-bold
-              "
-            >
-              ✏️ Szerkesztés
-            </h2>
-
-            <input
-              className="
-                mb-3
-                w-full
-                rounded-xl
-                border border-zinc-700
-                bg-zinc-800
-                p-3
-                outline-none
-                focus:border-emerald-500
-              "
-              value={editingPost.title}
-              onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  title:
-                    e.target.value,
-                })
-              }
-              placeholder="Cím"
-            />
-
-            <input
-              className="
-                mb-3
-                w-full
-                rounded-xl
-                border border-zinc-700
-                bg-zinc-800
-                p-3
-                outline-none
-                focus:border-emerald-500
-              "
-              value={editingPost.city}
-              onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  city:
-                    e.target.value,
-                })
-              }
-              placeholder="Város"
-            />
-
-            <input
-              type="number"
-              className="
-                mb-3
-                w-full
-                rounded-xl
-                border border-zinc-700
-                bg-zinc-800
-                p-3
-                outline-none
-                focus:border-emerald-500
-              "
-              value={editingPost.price}
-              onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  price: Number(
-                    e.target.value
-                  ),
-                })
-              }
-              placeholder="Ár"
-            />
-
-            <textarea
-              className="
-                mb-3
-                w-full
-                rounded-xl
-                border border-zinc-700
-                bg-zinc-800
-                p-3
-                outline-none
-                focus:border-emerald-500
-              "
-              value={
-                editingPost.description
-              }
-              onChange={(e) =>
-                setEditingPost({
-                  ...editingPost,
-                  description:
-                    e.target.value,
-                })
-              }
-              placeholder="Leírás"
-            />
-
-            {/* IMAGE */}
-            <input
-              type="file"
-              className="mb-3"
-              onChange={(e) => {
-
-                const file =
-                  e.target.files?.[0];
-
-                if (file) {
-
-                  setNewImage(file);
-
-                  setPreview(
-                    URL.createObjectURL(
-                      file
-                    )
-                  );
-
-                }
-
-              }}
-            />
-
-            {/* PREVIEW */}
-            {preview && (
-
-              <img
-                src={preview}
-                className="
-                  mt-2
-                  h-44
-                  w-full
-                  rounded-xl
-                  object-cover
-                "
-              />
-
+            <h1 className="mt-4 text-3xl font-black sm:text-4xl">
+              Ingatlanjaid kezelése
+            </h1>
+            {user?.email && (
+              <p className="mt-2 text-zinc-400">Bejelentkezve: {user.email}</p>
             )}
-
-            {/* ACTIONS */}
-            <div className="mt-5 flex gap-3">
-
-              <button
-                onClick={handleUpdate}
-                className="
-                  rounded-xl
-                  bg-emerald-500
-                  px-5
-                  py-3
-                  font-semibold
-                  text-white
-                  transition
-                  hover:bg-emerald-400
-                "
-              >
-                Mentés
-              </button>
-
-              <button
-                onClick={() => {
-
-                  setEditingPost(
-                    null
-                  );
-
-                  setPreview(
-                    null
-                  );
-
-                  setNewImage(
-                    null
-                  );
-
-                }}
-                className="
-                  rounded-xl
-                  bg-zinc-700
-                  px-5
-                  py-3
-                  font-semibold
-                  text-white
-                  transition
-                  hover:bg-zinc-600
-                "
-              >
-                Mégse
-              </button>
-
-            </div>
-
           </div>
 
+          <Link
+            href="/create"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-white transition hover:bg-emerald-400"
+          >
+            <CirclePlus size={20} /> Új ingatlan
+          </Link>
         </div>
 
-      )}
+        <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Összes" value={stats.all} />
+          <StatCard label="Aktív" value={stats.active} />
+          <StatCard label="Piszkozat" value={stats.draft} />
+          <StatCard label="Eladva" value={stats.sold} />
+        </div>
 
+        {posts.length === 0 ? (
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-10 text-center">
+            <h2 className="text-xl font-bold">Még nincs feltöltött ingatlanod.</h2>
+            <p className="mt-2 text-zinc-400">
+              Az első hirdetésedet az „Új ingatlan” gombbal hozhatod létre.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post) => {
+              const statusLabel =
+                STATUS_OPTIONS.find((option) => option.value === post.status)
+                  ?.label ?? "Aktív";
+              const busy = busyId === post.id;
+
+              return (
+                <article
+                  key={post.id}
+                  className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-xl"
+                >
+                  <div className="relative bg-zinc-800">
+                    {post.imageUrl ? (
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title || "Ingatlan"}
+                        className="h-56 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-56 items-center justify-center text-zinc-500">
+                        Nincs borítókép
+                      </div>
+                    )}
+
+                    <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass[post.status]}`}
+                      >
+                        {statusLabel}
+                      </span>
+                      {post.featured && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-black">
+                          <Star size={13} fill="currentColor" /> Kiemelt
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <h2 className="text-xl font-bold">{post.title}</h2>
+                    <p className="mt-1 text-zinc-400">
+                      📍 {[post.city, post.district].filter(Boolean).join(", ")}
+                    </p>
+                    <p className="mt-2 min-h-5 text-sm text-zinc-500">
+                      {[
+                        post.propertyType,
+                        post.area ? `${post.area} m²` : "",
+                        post.rooms ? `${post.rooms} szoba` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")}
+                    </p>
+                    <p className="mt-4 text-2xl font-black text-emerald-400">
+                      {post.price.toLocaleString("hu-HU")} Ft
+                    </p>
+
+                    <div className="mt-5">
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Hirdetés státusza
+                      </label>
+                      <select
+                        value={post.status}
+                        disabled={busy}
+                        onChange={(event) =>
+                          void handleStatusChange(
+                            post,
+                            event.target.value as PropertyStatus
+                          )
+                        }
+                        className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm outline-none focus:border-emerald-500 disabled:opacity-50"
+                      >
+                        {STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-2">
+                      <Link
+                        href={`/post/${post.id}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 font-semibold transition hover:bg-emerald-400"
+                      >
+                        <Eye size={17} /> Megnézem
+                      </Link>
+                      <Link
+                        href={`/edit/${post.id}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 font-semibold transition hover:bg-blue-500"
+                      >
+                        <Pencil size={17} /> Szerkesztés
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleDelete(post)}
+                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2 font-semibold transition hover:bg-red-500 disabled:opacity-50"
+                      >
+                        <Trash2 size={17} />
+                        {busy ? "Művelet..." : "Hirdetés törlése"}
+                      </button>
+                    </div>
+
+                    {post.featured && (
+                      <p className="mt-4 text-xs text-zinc-500">
+                        A kiemelést az admin kezeli; a hirdető nem módosíthatja.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+      <p className="text-sm text-zinc-500">{label}</p>
+      <p className="mt-1 text-3xl font-black">{value}</p>
     </div>
   );
 }

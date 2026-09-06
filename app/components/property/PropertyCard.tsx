@@ -6,6 +6,7 @@ import { ArrowUpRight, BedDouble, Heart, MapPin, Maximize2, MessageCircle, Phone
 import { useState } from "react";
 
 import ContactModal from "../ContactModal";
+import { formatPrice } from "../../lib/format";
 
 type PropertyCardProps = {
   id: string;
@@ -83,7 +84,7 @@ export default function PropertyCard({
 
           <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-3">
             <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType || "Eladó ingatlan"}</div>
-            <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{price.toLocaleString("hu-HU")} Ft</div>
+            <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{formatPrice(price)}</div>
           </div>
         </div>
 

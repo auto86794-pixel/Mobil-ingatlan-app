@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useParams } from "next/navigation";
-import { MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, MessageCircle, Phone, Share2 } from "lucide-react";
 
 import { db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
+import { formatPrice } from "@/app/lib/format";
+import ContactModal from "@/app/components/ContactModal";
 
 const PropertyMap = dynamic(() => import("@/app/components/map/PropertyMap"), { ssr: false });
 
@@ -26,6 +28,9 @@ export default function PropertyClient() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const swipeHandledRef = useRef(false);
   const [loading, setLoading] = useState(false);
+  const [similarProperties, setSimilarProperties] = useState<PropertyWithId[]>([]);
+  const [shareNotice, setShareNotice] = useState("");
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -36,6 +41,23 @@ export default function PropertyClient() {
         const data = propertyFromFirestore(docSnap.id, docSnap.data());
         setProperty(data);
         setSelectedImageIndex(0);
+
+        const allSnapshot = await getDocs(collection(db, "posts"));
+        const candidates = allSnapshot.docs
+          .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
+          .filter((item) => item.id !== data.id && item.status === "active" && Boolean(item.imageUrl))
+          .map((item) => ({
+            item,
+            score:
+              (item.city === data.city ? 4 : 0) +
+              (item.district && item.district === data.district ? 4 : 0) +
+              (item.propertyType && item.propertyType === data.propertyType ? 3 : 0) +
+              (data.price > 0 && Math.abs(item.price - data.price) / data.price <= 0.25 ? 2 : 0),
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map(({ item }) => item);
+        setSimilarProperties(candidates);
       } catch (error) {
         console.error(error);
       }
@@ -80,6 +102,21 @@ export default function PropertyClient() {
     swipeHandledRef.current = true;
     if (distance > 0) showPreviousImage();
     else showNextImage();
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: property?.title || "DebrecenHomes ingatlan", url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareNotice("Link kimásolva");
+      window.setTimeout(() => setShareNotice(""), 1800);
+    } catch (error) {
+      if ((error as DOMException)?.name !== "AbortError") console.error("Megosztási hiba:", error);
+    }
   };
 
   const handleMainImageClick = () => {
@@ -131,6 +168,14 @@ export default function PropertyClient() {
   return (
     <div className="min-h-screen bg-[#f7f4ee] px-4 pb-48 pt-4 text-[#18201b] md:p-6">
       <div className="mx-auto max-w-6xl">
+        <div className="mb-3 flex items-center justify-between gap-3 sm:mb-5">
+          <button type="button" onClick={() => history.back()} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#344139] shadow-sm hover:border-[#b9d1c0]">
+            <ArrowLeft size={17} /> Vissza a találatokhoz
+          </button>
+          <button type="button" onClick={handleShare} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#176b3a] shadow-sm hover:border-[#b9d1c0]">
+            <Share2 size={17} /> <span className="hidden sm:inline">Megosztás</span>
+          </button>
+        </div>
         {selectedImage ? (
           <div className="relative overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white">
             <button
@@ -144,7 +189,7 @@ export default function PropertyClient() {
               <img
                 src={selectedImage}
                 alt={`${property.title} ${selectedImageIndex + 1}. kép`}
-                className="h-[300px] w-full object-cover transition-all duration-300 sm:h-[500px]"
+                className="h-[300px] w-full object-cover transition-all duration-300 sm:h-[500px]" decoding="async" fetchPriority="high"
               />
             </button>
 
@@ -202,7 +247,7 @@ export default function PropertyClient() {
                 <img
                   src={image}
                   alt={`${property.title} ${index + 1}. bélyegkép`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover" loading="lazy" decoding="async"
                 />
               </button>
             ))}
@@ -216,7 +261,7 @@ export default function PropertyClient() {
           </div>
           <h1 className="mt-3 text-[28px] font-black leading-[1.08] tracking-tight sm:mt-4 sm:text-5xl">{property.title}</h1>
           <p className="mt-2 text-base text-[#6c776f] sm:mt-3 sm:text-xl">📍 {property.city}{property.district ? `, ${property.district}` : ""}</p>
-          <p className="mt-3 text-[30px] font-black tracking-tight text-[#176b3a] sm:mt-6 sm:text-4xl">{property.price.toLocaleString("hu-HU")} Ft</p>
+          <p className="mt-3 text-[30px] font-black tracking-tight text-[#176b3a] sm:mt-6 sm:text-4xl">{formatPrice(property.price)}</p>
 
           <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
             {property.area ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">📐 {property.area} m²</div> : null}
@@ -276,9 +321,36 @@ export default function PropertyClient() {
             </div>}
           </div>
 
+          {similarProperties.length > 0 && (
+            <section className="mt-10">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Még érdemes megnézni</p>
+                  <h2 className="mt-1 text-2xl font-black text-[#18201b] sm:text-3xl">Hasonló ingatlanok</h2>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {similarProperties.map((item) => (
+                  <a key={item.id} href={`/post/${item.id}`} className="group overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="h-44 overflow-hidden bg-[#ece7de]">
+                      <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                    </div>
+                    <div className="p-4">
+                      <p className="line-clamp-2 font-black leading-snug text-[#172019]">{item.title}</p>
+                      <p className="mt-1 text-sm text-[#6c776f]">{item.city}{item.district ? `, ${item.district}` : ""}</p>
+                      <p className="mt-3 text-lg font-black text-[#176b3a]">{formatPrice(item.price)}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
           {property.lat && property.lng ? <div className="mt-10"><h2 className="mb-4 text-3xl font-black text-[#18201b]">📍 Elhelyezkedés</h2><PropertyMap lat={property.lat} lng={property.lng} title={property.title} /></div> : null}
         </div>
       </div>
+
+      {shareNotice && <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{shareNotice}</div>}
 
       {!galleryOpen && (property.phone || property.email) && (
         <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-3 pb-3 pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
@@ -294,7 +366,7 @@ export default function PropertyClient() {
             {property.email ? (
               <button
                 type="button"
-                onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                onClick={() => setContactModalOpen(true)}
                 className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
               >
                 <MessageCircle size={18} /> Érdeklődöm
@@ -303,6 +375,13 @@ export default function PropertyClient() {
           </div>
         </div>
       )}
+
+      <ContactModal
+        open={contactModalOpen}
+        setOpen={setContactModalOpen}
+        propertyTitle={property.title}
+        propertyId={property.id}
+      />
 
       {galleryOpen && selectedImage && (
         <div
@@ -369,7 +448,7 @@ export default function PropertyClient() {
                   }`}
                   aria-label={`${index + 1}. kép megnyitása`}
                 >
-                  <img src={image} alt="" className="h-full w-full object-cover" />
+                  <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -63,6 +63,41 @@ export default function Home() {
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteNotice, setFavoriteNotice] = useState("");
+  const searchStateReady = useRef(false);
+  const skipNextFilterSave = useRef(true);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("debrecenhomes-search-filters");
+      if (saved) setFilters({ ...emptyFilters, ...JSON.parse(saved) });
+    } catch {
+      // Hibás vagy régi mentett keresési állapotot figyelmen kívül hagyjuk.
+    } finally {
+      searchStateReady.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!searchStateReady.current) return;
+    if (skipNextFilterSave.current) {
+      skipNextFilterSave.current = false;
+      return;
+    }
+    sessionStorage.setItem("debrecenhomes-search-filters", JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    if (loading) return;
+    const savedScroll = Number(sessionStorage.getItem("debrecenhomes-search-scroll") || "0");
+    if (savedScroll > 0) requestAnimationFrame(() => window.scrollTo({ top: savedScroll, behavior: "auto" }));
+
+    const rememberScroll = () => sessionStorage.setItem("debrecenhomes-search-scroll", String(window.scrollY));
+    window.addEventListener("pagehide", rememberScroll);
+    return () => {
+      rememberScroll();
+      window.removeEventListener("pagehide", rememberScroll);
+    };
+  }, [loading]);
 
   useEffect(() => {
     const loadFavorites = async () => {

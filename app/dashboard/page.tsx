@@ -63,6 +63,10 @@ export default function Dashboard() {
         window.location.href = "/login";
         return;
       }
+      if (!currentUser.emailVerified) {
+        window.location.href = "/login?verify=1";
+        return;
+      }
       setUser(currentUser);
       void fetchPosts(currentUser.uid);
     });

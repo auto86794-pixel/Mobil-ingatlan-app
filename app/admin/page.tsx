@@ -75,6 +75,10 @@ export default function AdminPage() {
         router.replace("/login");
         return;
       }
+      if (!user.emailVerified) {
+        router.replace("/login?verify=1");
+        return;
+      }
 
       try {
         const userRef = doc(db, "users", user.uid);

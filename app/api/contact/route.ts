@@ -1,271 +1,148 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const rateLimitStore = new Map<string, number[]>();
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const recent = (rateLimitStore.get(ip) || []).filter((timestamp) => timestamp > cutoff);
+
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitStore.set(ip, recent);
+    return true;
+  }
+
+  recent.push(now);
+  rateLimitStore.set(ip, recent);
+
+  // Időnként takarítsuk a régi bejegyzéseket.
+  if (rateLimitStore.size > 500) {
+    for (const [key, timestamps] of rateLimitStore.entries()) {
+      const active = timestamps.filter((timestamp) => timestamp > cutoff);
+      if (active.length === 0) rateLimitStore.delete(key);
+      else rateLimitStore.set(key, active);
+    }
+  }
+
+  return false;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function cleanText(value: unknown, maxLength: number): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
 export async function POST(req: Request) {
-
   try {
-
-    // =========================
-    // RESEND
-    // =========================
-
-    const resend = new Resend(
-      process.env.RESEND_API_KEY
-    );
-
-    // =========================
-    // BODY
-    // =========================
+    const ip = getClientIp(req);
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { success: false, error: "Túl sok üzenetet küldtél rövid időn belül. Próbáld újra később." },
+        { status: 429, headers: { "Retry-After": "600" } }
+      );
+    }
 
     const body = await req.json();
 
-    const name =
-      body.name?.trim();
-
-    const email =
-      body.email?.trim();
-
-    const message =
-      body.message?.trim();
-
-    const propertyTitle =
-      body.propertyTitle?.trim();
-
-    // =========================
-    // VALIDATION
-    // =========================
-
-    if (
-      !name ||
-      !email ||
-      !message
-    ) {
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Missing required fields",
-        },
-        {
-          status: 400,
-        }
-      );
-
+    // Honeypot: normál felhasználó ezt a mezőt soha nem tölti ki.
+    const website = cleanText(body.website, 200);
+    if (website) {
+      return NextResponse.json({ success: true }, { status: 200 });
     }
 
-    // =========================
-    // EMAIL VALIDATION
-    // =========================
+    const name = cleanText(body.name, 100);
+    const email = cleanText(body.email, 254).toLowerCase();
+    const message = cleanText(body.message, 3000);
+    const propertyTitle = cleanText(body.propertyTitle, 200);
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (
-      !emailRegex.test(email)
-    ) {
-
+    if (!name || !email || !message) {
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Invalid email address",
-        },
-        {
-          status: 400,
-        }
+        { success: false, error: "A név, e-mail cím és üzenet megadása kötelező." },
+        { status: 400 }
       );
-
     }
 
-    // =========================
-    // RECIPIENT
-    // =========================
-
-    const recipientEmail =
-      process.env.CONTACT_TO_EMAIL;
-
-    console.log(
-      "CONTACT_TO_EMAIL:",
-      recipientEmail
-    );
-
-    console.log(
-      "RESEND_API_KEY_EXISTS:",
-      !!process.env.RESEND_API_KEY
-    );
-
-    if (!recipientEmail) {
-
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Missing CONTACT_TO_EMAIL",
-        },
-        {
-          status: 500,
-        }
+        { success: false, error: "Érvénytelen e-mail cím." },
+        { status: 400 }
       );
-
     }
 
-    // =========================
-    // SEND ADMIN EMAIL
-    // =========================
+    const recipientEmail = process.env.CONTACT_TO_EMAIL;
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!recipientEmail || !apiKey) {
+      console.error("CONTACT_API_CONFIG_MISSING");
+      return NextResponse.json(
+        { success: false, error: "Az üzenetküldés átmenetileg nem elérhető." },
+        { status: 500 }
+      );
+    }
 
-    const inquiryEmail =
-      await resend.emails.send({
+    const resend = new Resend(apiKey);
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = escapeHtml(message).replace(/\r?\n/g, "<br />");
+    const safePropertyTitle = escapeHtml(propertyTitle || "Ingatlan");
 
-        // VERIFIED DOMAIN SENDER
-        from:
-          "inquiries@debrecenhomes.hu",
+    const inquiryEmail = await resend.emails.send({
+      from: "DebrecenHomes <inquiries@debrecenhomes.hu>",
+      to: recipientEmail,
+      replyTo: email,
+      subject: `Új érdeklődés — ${propertyTitle || "ingatlan"}`,
+      html: `
+        <div style="font-family:Arial,Helvetica,sans-serif;padding:32px;color:#172019;line-height:1.7">
+          <h2>Új ingatlanérdeklődés</h2>
+          <p><strong>Ingatlan:</strong><br/>${safePropertyTitle}</p>
+          <p><strong>Név:</strong><br/>${safeName}</p>
+          <p><strong>E-mail:</strong><br/>${safeEmail}</p>
+          <p><strong>Üzenet:</strong><br/>${safeMessage}</p>
+        </div>
+      `,
+    });
 
-        to: recipientEmail,
+    if (inquiryEmail.error) throw inquiryEmail.error;
 
-        replyTo: email,
+    const autoReply = await resend.emails.send({
+      from: "DebrecenHomes <inquiries@debrecenhomes.hu>",
+      to: email,
+      subject: "Megkaptuk az érdeklődésed",
+      html: `
+        <div style="background:#fff;padding:40px 24px;font-family:Arial,Helvetica,sans-serif;color:#172019;line-height:1.8;max-width:640px;margin:0 auto">
+          <h1>Köszönjük, ${safeName}!</h1>
+          <p>Megkaptuk az érdeklődésed a(z) <strong>${safePropertyTitle}</strong> hirdetéssel kapcsolatban.</p>
+          <p>Hamarosan felvesszük veled a kapcsolatot.</p>
+          <p>— DebrecenHomes</p>
+        </div>
+      `,
+    });
 
-        subject:
-          `New Inquiry — ${
-            propertyTitle ||
-            "Luxury Property"
-          }`,
+    if (autoReply.error) throw autoReply.error;
 
-        html: `
-          <div style="
-            font-family: Arial, Helvetica, sans-serif;
-            padding: 32px;
-            color: #111111;
-            line-height: 1.7;
-          ">
-
-            <h2>
-              New Property Inquiry
-            </h2>
-
-            <p>
-              <strong>Property:</strong><br/>
-              ${
-                propertyTitle ||
-                "Luxury Property"
-              }
-            </p>
-
-            <p>
-              <strong>Name:</strong><br/>
-              ${name}
-            </p>
-
-            <p>
-              <strong>Email:</strong><br/>
-              ${email}
-            </p>
-
-            <p>
-              <strong>Message:</strong><br/>
-              ${message}
-            </p>
-
-          </div>
-        `,
-      });
-
-    console.log(
-      "INQUIRY EMAIL:",
-      inquiryEmail
-    );
-
-    // =========================
-    // AUTO REPLY
-    // =========================
-
-    const autoReply =
-      await resend.emails.send({
-
-        // VERIFIED DOMAIN SENDER
-        from:
-          "inquiries@debrecenhomes.hu",
-
-        to: email,
-
-        subject:
-          "We received your inquiry",
-
-        html: `
-          <div style="
-            background-color: #ffffff;
-            padding: 48px 24px;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #111111;
-            line-height: 1.8;
-            max-width: 640px;
-            margin: 0 auto;
-          ">
-
-            <h1>
-              Thank you, ${name}
-            </h1>
-
-            <p>
-              Your inquiry regarding
-              <strong>
-                ${
-                  propertyTitle ||
-                  "this property"
-                }
-              </strong>
-              has been received.
-            </p>
-
-            <p>
-              Our concierge team
-              will contact you shortly.
-            </p>
-
-            <p>
-              — DebHome
-            </p>
-
-          </div>
-        `,
-      });
-
-    console.log(
-      "AUTO REPLY:",
-      autoReply
-    );
-
-    // =========================
-    // SUCCESS
-    // =========================
-
-    return NextResponse.json(
-      {
-        success: true,
-      },
-      {
-        status: 200,
-      }
-    );
-
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-
-    console.error(
-      "CONTACT_API_ERROR:",
-      error
-    );
-
+    console.error("CONTACT_API_ERROR", error);
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Internal server error",
-      },
-      {
-        status: 500,
-      }
+      { success: false, error: "Hiba történt az üzenet küldésekor." },
+      { status: 500 }
     );
-
   }
-
 }

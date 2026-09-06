@@ -8,6 +8,7 @@ import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { auth, db, storage } from "../../lib/firebase";
+import { createSafeImageName, validateImageFile } from "../../lib/imageUpload";
 import { propertyFromFirestore, type PropertyStatus } from "../../lib/types";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
@@ -44,6 +45,7 @@ export default function EditPropertyPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) return router.replace("/login");
+      if (!currentUser.emailVerified) return router.replace("/login?verify=1");
       setUser(currentUser);
       try {
         const docRef = doc(db, "posts", params.id as string);
@@ -85,9 +87,14 @@ export default function EditPropertyPage() {
       setUploading(true);
       const uploadedUrls: string[] = [];
       for (const file of Array.from(files)) {
-        const safeName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.name}`;
+        const validationError = validateImageFile(file);
+        if (validationError) {
+          alert(validationError);
+          return;
+        }
+        const safeName = createSafeImageName(file);
         const imageRef = ref(storage, `properties/${user.uid}/${safeName}`);
-        await uploadBytes(imageRef, file);
+        await uploadBytes(imageRef, file, { contentType: file.type });
         uploadedUrls.push(await getDownloadURL(imageRef));
       }
       setImages((prev) => [...prev, ...uploadedUrls]);
@@ -120,6 +127,7 @@ export default function EditPropertyPage() {
 
   const handleSave = async () => {
     if (!user) return router.replace("/login");
+    if (!user.emailVerified) return router.replace("/login?verify=1");
     if (!title.trim() || !city.trim() || !price || !area || !rooms) {
       alert("A cím, város, ár, alapterület és szobaszám megadása kötelező.");
       return;
@@ -163,7 +171,7 @@ export default function EditPropertyPage() {
         <div className="grid gap-4 md:grid-cols-2">{field("Állapot", condition, setCondition)}{field("Emelet", floor, setFloor)}{field("Erkély / terasz", balcony, setBalcony)}{field("Parkolás / garázs", parking, setParking)}{field("Fűtés", heating, setHeating)}</div>
         <div className="mb-6"><label className="mb-2 block text-[#6c776f]">Leírás</label><textarea rows={7} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} /></div>
         <div className="grid gap-4 md:grid-cols-2">{field("Telefonszám", phone, setPhone)}{field("E-mail", email, setEmail, "", "email")}</div>
-        <div className="mb-6"><label className="mb-3 block text-[#6c776f]">Új képek hozzáadása</label><input type="file" multiple accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4" />{uploading && <p className="mt-2 text-sm text-[#a1813a]">Képek feltöltése...</p>}</div>
+        <div className="mb-6"><label className="mb-3 block text-[#6c776f]">Új képek hozzáadása</label><input type="file" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={handleImageUpload} className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4" />{uploading && <p className="mt-2 text-sm text-[#a1813a]">Képek feltöltése...</p>}</div>
         {images.length > 0 && (
           <div className="mb-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {images.map((image, index) => (

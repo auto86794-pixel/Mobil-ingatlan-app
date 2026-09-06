@@ -20,6 +20,7 @@ export default function ContactModal({
     name: "",
     email: "",
     message: "",
+    website: "",
   });
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function ContactModal({
           email: form.email,
           message: form.message,
           propertyTitle,
+          website: form.website,
         }),
       });
 
@@ -60,7 +62,7 @@ export default function ContactModal({
       }
 
       alert("Üzenet elküldve! 🎉");
-      setForm({ name: "", email: "", message: "" });
+      setForm({ name: "", email: "", message: "", website: "" });
       setOpen(false);
     } catch (error) {
       console.error(error);
@@ -101,6 +103,10 @@ export default function ContactModal({
         )}
 
         <form onSubmit={sendEmail} className="flex flex-col gap-4">
+          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Weboldal</label>
+            <input id="website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
+          </div>
           <input
             name="name"
             placeholder="Név"

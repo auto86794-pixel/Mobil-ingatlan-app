@@ -2,11 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Building2, Heart, Mail, Search, ShieldCheck } from "lucide-react";
 
 import { auth, db } from "../lib/firebase";
+import { authErrorMessage } from "../lib/authErrors";
 
 export default function Login() {
   const router = useRouter();
@@ -14,35 +23,158 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => { if (user) router.replace("/dashboard"); });
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setUnverifiedUser(null);
+        return;
+      }
+
+      await user.reload();
+      const refreshedUser = auth.currentUser;
+      if (refreshedUser?.emailVerified) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setUnverifiedUser(refreshedUser);
+      setEmail((current) => current || refreshedUser?.email || "");
+      setNotice("A fiókod még nincs megerősítve. Nyisd meg a tőlünk kapott e-mailt, majd kattints a megerősítő linkre.");
+    });
     return () => unsubscribe();
   }, [router]);
 
+  const validateEmail = () => {
+    const value = email.trim();
+    if (!value) {
+      setError("Add meg az e-mail címed.");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setError("Az e-mail cím formátuma nem megfelelő.");
+      return false;
+    }
+    return true;
+  };
+
   const validate = () => {
-    if (!email.trim() || !password) { setError("Add meg az e-mail-címed és a jelszavad."); return false; }
-    if (password.length < 6) { setError("A jelszó legalább 6 karakter legyen."); return false; }
-    setError(""); return true;
+    if (!validateEmail()) return false;
+    if (!password) {
+      setError("Add meg a jelszavad.");
+      return false;
+    }
+    if (password.length < 6) {
+      setError("A jelszó legalább 6 karakter legyen.");
+      return false;
+    }
+    setError("");
+    return true;
   };
 
   const handleLogin = async () => {
     if (!validate()) return;
-    try { setLoading(true); setError(""); await signInWithEmailAndPassword(auth, email.trim(), password); router.replace("/dashboard"); }
-    catch (err) { console.error(err); setError("Sikertelen bejelentkezés. Ellenőrizd az adatokat."); }
-    finally { setLoading(false); }
+    try {
+      setLoading(true);
+      setError("");
+      setNotice("");
+      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await credential.user.reload();
+      const refreshedUser = auth.currentUser;
+
+      if (!refreshedUser?.emailVerified) {
+        setUnverifiedUser(refreshedUser);
+        setNotice("Az e-mail címed még nincs megerősítve. A folytatáshoz kattints a megerősítő levélben található linkre.");
+        return;
+      }
+
+      router.replace("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError(authErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
     if (!validate()) return;
     try {
-      setLoading(true); setError("");
+      setLoading(true);
+      setError("");
+      setNotice("");
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await setDoc(doc(db, "users", credential.user.uid), { email: credential.user.email, role: "user", createdAt: serverTimestamp() });
-      router.replace("/dashboard");
-    } catch (err) { console.error(err); setError("A regisztráció nem sikerült. Lehet, hogy az e-mail már használatban van."); }
-    finally { setLoading(false); }
+      await setDoc(doc(db, "users", credential.user.uid), {
+        email: credential.user.email,
+        role: "user",
+        createdAt: serverTimestamp(),
+      });
+      await sendEmailVerification(credential.user);
+      setUnverifiedUser(credential.user);
+      setNotice("A regisztráció sikerült. Küldtünk egy megerősítő e-mailt. A fiókod a link megnyitása után használható.");
+    } catch (err) {
+      console.error(err);
+      setError(authErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedUser) return;
+    try {
+      setLoading(true);
+      setError("");
+      await sendEmailVerification(unverifiedUser);
+      setNotice("Új megerősítő e-mailt küldtünk. Nézd meg a Beérkezett és a Spam mappát is.");
+    } catch (err) {
+      console.error(err);
+      setError(authErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckVerification = async () => {
+    if (!unverifiedUser) return;
+    try {
+      setLoading(true);
+      setError("");
+      await unverifiedUser.reload();
+      if (auth.currentUser?.emailVerified) {
+        router.replace("/dashboard");
+      } else {
+        setError("Az e-mail cím még nincs megerősítve. Előbb nyisd meg a levélben található linket.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!validateEmail()) return;
+    try {
+      setLoading(true);
+      setError("");
+      await sendPasswordResetEmail(auth, email.trim());
+      setNotice("Ha ehhez az e-mail címhez tartozik fiók, elküldtük a jelszó-visszaállító levelet.");
+    } catch (err) {
+      console.error(err);
+      setError(authErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUseAnotherAccount = async () => {
+    await signOut(auth);
+    setUnverifiedUser(null);
+    setNotice("");
+    setError("");
+    setPassword("");
   };
 
   return (
@@ -70,19 +202,39 @@ export default function Login() {
               <h2 className="text-3xl font-black tracking-tight text-[#172019]">Debrecen<span className="text-[#176b3a]">Homes</span></h2>
               <p className="mt-2 text-sm text-[#737e76]">Jelentkezz be, vagy hozz létre új fiókot.</p>
 
-              <div className="mt-7 grid grid-cols-2 rounded-2xl bg-[#f5f2ec] p-1">
-                <button type="button" onClick={() => {setMode("login");setError("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "login" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Belépés</button>
-                <button type="button" onClick={() => {setMode("register");setError("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "register" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Regisztráció</button>
-              </div>
+              {!unverifiedUser && (
+                <div className="mt-7 grid grid-cols-2 rounded-2xl bg-[#f5f2ec] p-1">
+                  <button type="button" onClick={() => {setMode("login");setError("");setNotice("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "login" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Belépés</button>
+                  <button type="button" onClick={() => {setMode("register");setError("");setNotice("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "register" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Regisztráció</button>
+                </div>
+              )}
 
-              <label className="mt-6 block text-sm font-bold text-[#3f4a43]">E-mail cím</label>
-              <div className="relative mt-2"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#909991]" size={18}/><input className="dh-input rounded-2xl py-3.5 pl-11 pr-4" type="email" placeholder="nev@email.hu" value={email} onChange={(e)=>setEmail(e.target.value)} autoComplete="email" /></div>
-              <label className="mt-4 block text-sm font-bold text-[#3f4a43]">Jelszó</label>
-              <input className="dh-input mt-2 rounded-2xl px-4 py-3.5" type="password" placeholder="Legalább 6 karakter" value={password} onChange={(e)=>setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
+              {unverifiedUser ? (
+                <div className="mt-7">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                    <strong>E-mail megerősítés szükséges</strong>
+                    <p className="mt-1">{notice || `Küldtünk egy megerősítő levelet erre a címre: ${unverifiedUser.email || email}`}</p>
+                  </div>
+                  {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+                  <button type="button" onClick={handleCheckVerification} disabled={loading} className="mt-5 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white transition hover:bg-[#115b30] disabled:opacity-60">{loading ? "Ellenőrzés..." : "Már megerősítettem"}</button>
+                  <button type="button" onClick={handleResendVerification} disabled={loading} className="mt-3 w-full rounded-2xl border border-[#d8d2c7] bg-white p-3.5 font-bold text-[#176b3a] transition hover:bg-[#f7f4ee] disabled:opacity-60">Megerősítő e-mail újraküldése</button>
+                  <button type="button" onClick={handleUseAnotherAccount} className="mt-4 w-full text-sm font-semibold text-[#6c776f] hover:text-[#172019]">Másik e-mail címet használok</button>
+                </div>
+              ) : (
+                <>
+                  <label className="mt-6 block text-sm font-bold text-[#3f4a43]">E-mail cím</label>
+                  <div className="relative mt-2"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#909991]" size={18}/><input className="dh-input rounded-2xl py-3.5 pl-11 pr-4" type="email" placeholder="nev@email.hu" value={email} onChange={(e)=>setEmail(e.target.value)} autoComplete="email" /></div>
+                  <label className="mt-4 block text-sm font-bold text-[#3f4a43]">Jelszó</label>
+                  <input className="dh-input mt-2 rounded-2xl px-4 py-3.5" type="password" placeholder="Legalább 6 karakter" value={password} onChange={(e)=>setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
 
-              {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+                  {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+                  {notice && <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</div>}
 
-              <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} className="mt-6 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Feldolgozás..." : mode === "login" ? "Belépés" : "Fiók létrehozása"}</button>
+                  <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} className="mt-6 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Feldolgozás..." : mode === "login" ? "Belépés" : "Fiók létrehozása"}</button>
+                  {mode === "login" && <button type="button" onClick={handlePasswordReset} disabled={loading} className="mt-4 w-full text-sm font-semibold text-[#176b3a] hover:underline disabled:opacity-60">Elfelejtetted a jelszavad?</button>}
+                </>
+              )}
+
               <p className="mt-5 text-center text-xs leading-5 text-[#8a938c]">A belépéssel a DebrecenHomes felületét használod. Adataidat kizárólag a szolgáltatás működéséhez kezeljük.</p>
             </div>
           </div>

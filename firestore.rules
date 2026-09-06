@@ -6,17 +6,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function verified() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
-      return signedIn()
+      return verified()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
     match /posts/{postId} {
       allow read: if true;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if signedIn()
+
+      allow create: if verified()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.featured == false;
+
+      allow update: if verified()
         && request.resource.data.userId == resource.data.userId
         && (
           isAdmin()
@@ -25,7 +32,8 @@ service cloud.firestore {
             && request.resource.data.featured == resource.data.featured
           )
         );
-      allow delete: if signedIn()
+
+      allow delete: if verified()
         && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
@@ -58,7 +66,7 @@ service cloud.firestore {
           || isAdmin()
         );
 
-      allow delete: if signedIn()
+      allow delete: if verified()
         && (request.auth.uid == userId || isAdmin());
     }
 

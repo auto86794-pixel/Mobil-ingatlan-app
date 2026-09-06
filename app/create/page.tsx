@@ -8,6 +8,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { auth, db, storage } from "../lib/firebase";
+import { createSafeImageName, validateImageFile } from "../lib/imageUpload";
 import type { PropertyStatus } from "../lib/types";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
@@ -47,6 +48,10 @@ export default function Create() {
         router.replace("/login");
         return;
       }
+      if (!currentUser.emailVerified) {
+        router.replace("/login?verify=1");
+        return;
+      }
       setUser(currentUser);
       setEmail((current) => current || currentUser.email || "");
       setAuthLoading(false);
@@ -61,9 +66,14 @@ export default function Create() {
       setUploading(true);
       const uploadedUrls: string[] = [];
       for (const file of Array.from(files)) {
-        const safeName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.name}`;
+        const validationError = validateImageFile(file);
+        if (validationError) {
+          alert(validationError);
+          return;
+        }
+        const safeName = createSafeImageName(file);
         const imageRef = ref(storage, `properties/${user.uid}/${safeName}`);
-        await uploadBytes(imageRef, file);
+        await uploadBytes(imageRef, file, { contentType: file.type });
         uploadedUrls.push(await getDownloadURL(imageRef));
       }
       setImages((prev) => [...prev, ...uploadedUrls]);
@@ -77,6 +87,7 @@ export default function Create() {
 
   const handleSubmit = async () => {
     if (!user) return router.replace("/login");
+    if (!user.emailVerified) return router.replace("/login?verify=1");
     if (!title.trim() || !city.trim() || !price || !area || !rooms) {
       alert("A cím, város, ár, alapterület és szobaszám megadása kötelező.");
       return;
@@ -181,7 +192,7 @@ export default function Create() {
 
         <div className="mb-6">
           <label className="mb-3 block text-sm text-[#6c776f]">Képek</label>
-          <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4" />
+          <input type="file" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={handleImageUpload} className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4" />
           {uploading && <p className="mt-2 text-sm text-[#a1813a]">Képek feltöltése...</p>}
         </div>
 

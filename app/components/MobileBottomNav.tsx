@@ -28,7 +28,7 @@ export default function MobileBottomNav() {
       ];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-zinc-950/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-2xl md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e5dfd5] bg-white/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_35px_rgba(48,42,30,.08)] backdrop-blur-2xl md:hidden">
       <div className={`mx-auto grid max-w-md ${user ? "grid-cols-4" : "grid-cols-3"} gap-1`}>
         {navItems.map((item) => {
           const active = pathname === item.href;
@@ -38,7 +38,7 @@ export default function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition ${
-                active ? "bg-emerald-400/10 text-emerald-300" : "text-zinc-500"
+                active ? "bg-[#edf5ef] text-[#176b3a]" : "text-[#7c877f]"
               }`}
             >
               <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />

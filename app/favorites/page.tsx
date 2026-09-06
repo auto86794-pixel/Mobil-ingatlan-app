@@ -136,8 +136,8 @@ export default function FavoritesPage() {
       <div
         className="
           min-h-screen
-          bg-black
-          text-white
+          bg-[#f7f4ee]
+          text-[#18201b]
           flex
           items-center
           justify-center
@@ -153,8 +153,8 @@ export default function FavoritesPage() {
     <div
       className="
         min-h-screen
-        bg-black
-        text-white
+        bg-[#f7f4ee]
+        text-[#18201b]
         p-6
       "
     >
@@ -200,8 +200,8 @@ export default function FavoritesPage() {
         <div
           className="
             rounded-[32px]
-            border border-zinc-800
-            bg-zinc-900
+            border border-[#e2ddd3]
+            bg-white
             p-20
             text-center
           "
@@ -246,8 +246,8 @@ export default function FavoritesPage() {
               className="
                 overflow-hidden
                 rounded-[32px]
-                border border-zinc-800
-                bg-zinc-900
+                border border-[#e2ddd3]
+                bg-white
               "
             >
 
@@ -282,7 +282,7 @@ export default function FavoritesPage() {
                     flex
                     items-center
                     gap-2
-                    text-zinc-400
+                    text-[#6c776f]
                   "
                 >
 
@@ -298,7 +298,7 @@ export default function FavoritesPage() {
                     mt-6
                     text-4xl
                     font-black
-                    text-emerald-400
+                    text-[#176b3a]
                   "
                 >
                   {post.price.toLocaleString()} Ft
@@ -311,13 +311,13 @@ export default function FavoritesPage() {
                     mt-8
                     inline-flex
                     rounded-2xl
-                    bg-emerald-500
+                    bg-[#176b3a]
                     px-6
                     py-4
                     font-bold
-                    text-white
+                    text-[#18201b]
                     transition
-                    hover:bg-emerald-400
+                    hover:bg-[#115b30]
                   "
                 >
                   Megnézem

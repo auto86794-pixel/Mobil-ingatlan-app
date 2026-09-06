@@ -39,7 +39,7 @@ export default function PropertyMap({
       className="
         overflow-hidden
         rounded-[32px]
-        border border-zinc-800
+        border border-[#e2ddd3]
       "
     >
 

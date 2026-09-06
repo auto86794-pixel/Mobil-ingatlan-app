@@ -186,9 +186,9 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="min-h-screen px-4 py-6 md:px-6 md:py-10">
-        <div className="mb-10 h-64 animate-pulse rounded-[32px] bg-zinc-900" />
-        <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      <main className="min-h-screen bg-[#f7f4ee] px-4 py-6 md:px-6 md:py-10">
+        <div className="mx-auto mb-10 h-64 max-w-[1500px] animate-pulse rounded-[32px] bg-[#ece7de]" />
+        <div className="mx-auto grid max-w-[1500px] gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <PropertyCardSkeleton key={index} />
           ))}
@@ -202,7 +202,7 @@ export default function Home() {
     "@type": "WebSite",
     name: "DebrecenHomes",
     url: "https://debrecenhomes.hu",
-    description: "Eladó és kiadó ingatlanok Debrecenben részletes keresővel.",
+    description: "Eladó és kiadó ingatlanok Debrecenben egyszerű kereséssel és átlátható információkkal.",
     inLanguage: "hu-HU",
     potentialAction: {
       "@type": "SearchAction",
@@ -217,32 +217,42 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
-      <main className="mx-auto min-h-screen max-w-[1500px] px-4 py-5 text-white md:px-6 md:py-8">
-      <section className="relative mb-10 min-h-[500px] overflow-hidden rounded-[32px] border border-white/10 bg-zinc-900 shadow-[0_30px_100px_rgba(0,0,0,.38)] md:min-h-[650px]">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2070&auto=format&fit=crop"
-            alt="Modern debreceni otthon"
-            className="h-full w-full object-cover object-[65%_center] md:object-center"
-          />
-          <div className="absolute inset-0 bg-black/62" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/65 to-black/10" />
-        </div>
+      <main className="mx-auto min-h-screen max-w-[1500px] px-4 py-5 md:px-6 md:py-8">
+        <section className="relative mb-10 overflow-hidden rounded-[34px] border border-[#e2ddd3] bg-white shadow-[0_28px_80px_rgba(55,47,33,.10)]">
+          <div className="grid min-h-[610px] lg:grid-cols-[1.05fr_.95fr]">
+            <div className="relative z-10 flex flex-col justify-center px-6 py-12 sm:px-10 md:px-14 lg:px-16">
+              <div className="mb-6 inline-flex w-fit items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#a1813a]">
+                <span className="h-px w-12 bg-[#c7a95d]" /> DebrecenHomes
+              </div>
+              <h1 className="max-w-3xl text-5xl font-black leading-[.96] tracking-[-0.055em] text-[#172019] sm:text-6xl lg:text-7xl">
+                Találd meg<br />az otthonod <span className="text-[#176b3a]">Debrecenben.</span>
+              </h1>
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-[#667169] md:text-xl">
+                Eladó és kiadó ingatlanok egyszerű kereséssel, átlátható információkkal, egy helyen.
+              </p>
 
-        <div className="relative z-10 flex min-h-[520px] flex-col justify-center px-5 py-12 md:min-h-[680px] md:px-14 md:py-20">
-          <div className="max-w-3xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-300 backdrop-blur-xl md:text-sm">
-              Debrecen • válogatott ingatlanok
+              <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-[#fbf7ef] p-4"><p className="font-bold text-[#263129]">Gyors keresés</p><p className="mt-1 text-sm text-[#7b857e]">Szűrj a fontos szempontokra.</p></div>
+                <div className="rounded-2xl bg-[#f2f7f3] p-4"><p className="font-bold text-[#263129]">Kedvencek</p><p className="mt-1 text-sm text-[#7b857e]">Mentsd el, ami igazán tetszik.</p></div>
+                <div className="rounded-2xl bg-[#fbf7ef] p-4"><p className="font-bold text-[#263129]">Átlátható adatok</p><p className="mt-1 text-sm text-[#7b857e]">A lényeg egy helyen.</p></div>
+              </div>
             </div>
-            <h1 className="max-w-3xl text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-6xl md:text-7xl">
-              Otthon Debrecenben. Átláthatóbban.
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-300 md:text-lg md:leading-8">
-              Keress eladó és kiadó ingatlanok között részletes szűrőkkel, átlátható adatokkal és közvetlen kapcsolatfelvétellel.
-            </p>
+
+            <div className="relative min-h-[360px] overflow-hidden lg:min-h-full">
+              <img
+                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=85&w=1800&auto=format&fit=crop"
+                alt="Világos, modern otthon"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/15 to-transparent lg:from-white/85 lg:via-white/10" />
+              <div className="absolute bottom-7 left-7 rounded-2xl border border-white/70 bg-white/90 px-5 py-4 shadow-xl backdrop-blur-xl lg:left-8">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Debrecen</p>
+                <p className="mt-1 text-lg font-black text-[#172019]">Otthon. Egyszerűbben.</p>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-10 max-w-6xl">
+          <div className="relative z-20 border-t border-[#eee8df] bg-[#faf8f4] p-4 md:p-6">
             <PropertyFilters
               filters={filters}
               setFilters={setFilters}
@@ -251,88 +261,51 @@ export default function Home() {
               onReset={() => setFilters(emptyFilters)}
             />
           </div>
-        </div>
-      </section>
-
-      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Aktív kínálat</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">{filteredPosts.length} ingatlan felel meg</h2>
-        </div>
-        <p className="text-sm text-zinc-500">Csak az aktuálisan elérhető hirdetések jelennek meg.</p>
-      </div>
-
-      {featuredPosts.length > 0 && (
-        <section className="mb-14">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold md:text-3xl">Kiemelt ingatlanok</h2>
-            <span className="text-sm text-emerald-400">{featuredPosts.length} kiemelt</span>
-          </div>
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {featuredPosts.map((post) => (
-              <PropertyCard
-                key={post.id}
-                id={post.id}
-                title={post.title}
-                city={post.city}
-                district={post.district}
-                price={post.price}
-                area={post.area}
-                rooms={post.rooms}
-                propertyType={post.propertyType}
-                imageUrl={post.imageUrl}
-                phone={post.phone}
-                featured={post.featured}
-                isFavorite={favorites.includes(post.id)}
-                onToggleFavorite={() => toggleFavorite(post.id)}
-              />
-            ))}
-          </div>
         </section>
-      )}
 
-      {filteredPosts.length === 0 && (
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-10 text-center">
-          <p className="text-xl font-semibold text-white">Nincs találat a megadott feltételekkel.</p>
-          <p className="mt-2 text-zinc-400">Próbálj meg kevesebb szűrőt használni.</p>
-          <button
-            type="button"
-            onClick={() => setFilters(emptyFilters)}
-            className="mt-6 rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-zinc-950 hover:bg-emerald-400"
-          >
-            Összes szűrő törlése
-          </button>
+        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Aktív kínálat</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-[#172019] md:text-3xl">{filteredPosts.length} ingatlan felel meg</h2>
+          </div>
+          <p className="text-sm text-[#7d877f]">Csak az aktuálisan elérhető hirdetések jelennek meg.</p>
         </div>
-      )}
 
-      {normalPosts.length > 0 && (
-        <section>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold md:text-3xl">Ingatlan kínálatunk</h2>
-            <span className="text-sm text-zinc-400 md:text-base">{normalPosts.length} további találat</span>
+        {featuredPosts.length > 0 && (
+          <section className="mb-14">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">Kiemelt ingatlanok</h2>
+              <span className="text-sm font-semibold text-[#176b3a]">{featuredPosts.length} kiemelt</span>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+              {featuredPosts.map((post) => (
+                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {filteredPosts.length === 0 && (
+          <div className="rounded-[28px] border border-[#e2ddd3] bg-white p-10 text-center shadow-sm">
+            <p className="text-xl font-semibold text-[#172019]">Nincs találat a megadott feltételekkel.</p>
+            <p className="mt-2 text-[#6c776f]">Próbálj meg kevesebb szűrőt használni.</p>
+            <button type="button" onClick={() => setFilters(emptyFilters)} className="mt-6 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white hover:bg-[#115b30]">Összes szűrő törlése</button>
           </div>
-          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {normalPosts.map((post) => (
-              <PropertyCard
-                key={post.id}
-                id={post.id}
-                title={post.title}
-                city={post.city}
-                district={post.district}
-                price={post.price}
-                area={post.area}
-                rooms={post.rooms}
-                propertyType={post.propertyType}
-                imageUrl={post.imageUrl}
-                phone={post.phone}
-                featured={post.featured}
-                isFavorite={favorites.includes(post.id)}
-                onToggleFavorite={() => toggleFavorite(post.id)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        )}
+
+        {normalPosts.length > 0 && (
+          <section>
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">Ingatlan kínálatunk</h2>
+              <span className="text-sm text-[#6c776f] md:text-base">{normalPosts.length} további találat</span>
+            </div>
+            <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {normalPosts.map((post) => (
+                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </>
   );

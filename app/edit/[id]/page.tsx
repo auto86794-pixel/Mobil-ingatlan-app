@@ -11,7 +11,7 @@ import { auth, db, storage } from "../../lib/firebase";
 import { propertyFromFirestore, type PropertyStatus } from "../../lib/types";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
-const inputClass = "w-full rounded-2xl border border-zinc-700 bg-zinc-800 px-5 py-4 outline-none transition focus:border-yellow-500";
+const inputClass = "w-full rounded-2xl border border-[#d8d2c7] bg-[#f5f2ec] px-5 py-4 outline-none transition focus:border-[#b99445]";
 
 export default function EditPropertyPage() {
   const params = useParams();
@@ -144,44 +144,44 @@ export default function EditPropertyPage() {
   };
 
   const field = (label: string, value: string, setter: (v: string) => void, placeholder = "", type = "text") => (
-    <div className="mb-4"><label className="mb-2 block text-zinc-400">{label}</label><input type={type} value={value} placeholder={placeholder} onChange={(e) => setter(e.target.value)} className={inputClass} /></div>
+    <div className="mb-4"><label className="mb-2 block text-[#6c776f]">{label}</label><input type={type} value={value} placeholder={placeholder} onChange={(e) => setter(e.target.value)} className={inputClass} /></div>
   );
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white">Betöltés...</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#f7f4ee] text-[#18201b]">Betöltés...</div>;
 
   return (
-    <div className="flex min-h-screen justify-center bg-black p-6 text-white">
-      <div className="w-full max-w-3xl rounded-[32px] border border-zinc-800 bg-zinc-900 p-8 shadow-2xl">
-        <div className="mb-8"><h1 className="text-4xl font-black">✏️ Ingatlan szerkesztése</h1><p className="mt-2 text-zinc-400">Minden ingatlanadat egy helyen.</p></div>
+    <div className="flex min-h-screen justify-center bg-[#f7f4ee] p-6 text-[#18201b]">
+      <div className="w-full max-w-3xl rounded-[32px] border border-[#e2ddd3] bg-white p-8 shadow-[0_24px_70px_rgba(55,47,33,.10)]">
+        <div className="mb-8"><h1 className="text-4xl font-black">Ingatlan szerkesztése</h1><p className="mt-2 text-[#6c776f]">Minden ingatlanadat egy helyen.</p></div>
         {field("Ingatlan neve", title, setTitle)}
         <div className="grid gap-4 md:grid-cols-2">{field("Város", city, setCity)}{field("Városrész", district, setDistrict)}</div>
         <div className="grid gap-4 md:grid-cols-3">{field("Ár (Ft)", price, setPrice, "", "number")}{field("Alapterület (m²)", area, setArea, "", "number")}{field("Szobák száma", rooms, setRooms, "", "number")}</div>
         <div className="mb-4 grid gap-4 md:grid-cols-2">
-          <div><label className="mb-2 block text-zinc-400">Ingatlantípus</label><select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputClass}><option value="lakás">Lakás</option><option value="családi ház">Családi ház</option><option value="ikerház">Ikerház</option><option value="sorház">Sorház</option><option value="telek">Telek</option><option value="egyéb">Egyéb</option></select></div>
-          <div><label className="mb-2 block text-zinc-400">Státusz</label><select value={status} onChange={(e) => setStatus(e.target.value as PropertyStatus)} className={inputClass}><option value="active">Aktív</option><option value="draft">Piszkozat</option><option value="sold">Eladva</option><option value="inactive">Inaktív</option></select></div>
+          <div><label className="mb-2 block text-[#6c776f]">Ingatlantípus</label><select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputClass}><option value="lakás">Lakás</option><option value="családi ház">Családi ház</option><option value="ikerház">Ikerház</option><option value="sorház">Sorház</option><option value="telek">Telek</option><option value="egyéb">Egyéb</option></select></div>
+          <div><label className="mb-2 block text-[#6c776f]">Státusz</label><select value={status} onChange={(e) => setStatus(e.target.value as PropertyStatus)} className={inputClass}><option value="active">Aktív</option><option value="draft">Piszkozat</option><option value="sold">Eladva</option><option value="inactive">Inaktív</option></select></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">{field("Állapot", condition, setCondition)}{field("Emelet", floor, setFloor)}{field("Erkély / terasz", balcony, setBalcony)}{field("Parkolás / garázs", parking, setParking)}{field("Fűtés", heating, setHeating)}</div>
-        <div className="mb-6"><label className="mb-2 block text-zinc-400">Leírás</label><textarea rows={7} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} /></div>
+        <div className="mb-6"><label className="mb-2 block text-[#6c776f]">Leírás</label><textarea rows={7} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} /></div>
         <div className="grid gap-4 md:grid-cols-2">{field("Telefonszám", phone, setPhone)}{field("E-mail", email, setEmail, "", "email")}</div>
-        <div className="mb-6"><label className="mb-3 block text-zinc-400">Új képek hozzáadása</label><input type="file" multiple accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 p-4" />{uploading && <p className="mt-2 text-sm text-yellow-400">Képek feltöltése...</p>}</div>
+        <div className="mb-6"><label className="mb-3 block text-[#6c776f]">Új képek hozzáadása</label><input type="file" multiple accept="image/*" onChange={handleImageUpload} className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4" />{uploading && <p className="mt-2 text-sm text-[#a1813a]">Képek feltöltése...</p>}</div>
         {images.length > 0 && (
           <div className="mb-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {images.map((image, index) => (
-              <div key={image} className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+              <div key={image} className="overflow-hidden rounded-2xl border border-[#e2ddd3] bg-[#f7f4ee]">
                 <div className="relative">
                   <img src={image} alt={`Ingatlan kép ${index + 1}`} className="h-44 w-full object-cover" />
-                  {index === 0 && <span className="absolute left-3 top-3 rounded-full bg-yellow-500 px-3 py-1 text-xs font-bold text-black">BORÍTÓ</span>}
+                  {index === 0 && <span className="absolute left-3 top-3 rounded-full bg-[#b99445] px-3 py-1 text-xs font-bold text-[#172019]">BORÍTÓ</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-2 p-2">
-                  <button type="button" disabled={index === 0} onClick={() => handleSetCover(image)} className="rounded-lg bg-zinc-700 px-2 py-2 text-xs font-bold disabled:cursor-default disabled:opacity-40">Borítónak</button>
+                  <button type="button" disabled={index === 0} onClick={() => handleSetCover(image)} className="rounded-lg bg-[#ebe6dc] px-2 py-2 text-xs font-bold disabled:cursor-default disabled:opacity-40">Borítónak</button>
                   <button type="button" onClick={() => void handleRemoveImage(image)} className="rounded-lg bg-red-600 px-2 py-2 text-xs font-bold">Törlés</button>
                 </div>
               </div>
             ))}
           </div>
         )}
-        <div className="mb-8"><label className="mb-3 block text-zinc-400">Elhelyezkedés a térképen</label><MapPicker lat={lat} lng={lng} setLat={setLat} setLng={setLng} /></div>
-        <button type="button" onClick={handleSave} disabled={saving || uploading} className="w-full rounded-2xl bg-yellow-500 px-6 py-4 text-lg font-black text-black transition hover:bg-yellow-400 disabled:opacity-50">{saving ? "Mentés..." : "Módosítások mentése"}</button>
+        <div className="mb-8"><label className="mb-3 block text-[#6c776f]">Elhelyezkedés a térképen</label><MapPicker lat={lat} lng={lng} setLat={setLat} setLng={setLng} /></div>
+        <button type="button" onClick={handleSave} disabled={saving || uploading} className="w-full rounded-2xl bg-[#176b3a] px-6 py-4 text-lg font-black text-white transition hover:bg-[#115b30] disabled:opacity-50">{saving ? "Mentés..." : "Módosítások mentése"}</button>
       </div>
     </div>
   );

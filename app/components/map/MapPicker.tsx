@@ -64,7 +64,7 @@ export default function MapPicker({
       className="
         overflow-hidden
         rounded-3xl
-        border border-zinc-800
+        border border-[#e2ddd3]
       "
     >
 

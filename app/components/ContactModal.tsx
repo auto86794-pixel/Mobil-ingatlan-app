@@ -74,23 +74,23 @@ export default function ContactModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
+      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/30 backdrop-blur-sm p-4"
       onClick={() => setOpen(false)}
     >
       <div
-        className="relative mt-20 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        className="relative mt-20 w-full max-w-md rounded-[28px] border border-[#e2ddd3] bg-white p-7 shadow-[0_24px_70px_rgba(55,47,33,.10)]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="absolute right-3 top-3 text-gray-500 transition hover:text-black"
+          className="absolute right-3 top-3 text-gray-500 transition hover:text-[#172019]"
           aria-label="Bezárás"
         >
           ✕
         </button>
 
-        <h2 className="mb-5 text-2xl font-bold text-black">
+        <h2 className="mb-5 text-2xl font-bold text-[#172019]">
           Kapcsolatfelvétel
         </h2>
 
@@ -106,7 +106,7 @@ export default function ContactModal({
             placeholder="Név"
             value={form.name}
             onChange={handleChange}
-            className="rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
@@ -116,7 +116,7 @@ export default function ContactModal({
             placeholder="E-mail"
             value={form.email}
             onChange={handleChange}
-            className="rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
@@ -125,14 +125,14 @@ export default function ContactModal({
             placeholder="Üzenet"
             value={form.message}
             onChange={handleChange}
-            className="min-h-[140px] rounded-xl border border-gray-300 bg-white p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="min-h-[140px] rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-emerald-500 p-3 font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[#176b3a] p-3 font-semibold text-white transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Küldés..." : "Üzenet küldése"}
           </button>

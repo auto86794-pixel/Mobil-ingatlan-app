@@ -51,10 +51,10 @@ const STATUS_OPTIONS: StatusOption[] = [
 ];
 
 const statusClass: Record<PropertyStatus, string> = {
-  active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  active: "border-emerald-500/30 bg-[#176b3a]/10 text-[#176b3a]",
   draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  sold: "border-blue-500/30 bg-blue-500/10 text-blue-300",
-  inactive: "border-zinc-600 bg-zinc-800 text-zinc-300",
+  sold: "border-blue-500/30 bg-[#176b3a]/10 text-blue-300",
+  inactive: "border-[#cbc4b7] bg-[#f5f2ec] text-[#4d5a51]",
 };
 
 export default function AdminPage() {
@@ -255,25 +255,25 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f4ee] text-[#18201b]">
         Admin betöltése...
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6">
+    <main className="min-h-screen bg-[#f7f4ee] px-4 py-8 text-[#18201b] sm:px-6">
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#b9d1c0] bg-[#176b3a]/10 px-4 py-2 text-sm text-[#176b3a]">
             <ShieldCheck size={16} /> Adminisztráció
           </div>
           <h1 className="mt-4 text-3xl font-black sm:text-4xl">DebrecenHomes Admin PRO</h1>
-          <p className="mt-2 text-zinc-400">
+          <p className="mt-2 text-[#6c776f]">
             Valós idejű platformkezelés: hirdetések, kiemelések, státuszok és felhasználói jogosultságok.
           </p>
           {currentUser?.email && (
-            <p className="mt-2 text-sm text-zinc-500">Admin: {currentUser.email}</p>
+            <p className="mt-2 text-sm text-[#879087]">Admin: {currentUser.email}</p>
           )}
         </header>
 
@@ -291,19 +291,19 @@ export default function AdminPage() {
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h2 className="text-2xl font-black">Hirdetések kezelése</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-[#879087]">
                 {filteredPosts.length} hirdetés látható a szűrés után.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_180px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={17} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#879087]" size={17} />
                 <input
                   value={propertySearch}
                   onChange={(event) => setPropertySearch(event.target.value)}
                   placeholder="Cím, város, e-mail..."
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-500"
+                  className="w-full rounded-xl border border-[#d8d2c7] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#176b3a]"
                 />
               </div>
               <select
@@ -311,7 +311,7 @@ export default function AdminPage() {
                 onChange={(event) =>
                   setStatusFilter(event.target.value as "all" | PropertyStatus)
                 }
-                className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm outline-none focus:border-emerald-500"
+                className="rounded-xl border border-[#d8d2c7] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#176b3a]"
               >
                 <option value="all">Minden státusz</option>
                 {STATUS_OPTIONS.map((option) => (
@@ -326,9 +326,9 @@ export default function AdminPage() {
           {filteredPosts.length === 0 ? (
             <EmptyState text="Nincs a szűrésnek megfelelő hirdetés." />
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-zinc-800 bg-zinc-900">
+            <div className="overflow-x-auto rounded-3xl border border-[#e2ddd3] bg-white">
               <table className="min-w-[1050px] w-full text-left text-sm">
-                <thead className="border-b border-zinc-800 text-xs uppercase tracking-wide text-zinc-500">
+                <thead className="border-b border-[#e2ddd3] text-xs uppercase tracking-wide text-[#879087]">
                   <tr>
                     <th className="px-5 py-4">Ingatlan</th>
                     <th className="px-5 py-4">Ár</th>
@@ -346,7 +346,7 @@ export default function AdminPage() {
                       post.status;
 
                     return (
-                      <tr key={post.id} className="border-b border-zinc-800/70 last:border-0">
+                      <tr key={post.id} className="border-b border-[#e2ddd3]/70 last:border-0">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {post.imageUrl ? (
@@ -356,19 +356,19 @@ export default function AdminPage() {
                                 className="h-14 w-20 rounded-xl object-cover"
                               />
                             ) : (
-                              <div className="flex h-14 w-20 items-center justify-center rounded-xl bg-zinc-800 text-xs text-zinc-600">
+                              <div className="flex h-14 w-20 items-center justify-center rounded-xl bg-[#f5f2ec] text-xs text-[#9aa29b]">
                                 Nincs kép
                               </div>
                             )}
                             <div>
                               <p className="max-w-xs font-bold">{post.title || "Névtelen hirdetés"}</p>
-                              <p className="mt-1 text-xs text-zinc-500">
+                              <p className="mt-1 text-xs text-[#879087]">
                                 {[post.city, post.district].filter(Boolean).join(", ") || "Nincs helyszín"}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-semibold text-emerald-400">
+                        <td className="px-5 py-4 font-semibold text-[#176b3a]">
                           {post.price.toLocaleString("hu-HU")} Ft
                         </td>
                         <td className="px-5 py-4">
@@ -382,7 +382,7 @@ export default function AdminPage() {
                               onChange={(event) =>
                                 void changeStatus(post, event.target.value as PropertyStatus)
                               }
-                              className="rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs outline-none disabled:opacity-50"
+                              className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] px-2 py-1.5 text-xs outline-none disabled:opacity-50"
                             >
                               {STATUS_OPTIONS.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -399,17 +399,17 @@ export default function AdminPage() {
                             onClick={() => void toggleFeatured(post)}
                             className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${
                               post.featured
-                                ? "bg-yellow-400 text-black hover:bg-yellow-300"
-                                : "border border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-yellow-500"
+                                ? "bg-[#ead8a5] text-[#172019] hover:bg-yellow-300"
+                                : "border border-[#d8d2c7] bg-[#f5f2ec] text-[#4d5a51] hover:border-[#b99445]"
                             }`}
                           >
                             <Star size={14} fill={post.featured ? "currentColor" : "none"} />
                             {post.featured ? "Kiemelt" : "Kiemelés"}
                           </button>
                         </td>
-                        <td className="px-5 py-4 text-xs text-zinc-400">
+                        <td className="px-5 py-4 text-xs text-[#6c776f]">
                           <div>{post.email || "Nincs e-mail"}</div>
-                          <div className="mt-1 max-w-40 truncate text-zinc-600" title={post.userId}>
+                          <div className="mt-1 max-w-40 truncate text-[#9aa29b]" title={post.userId}>
                             {post.userId || "Nincs userId"}
                           </div>
                         </td>
@@ -417,14 +417,14 @@ export default function AdminPage() {
                           <div className="flex justify-end gap-2">
                             <Link
                               href={`/post/${post.id}`}
-                              className="rounded-lg border border-zinc-700 bg-zinc-800 p-2 transition hover:border-emerald-500"
+                              className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] p-2 transition hover:border-emerald-500"
                               title="Megnézem"
                             >
                               <Eye size={16} />
                             </Link>
                             <Link
                               href={`/edit/${post.id}`}
-                              className="rounded-lg border border-zinc-700 bg-zinc-800 p-2 transition hover:border-blue-500"
+                              className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] p-2 transition hover:border-blue-500"
                               title="Szerkesztés"
                             >
                               <Pencil size={16} />
@@ -455,17 +455,17 @@ export default function AdminPage() {
               <h2 className="flex items-center gap-2 text-2xl font-black">
                 <Users size={22} /> Felhasználók
               </h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-[#879087]">
                 Jogosultságkezelés a Firestore felhasználói profiljai alapján.
               </p>
             </div>
             <div className="relative w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={17} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#879087]" size={17} />
               <input
                 value={userSearch}
                 onChange={(event) => setUserSearch(event.target.value)}
                 placeholder="E-mail vagy szerepkör..."
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-[#d8d2c7] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#176b3a]"
               />
             </div>
           </div>
@@ -473,9 +473,9 @@ export default function AdminPage() {
           {filteredUsers.length === 0 ? (
             <EmptyState text="Nincs a keresésnek megfelelő felhasználó." />
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-zinc-800 bg-zinc-900">
+            <div className="overflow-x-auto rounded-3xl border border-[#e2ddd3] bg-white">
               <table className="min-w-[720px] w-full text-left text-sm">
-                <thead className="border-b border-zinc-800 text-xs uppercase tracking-wide text-zinc-500">
+                <thead className="border-b border-[#e2ddd3] text-xs uppercase tracking-wide text-[#879087]">
                   <tr>
                     <th className="px-5 py-4">E-mail</th>
                     <th className="px-5 py-4">Azonosító</th>
@@ -489,16 +489,16 @@ export default function AdminPage() {
                     const busy = busyId === item.id;
 
                     return (
-                      <tr key={item.id} className="border-b border-zinc-800/70 last:border-0">
+                      <tr key={item.id} className="border-b border-[#e2ddd3]/70 last:border-0">
                         <td className="px-5 py-4 font-semibold">
                           {item.email}
                           {isSelf && (
-                            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
+                            <span className="ml-2 rounded-full bg-[#176b3a]/10 px-2 py-1 text-xs text-[#176b3a]">
                               Te
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-xs text-zinc-500">
+                        <td className="px-5 py-4 text-xs text-[#879087]">
                           <span className="block max-w-64 truncate" title={item.id}>
                             {item.id}
                           </span>
@@ -507,8 +507,8 @@ export default function AdminPage() {
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-bold ${
                               item.role === "admin"
-                                ? "bg-emerald-500/10 text-emerald-300"
-                                : "bg-zinc-800 text-zinc-300"
+                                ? "bg-[#176b3a]/10 text-[#176b3a]"
+                                : "bg-[#f5f2ec] text-[#4d5a51]"
                             }`}
                           >
                             {item.role === "admin" ? "Admin" : "Felhasználó"}
@@ -524,7 +524,7 @@ export default function AdminPage() {
                                 event.target.value as "user" | "admin"
                               )
                             }
-                            className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-xl border border-[#d8d2c7] bg-[#f5f2ec] px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <option value="user">Felhasználó</option>
                             <option value="admin">Admin</option>
@@ -545,16 +545,16 @@ export default function AdminPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-white">{value}</p>
+    <div className="rounded-2xl border border-[#e2ddd3] bg-white p-5">
+      <p className="text-xs uppercase tracking-wide text-[#879087]">{label}</p>
+      <p className="mt-2 text-3xl font-black text-[#18201b]">{value}</p>
     </div>
   );
 }
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-400">
+    <div className="rounded-3xl border border-[#e2ddd3] bg-white p-8 text-center text-[#6c776f]">
       {text}
     </div>
   );

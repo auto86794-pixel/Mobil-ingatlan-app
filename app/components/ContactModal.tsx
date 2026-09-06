@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { CheckCircle2 } from "lucide-react";
 
 type ContactModalProps = {
   open: boolean;
@@ -9,6 +10,8 @@ type ContactModalProps = {
   propertyTitle?: string;
   propertyId?: string;
 };
+
+const emptyForm = { name: "", phone: "", email: "", message: "", website: "" };
 
 export default function ContactModal({
   open,
@@ -18,38 +21,38 @@ export default function ContactModal({
 }: ContactModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    message: "",
-    website: "",
-  });
+  const [form, setForm] = useState(emptyForm);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorText, setErrorText] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm((current) => ({
-      ...current,
-      [e.target.name]: e.target.value,
-    }));
+  useEffect(() => {
+    if (open) {
+      setStatus("idle");
+      setErrorText("");
+    }
+  }, [open]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((current) => ({ ...current, [e.target.name]: e.target.value }));
   };
 
   const sendEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setStatus("idle");
+    setErrorText("");
 
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
+          phone: form.phone,
           email: form.email,
           message: form.message,
           propertyTitle,
@@ -60,17 +63,14 @@ export default function ContactModal({
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Hiba történt az üzenet küldésekor.");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Hiba történt az üzenet küldésekor.");
-      }
-
-      alert("Üzenet elküldve! 🎉");
-      setForm({ name: "", email: "", message: "", website: "" });
-      setOpen(false);
+      setForm(emptyForm);
+      setStatus("success");
     } catch (error) {
       console.error(error);
-      alert("Hiba történt az üzenet küldésekor.");
+      setErrorText(error instanceof Error ? error.message : "Hiba történt az üzenet küldésekor.");
+      setStatus("error");
     } finally {
       setLoading(false);
     }
@@ -79,74 +79,45 @@ export default function ContactModal({
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/30 backdrop-blur-sm p-4"
-      onClick={() => setOpen(false)}
-    >
-      <div
-        className="relative mt-20 w-full max-w-md rounded-[28px] border border-[#e2ddd3] bg-white p-7 shadow-[0_24px_70px_rgba(55,47,33,.10)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="absolute right-3 top-3 text-gray-500 transition hover:text-[#172019]"
-          aria-label="Bezárás"
-        >
-          ✕
-        </button>
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/30 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      <div className="relative mt-20 w-full max-w-md rounded-[28px] border border-[#e2ddd3] bg-white p-7 shadow-[0_24px_70px_rgba(55,47,33,.10)]" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={() => setOpen(false)} className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-[#f7f4ee] hover:text-[#172019]" aria-label="Bezárás">✕</button>
 
-        <h2 className="mb-5 text-2xl font-bold text-[#172019]">
-          Kapcsolatfelvétel
-        </h2>
-
-        {propertyTitle && (
-          <p className="mb-4 text-sm text-gray-600">
-            Érdeklődés: <strong>{propertyTitle}</strong>
-          </p>
-        )}
-
-        <form onSubmit={sendEmail} className="flex flex-col gap-4">
-          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
-            <label htmlFor="website">Weboldal</label>
-            <input id="website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
+        {status === "success" ? (
+          <div className="py-8 text-center" role="status" aria-live="polite">
+            <CheckCircle2 className="mx-auto h-14 w-14 text-[#176b3a]" />
+            <h2 className="mt-4 text-2xl font-black text-[#172019]">Köszönjük az érdeklődést!</h2>
+            <p className="mt-3 leading-7 text-[#5f6b63]">Megkaptuk az üzeneted. Hamarosan felvesszük veled a kapcsolatot.</p>
+            <button type="button" onClick={() => setOpen(false)} className="mt-6 w-full rounded-2xl bg-[#176b3a] px-5 py-3.5 font-bold text-white transition hover:bg-[#115b30]">Rendben</button>
           </div>
-          <input
-            name="name"
-            placeholder="Név"
-            value={form.name}
-            onChange={handleChange}
-            className="rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            required
-          />
+        ) : (
+          <>
+            <h2 className="mb-2 text-2xl font-black text-[#172019]">Érdeklődöm</h2>
+            {propertyTitle && (
+              <div className="mb-5 rounded-2xl bg-[#f2f7f3] px-4 py-3 text-sm text-[#4d5a51]">
+                <span className="font-bold text-[#176b3a]">Ingatlan:</span> {propertyTitle}
+                {propertyId ? <div className="mt-1 text-xs text-[#7b857e]">Azonosító: {propertyId}</div> : null}
+              </div>
+            )}
 
-          <input
-            name="email"
-            type="email"
-            placeholder="E-mail"
-            value={form.email}
-            onChange={handleChange}
-            className="rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            required
-          />
+            <form onSubmit={sendEmail} className="flex flex-col gap-3.5">
+              <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="website">Weboldal</label>
+                <input id="website" name="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
+              </div>
+              <input name="name" placeholder="Név" value={form.name} onChange={handleChange} autoComplete="name" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] px-4 py-3 text-[#172019] outline-none transition focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" required />
+              <input name="phone" type="tel" placeholder="Telefonszám" value={form.phone} onChange={handleChange} autoComplete="tel" inputMode="tel" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] px-4 py-3 text-[#172019] outline-none transition focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+              <input name="email" type="email" placeholder="E-mail" value={form.email} onChange={handleChange} autoComplete="email" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] px-4 py-3 text-[#172019] outline-none transition focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" required />
+              <textarea name="message" placeholder="Üzenet" value={form.message} onChange={handleChange} className="min-h-[130px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] px-4 py-3 text-[#172019] outline-none transition focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" required />
 
-          <textarea
-            name="message"
-            placeholder="Üzenet"
-            value={form.message}
-            onChange={handleChange}
-            className="min-h-[140px] rounded-xl border border-gray-300 bg-white p-3 text-[#172019] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            required
-          />
+              {status === "error" ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">{errorText}</p> : null}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-xl bg-[#176b3a] p-3 font-semibold text-white transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? "Küldés..." : "Üzenet küldése"}
-          </button>
-        </form>
+              <button type="submit" disabled={loading} className="min-h-12 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-50">
+                {loading ? "Küldés..." : "Érdeklődés elküldése"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>,
     document.body

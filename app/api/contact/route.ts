@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     }
 
     const name = cleanText(body.name, 100);
+    const phone = cleanText(body.phone, 80);
     const email = cleanText(body.email, 254).toLowerCase();
     const message = cleanText(body.message, 3000);
     const propertyTitle = cleanText(body.propertyTitle, 200);
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
 
     const resend = new Resend(apiKey);
     const safeName = escapeHtml(name);
+    const safePhone = escapeHtml(phone);
     const safeEmail = escapeHtml(email);
     const safeMessage = escapeHtml(message).replace(/\r?\n/g, "<br />");
     const safePropertyTitle = escapeHtml(propertyTitle || "Ingatlan");
@@ -119,6 +121,7 @@ export async function POST(req: Request) {
           ${safePropertyId ? `<p><strong>Hirdetés azonosító:</strong><br/>${safePropertyId}</p>` : ""}
           ${safePropertyUrl ? `<p><strong>Hirdetés:</strong><br/><a href="${safePropertyUrl}">${safePropertyUrl}</a></p>` : ""}
           <p><strong>Név:</strong><br/>${safeName}</p>
+          ${safePhone ? `<p><strong>Telefon:</strong><br/>${safePhone}</p>` : ""}
           <p><strong>E-mail:</strong><br/>${safeEmail}</p>
           <p><strong>Üzenet:</strong><br/>${safeMessage}</p>
         </div>

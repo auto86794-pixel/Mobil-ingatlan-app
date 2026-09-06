@@ -31,6 +31,8 @@ export default function PropertyClient() {
   const [similarProperties, setSimilarProperties] = useState<PropertyWithId[]>([]);
   const [shareNotice, setShareNotice] = useState("");
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [detailFormStatus, setDetailFormStatus] = useState<"idle" | "success" | "error">("idle");
+  const [detailFormMessage, setDetailFormMessage] = useState("");
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -43,20 +45,32 @@ export default function PropertyClient() {
         setSelectedImageIndex(0);
 
         const allSnapshot = await getDocs(collection(db, "posts"));
-        const candidates = allSnapshot.docs
+        const rankedCandidates = allSnapshot.docs
           .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
           .filter((item) => item.id !== data.id && item.status === "active" && Boolean(item.imageUrl))
-          .map((item) => ({
-            item,
-            score:
-              (item.city === data.city ? 4 : 0) +
-              (item.district && item.district === data.district ? 4 : 0) +
-              (item.propertyType && item.propertyType === data.propertyType ? 3 : 0) +
-              (data.price > 0 && Math.abs(item.price - data.price) / data.price <= 0.25 ? 2 : 0),
-          }))
-          .sort((a, b) => b.score - a.score)
+          .map((item) => {
+            const sameCity = Boolean(item.city && data.city && item.city === data.city);
+            const sameDistrict = Boolean(item.district && data.district && item.district === data.district);
+            const sameType = Boolean(item.propertyType && data.propertyType && item.propertyType === data.propertyType);
+            const priceDifference = data.price > 0 ? Math.abs(item.price - data.price) / data.price : 1;
+            const areaDifference = data.area > 0 ? Math.abs(item.area - data.area) / data.area : 1;
+
+            const score =
+              (sameDistrict ? 7 : 0) +
+              (sameCity ? 4 : 0) +
+              (sameType ? 5 : 0) +
+              (priceDifference <= 0.15 ? 4 : priceDifference <= 0.3 ? 2 : 0) +
+              (areaDifference <= 0.2 ? 3 : areaDifference <= 0.35 ? 1 : 0);
+
+            return { item, score, priceDifference };
+          })
+          .sort((a, b) => b.score - a.score || a.priceDifference - b.priceDifference);
+
+        const strongMatches = rankedCandidates.filter(({ score }) => score >= 5);
+        const candidates = (strongMatches.length >= 3 ? strongMatches : rankedCandidates)
           .slice(0, 3)
           .map(({ item }) => item);
+
         setSimilarProperties(candidates);
       } catch (error) {
         console.error(error);
@@ -291,6 +305,7 @@ export default function PropertyClient() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       name: formData.get("name"),
+                      phone: formData.get("phone"),
                       email: formData.get("email"),
                       message: formData.get("message"),
                       propertyEmail: property.email,
@@ -301,22 +316,30 @@ export default function PropertyClient() {
                     }),
                   });
                   const data = await response.json();
-                  if (!response.ok) throw new Error(data.error);
-                  alert("Üzenet sikeresen elküldve! 🎉");
+                  if (!response.ok) throw new Error(data.error || "Hiba történt az üzenet küldésekor.");
                   (e.target as HTMLFormElement).reset();
+                  setDetailFormStatus("success");
+                  setDetailFormMessage("Köszönjük az érdeklődést! Megkaptuk az üzeneted, hamarosan felvesszük veled a kapcsolatot.");
                 } catch (error) {
                   console.error(error);
-                  alert("Hiba történt 😢");
+                  setDetailFormStatus("error");
+                  setDetailFormMessage(error instanceof Error ? error.message : "Hiba történt az üzenet küldésekor.");
                 } finally {
                   setLoading(false);
                 }
               }} className="flex flex-col gap-4">
                 <div className="absolute left-[-9999px] h-px w-px overflow-hidden" aria-hidden="true"><label htmlFor="detail-website">Weboldal</label><input id="detail-website" type="text" name="website" tabIndex={-1} autoComplete="off" /></div>
                 <div className="rounded-2xl bg-[#f2f7f3] px-4 py-3 text-sm text-[#4d5a51]"><span className="font-bold text-[#176b3a]">Érdeklődés erről:</span> {property.title}</div>
-                <input type="text" name="name" placeholder="Név" required className="rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />
-                <input type="email" name="email" placeholder="Email" required className="rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />
-                <textarea name="message" placeholder="Üzenet" required className="min-h-[160px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />
-                <button type="submit" disabled={loading} className="rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30] disabled:opacity-50">{loading ? "Küldés..." : "✉️ Üzenet küldése"}</button>
+                <input type="text" name="name" placeholder="Név" autoComplete="name" required className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                <input type="tel" name="phone" placeholder="Telefonszám" autoComplete="tel" inputMode="tel" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                <input type="email" name="email" placeholder="E-mail" autoComplete="email" required className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                <textarea name="message" placeholder="Üzenet" required className="min-h-[150px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                {detailFormStatus !== "idle" ? (
+                  <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ${detailFormStatus === "success" ? "bg-[#eef7f0] text-[#176b3a]" : "bg-red-50 text-red-700"}`} role={detailFormStatus === "error" ? "alert" : "status"} aria-live="polite">
+                    {detailFormMessage}
+                  </div>
+                ) : null}
+                <button type="submit" disabled={loading} onClick={() => { setDetailFormStatus("idle"); setDetailFormMessage(""); }} className="min-h-12 rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30] disabled:opacity-50">{loading ? "Küldés..." : "✉️ Érdeklődés elküldése"}</button>
               </form>
             </div>}
           </div>

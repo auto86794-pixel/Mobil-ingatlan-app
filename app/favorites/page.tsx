@@ -1,338 +1,110 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
 import Link from "next/link";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { Heart, LogIn, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import {
-  Heart,
-  MapPin,
-} from "lucide-react";
-
-import {
-  auth,
-  db,
-} from "@/app/lib/firebase";
-
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-
-interface Property {
-  id: string;
-  title: string;
-  city: string;
-  price: number;
-  imageUrl: string;
-}
+import { auth, db } from "@/app/lib/firebase";
+import { formatPrice } from "@/app/lib/format";
+import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
 
 export default function FavoritesPage() {
-
-  const [favorites, setFavorites] =
-    useState<Property[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
+  const [favorites, setFavorites] = useState<PropertyWithId[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setSignedIn(Boolean(currentUser));
 
-    const fetchFavorites = async () => {
-
-      try {
-
-        if (!auth.currentUser) {
-
-          setLoading(false);
-          return;
-
-        }
-
-        // FAVORITES
-        const favoritesQuery = query(
-          collection(db, "favorites"),
-
-          where(
-            "userId",
-            "==",
-            auth.currentUser.uid
-          )
-        );
-
-        const favoritesSnapshot =
-          await getDocs(favoritesQuery);
-
-        const postIds =
-          favoritesSnapshot.docs.map(
-            (doc) => doc.data().postId
-          );
-
-        // EMPTY
-        if (postIds.length === 0) {
-
-          setFavorites([]);
-          setLoading(false);
-
-          return;
-
-        }
-
-        // LOAD POSTS
-        const loadedPosts: Property[] = [];
-
-        for (const postId of postIds) {
-
-          const postQuery = query(
-            collection(db, "posts"),
-
-            where(
-              "__name__",
-              "==",
-              postId
-            )
-          );
-
-          const postSnapshot =
-            await getDocs(postQuery);
-
-          postSnapshot.forEach((doc) => {
-
-            loadedPosts.push({
-              id: doc.id,
-              ...doc.data(),
-            } as Property);
-
-          });
-
-        }
-
-        setFavorites(loadedPosts);
-
-      } catch (err) {
-
-        console.error(err);
-
-      } finally {
-
+      if (!currentUser) {
+        setFavorites([]);
         setLoading(false);
-
+        return;
       }
 
-    };
+      setLoading(true);
+      try {
+        const favoritesSnapshot = await getDocs(
+          query(collection(db, "favorites"), where("userId", "==", currentUser.uid))
+        );
+        const postIds = favoritesSnapshot.docs
+          .map((item) => item.data().postId)
+          .filter((value): value is string => typeof value === "string" && value.length > 0);
 
-    fetchFavorites();
+        if (postIds.length === 0) {
+          setFavorites([]);
+          return;
+        }
 
+        const postsSnapshot = await getDocs(collection(db, "posts"));
+        const favoriteIdSet = new Set(postIds);
+        const posts = postsSnapshot.docs
+          .filter((item) => favoriteIdSet.has(item.id))
+          .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
+          .filter((item) => item.status === "active" && Boolean(item.title && item.imageUrl));
+
+        setFavorites(posts);
+      } catch (error) {
+        console.error("Kedvencek betöltési hiba:", error);
+        setFavorites([]);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
-  // LOADING
-  if (loading) {
+  if (loading || signedIn === null) {
+    return <div className="flex min-h-[60vh] items-center justify-center bg-[#f7f4ee] text-lg font-bold text-[#18201b]">Kedvencek betöltése...</div>;
+  }
 
+  if (!signedIn) {
     return (
-      <div
-        className="
-          min-h-screen
-          bg-[#f7f4ee]
-          text-[#18201b]
-          flex
-          items-center
-          justify-center
-        "
-      >
-        Betöltés...
-      </div>
+      <main className="mx-auto min-h-[70vh] max-w-3xl px-4 py-12 sm:px-6">
+        <div className="rounded-[32px] border border-[#e2ddd3] bg-white p-8 text-center shadow-sm sm:p-12">
+          <Heart className="mx-auto h-14 w-14 text-[#176b3a]" />
+          <h1 className="mt-5 text-3xl font-black text-[#172019]">A kedvencekhez jelentkezz be</h1>
+          <p className="mx-auto mt-3 max-w-xl leading-7 text-[#667168]">Belépés után elmentheted az érdekes ingatlanokat, és később innen egy helyen visszanézheted őket.</p>
+          <Link href="/login" className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]"><LogIn size={18} /> Belépés</Link>
+        </div>
+      </main>
     );
-
   }
 
   return (
-    <div
-      className="
-        min-h-screen
-        bg-[#f7f4ee]
-        text-[#18201b]
-        p-6
-      "
-    >
-
-      {/* TITLE */}
-      <div className="mb-10">
-
-        <div
-          className="
-            inline-flex
-            items-center
-            gap-2
-            rounded-full
-            border border-pink-500/20
-            bg-pink-500/10
-            px-5
-            py-2
-            text-pink-400
-          "
-        >
-
-          <Heart className="h-4 w-4 fill-pink-500" />
-
-          Kedvencek
-
-        </div>
-
-        <h1
-          className="
-            mt-6
-            text-5xl
-            font-black
-          "
-        >
-          Mentett ingatlanok
-        </h1>
-
+    <main className="mx-auto min-h-screen max-w-[1500px] px-4 py-8 sm:px-6">
+      <div className="mb-8">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Saját lista</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-[#172019] sm:text-5xl">Mentett ingatlanok</h1>
+        <p className="mt-3 text-[#667168]">{favorites.length} elérhető kedvenc ingatlan</p>
       </div>
 
-      {/* EMPTY */}
       {favorites.length === 0 ? (
-
-        <div
-          className="
-            rounded-[32px]
-            border border-[#e2ddd3]
-            bg-white
-            p-20
-            text-center
-          "
-        >
-
-          <Heart
-            className="
-              mx-auto
-              h-16
-              w-16
-              text-pink-500
-            "
-          />
-
-          <h2
-            className="
-              mt-6
-              text-4xl
-              font-black
-            "
-          >
-            Nincsenek kedvencek
-          </h2>
-
+        <div className="rounded-[32px] border border-[#e2ddd3] bg-white p-10 text-center sm:p-16">
+          <Heart className="mx-auto h-14 w-14 text-[#b7c0b9]" />
+          <h2 className="mt-5 text-2xl font-black text-[#172019]">Még nincs mentett ingatlanod</h2>
+          <p className="mt-3 text-[#667168]">A szív ikonra kattintva elmentheted a később megnézendő hirdetéseket.</p>
+          <Link href="/properties#ingatlanok" className="mt-7 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]">Ingatlanok böngészése</Link>
         </div>
-
       ) : (
-
-        <div
-          className="
-            grid
-            gap-8
-            md:grid-cols-2
-            xl:grid-cols-3
-          "
-        >
-
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {favorites.map((post) => (
-
-            <div
-              key={post.id}
-              className="
-                overflow-hidden
-                rounded-[32px]
-                border border-[#e2ddd3]
-                bg-white
-              "
-            >
-
-              {/* IMAGE */}
-              <img
-                src={post.imageUrl}
-                alt={post.title}
-                className="
-                  h-64
-                  w-full
-                  object-cover
-                "
-              />
-
-              {/* CONTENT */}
+            <article key={post.id} className="overflow-hidden rounded-[28px] border border-[#e2ddd3] bg-white shadow-sm">
+              <img src={post.imageUrl} alt={post.title} className="h-60 w-full object-cover" loading="lazy" decoding="async" />
               <div className="p-6">
-
-                {/* TITLE */}
-                <h2
-                  className="
-                    text-3xl
-                    font-black
-                  "
-                >
-                  {post.title}
-                </h2>
-
-                {/* CITY */}
-                <div
-                  className="
-                    mt-3
-                    flex
-                    items-center
-                    gap-2
-                    text-[#6c776f]
-                  "
-                >
-
-                  <MapPin className="h-4 w-4 text-pink-500" />
-
-                  {post.city}
-
-                </div>
-
-                {/* PRICE */}
-                <div
-                  className="
-                    mt-6
-                    text-4xl
-                    font-black
-                    text-[#176b3a]
-                  "
-                >
-                  {post.price.toLocaleString()} Ft
-                </div>
-
-                {/* BUTTON */}
-                <Link
-                  href={`/post/${post.id}`}
-                  className="
-                    mt-8
-                    inline-flex
-                    rounded-2xl
-                    bg-[#176b3a]
-                    px-6
-                    py-4
-                    font-bold
-                    text-[#18201b]
-                    transition
-                    hover:bg-[#115b30]
-                  "
-                >
-                  Megnézem
-                </Link>
-
+                <h2 className="line-clamp-2 text-xl font-black leading-snug text-[#172019]">{post.title}</h2>
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{post.city}{post.district ? `, ${post.district}` : ""}</p>
+                <p className="mt-5 text-2xl font-black text-[#176b3a]">{formatPrice(post.price)}</p>
+                <Link href={`/post/${post.id}`} className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]">Megnézem</Link>
               </div>
-
-            </div>
-
+            </article>
           ))}
-
         </div>
-
       )}
-
-    </div>
+    </main>
   );
 }

@@ -110,22 +110,25 @@ export default function Home() {
   }, [loading]);
 
   useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        if (!auth.currentUser) return;
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (!currentUser) {
+        setFavorites([]);
+        return;
+      }
 
+      try {
         const q = query(
           collection(db, "favorites"),
-          where("userId", "==", auth.currentUser.uid)
+          where("userId", "==", currentUser.uid)
         );
         const snapshot = await getDocs(q);
         setFavorites(snapshot.docs.map((item) => item.data().postId as string));
       } catch (error) {
         console.error("Kedvencek betöltési hiba:", error);
       }
-    };
+    });
 
-    loadFavorites();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -306,6 +309,21 @@ export default function Home() {
                 Eladó és kiadó ingatlanok egyszerű kereséssel, átlátható információkkal, egy helyen.
               </p>
 
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#ingatlanok"
+                  className="inline-flex items-center justify-center rounded-2xl bg-[#176b3a] px-5 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30]"
+                >
+                  Ingatlanok böngészése
+                </a>
+                <a
+                  href="#ingatlanok"
+                  className="inline-flex items-center justify-center rounded-2xl border border-[#d8d2c7] bg-white px-5 py-3.5 text-sm font-bold text-[#334039] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"
+                >
+                  Keresés és szűrés
+                </a>
+              </div>
+
               <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-[#fbf7ef] p-4"><p className="font-bold text-[#263129]">Gyors keresés</p><p className="mt-1 text-sm text-[#7b857e]">Szűrj a fontos szempontokra.</p></div>
                 <div className="rounded-2xl bg-[#f2f7f3] p-4"><p className="font-bold text-[#263129]">Kedvencek</p><p className="mt-1 text-sm text-[#7b857e]">Mentsd el, ami igazán tetszik.</p></div>
@@ -327,7 +345,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative z-20 border-t border-[#eee8df] bg-[#faf8f4] p-4 md:p-6">
+          <div id="ingatlanok" className="relative z-20 scroll-mt-24 border-t border-[#eee8df] bg-[#faf8f4] p-4 md:p-6">
             <PropertyFilters
               filters={filters}
               setFilters={setFilters}

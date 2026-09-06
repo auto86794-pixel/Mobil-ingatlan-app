@@ -33,8 +33,12 @@ export default function ContactModal({
     if (open) {
       setStatus("idle");
       setErrorText("");
+      setForm((current) => ({
+        ...current,
+        message: current.message || (propertyTitle ? `Érdeklődöm a(z) „${propertyTitle}” ingatlan iránt.` : ""),
+      }));
     }
-  }, [open]);
+  }, [open, propertyTitle]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((current) => ({ ...current, [e.target.name]: e.target.value }));

@@ -4,13 +4,18 @@ import Link from "next/link";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { auth } from "../lib/firebase";
 
 const navLink =
-  "rounded-full px-4 py-2 text-sm font-semibold text-[#3f4a43] transition hover:bg-[#f3efe7] hover:text-[#176b3a]";
+  "rounded-full px-4 py-2 text-sm font-semibold transition";
+
+const navLinkClass = (active: boolean) =>
+  `${navLink} ${active ? "bg-[#edf5ef] text-[#176b3a]" : "text-[#3f4a43] hover:bg-[#f3efe7] hover:text-[#176b3a]"}`;
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
@@ -40,12 +45,12 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-1">
-            <Link href="/" className={navLink}>Ingatlanok</Link>
-            <Link href="/favorites" className={navLink}>
+            <Link href="/properties#ingatlanok" className={navLinkClass(pathname.startsWith("/properties"))}>Ingatlanok</Link>
+            <Link href="/favorites" className={navLinkClass(pathname.startsWith("/favorites"))}>
               <span className="inline-flex items-center gap-2"><Heart size={15} /> Kedvencek</span>
             </Link>
             {user?.emailVerified && (
-              <Link href="/dashboard" className={navLink}>
+              <Link href="/dashboard" className={navLinkClass(pathname.startsWith("/dashboard"))}>
                 <span className="inline-flex items-center gap-2"><LayoutDashboard size={15} /> Saját hirdetések</span>
               </Link>
             )}

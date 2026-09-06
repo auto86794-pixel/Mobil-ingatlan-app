@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, MessageCircle, Phone, Share2 } from "lucide-react";
 
 import { db } from "@/app/lib/firebase";
@@ -22,6 +22,7 @@ const statusLabel: Record<string, string> = {
 
 export default function PropertyClient() {
   const params = useParams();
+  const router = useRouter();
   const [property, setProperty] = useState<PropertyWithId | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -183,7 +184,7 @@ export default function PropertyClient() {
     <div className="min-h-screen bg-[#f7f4ee] px-4 pb-48 pt-4 text-[#18201b] md:p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-3 flex items-center justify-between gap-3 sm:mb-5">
-          <button type="button" onClick={() => history.back()} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#344139] shadow-sm hover:border-[#b9d1c0]">
+          <button type="button" onClick={() => router.push("/properties#results")} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#344139] shadow-sm hover:border-[#b9d1c0]">
             <ArrowLeft size={17} /> Vissza a találatokhoz
           </button>
           <button type="button" onClick={handleShare} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#176b3a] shadow-sm hover:border-[#b9d1c0]">

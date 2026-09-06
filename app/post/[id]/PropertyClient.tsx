@@ -128,7 +128,7 @@ export default function PropertyClient() {
   ].filter(([, value]) => value);
 
   return (
-    <div className="min-h-screen bg-[#f7f4ee] p-6 text-[#18201b]">
+    <div className="min-h-screen bg-[#f7f4ee] px-4 pb-48 pt-4 text-[#18201b] md:p-6">
       <div className="mx-auto max-w-6xl">
         {selectedImage ? (
           <div className="relative overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white">
@@ -143,7 +143,7 @@ export default function PropertyClient() {
               <img
                 src={selectedImage}
                 alt={`${property.title} ${selectedImageIndex + 1}. kép`}
-                className="h-[320px] w-full object-cover transition-all duration-300 sm:h-[500px]"
+                className="h-[300px] w-full object-cover transition-all duration-300 sm:h-[500px]"
               />
             </button>
 
@@ -208,26 +208,32 @@ export default function PropertyClient() {
           </div>
         )}
 
-        <div className="mt-10">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="mt-5 sm:mt-10">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {property.featured && <span className="rounded-full bg-[#ead8a5] px-3 py-1 text-xs font-bold text-[#172019]">⭐ KIEMELT</span>}
             <span className="rounded-full border border-[#d8d2c7] bg-white px-3 py-1 text-xs text-[#4d5a51]">{statusLabel[property.status] || property.status}</span>
           </div>
-          <h1 className="mt-4 text-5xl font-black">{property.title}</h1>
-          <p className="mt-3 text-xl text-[#6c776f]">📍 {property.city}{property.district ? `, ${property.district}` : ""}</p>
-          <p className="mt-6 text-4xl font-bold text-[#a1813a]">{property.price.toLocaleString("hu-HU")} Ft</p>
+          <h1 className="mt-3 text-[28px] font-black leading-[1.08] tracking-tight sm:mt-4 sm:text-5xl">{property.title}</h1>
+          <p className="mt-2 text-base text-[#6c776f] sm:mt-3 sm:text-xl">📍 {property.city}{property.district ? `, ${property.district}` : ""}</p>
+          <p className="mt-3 text-[30px] font-black tracking-tight text-[#176b3a] sm:mt-6 sm:text-4xl">{property.price.toLocaleString("hu-HU")} Ft</p>
 
-          {details.length > 0 && <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{details.map(([label, value]) => <div key={label} className="rounded-2xl border border-[#e2ddd3] bg-white p-5"><div className="text-sm text-[#879087]">{label}</div><div className="mt-1 font-bold text-[#18201b]">{value}</div></div>)}</div>}
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
+            {property.area ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">📐 {property.area} m²</div> : null}
+            {property.rooms ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">🛏️ {property.rooms} szoba</div> : null}
+            {property.propertyType ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">🏠 {property.propertyType}</div> : null}
+          </div>
 
-          <div className="mt-8 rounded-3xl border border-[#e2ddd3] bg-white p-8">
+          {details.length > 0 && <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-4 lg:grid-cols-3">{details.map(([label, value]) => <div key={label} className="rounded-2xl border border-[#e2ddd3] bg-white p-4 sm:p-5"><div className="text-xs text-[#879087] sm:text-sm">{label}</div><div className="mt-1 text-sm font-bold text-[#18201b] sm:text-base">{value}</div></div>)}</div>}
+
+          <div className="mt-6 rounded-3xl border border-[#e2ddd3] bg-white p-5 sm:mt-8 sm:p-8">
             <h2 className="mb-4 text-2xl font-bold">Leírás</h2>
             <p className="whitespace-pre-line leading-8 text-[#4d5a51]">{property.description || "Nincs megadott leírás."}</p>
           </div>
 
           <div className="mt-8 flex flex-col gap-6">
-            {property.phone && <a href={`tel:${property.phone}`} className="w-fit rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30]">📞 Hívás</a>}
+            {property.phone && <a href={`tel:${property.phone}`} className="hidden w-fit rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30] md:inline-flex">📞 Hívás</a>}
 
-            {property.email && <div className="w-full max-w-2xl rounded-3xl border border-[#e2ddd3] bg-white p-8">
+            {property.email && <div id="contact-form" className="w-full max-w-2xl scroll-mt-24 rounded-3xl border border-[#e2ddd3] bg-white p-5 sm:p-8">
               <h2 className="mb-6 text-3xl font-black">✉️ Kapcsolatfelvétel</h2>
               <form onSubmit={async (e) => {
                 e.preventDefault();
@@ -267,6 +273,30 @@ export default function PropertyClient() {
           {property.lat && property.lng ? <div className="mt-10"><h2 className="mb-4 text-3xl font-black text-[#18201b]">📍 Elhelyezkedés</h2><PropertyMap lat={property.lat} lng={property.lng} title={property.title} /></div> : null}
         </div>
       </div>
+
+      {!galleryOpen && (property.phone || property.email) && (
+        <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
+          <div className="mx-auto flex max-w-6xl gap-3">
+            {property.phone ? (
+              <a
+                href={`tel:${property.phone}`}
+                className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-[#176b3a] bg-white px-4 font-bold text-[#176b3a]"
+              >
+                📞 Hívás
+              </a>
+            ) : null}
+            {property.email ? (
+              <button
+                type="button"
+                onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="flex min-h-12 flex-[1.35] items-center justify-center rounded-2xl bg-[#176b3a] px-4 font-bold text-white"
+              >
+                Érdeklődöm
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {galleryOpen && selectedImage && (
         <div

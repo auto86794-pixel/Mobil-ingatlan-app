@@ -57,8 +57,8 @@ export default function PropertyCard({
 
   return (
     <>
-      <article className="group overflow-hidden rounded-[26px] border border-[#e2ddd3] bg-white shadow-[0_16px_45px_rgba(54,46,32,.08)] transition duration-300 hover:-translate-y-1 hover:border-[#c7d7cb] hover:shadow-[0_20px_55px_rgba(54,46,32,.12)]">
-        <div className="relative h-60 overflow-hidden sm:h-64">
+      <article className="group flex h-full flex-col overflow-hidden rounded-[26px] border border-[#e2ddd3] bg-white shadow-[0_16px_45px_rgba(54,46,32,.08)] transition duration-300 hover:-translate-y-1 hover:border-[#c7d7cb] hover:shadow-[0_20px_55px_rgba(54,46,32,.12)]">
+        <div className="relative h-56 overflow-hidden sm:h-64">
           <Image src={imageUrl} alt={title} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.035]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-transparent to-black/5" />
 
@@ -80,8 +80,8 @@ export default function PropertyCard({
           </div>
         </div>
 
-        <div className="p-5 sm:p-6">
-          <div className="min-h-[76px]">
+        <div className="flex flex-1 flex-col p-5 sm:p-6">
+          <div className="min-h-[72px] sm:min-h-[82px]">
             <h2 className="line-clamp-2 text-xl font-black leading-snug tracking-tight text-[#172019] sm:text-[22px]">{title}</h2>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{city}{district ? `, ${district}` : ""}</p>
           </div>
@@ -93,7 +93,7 @@ export default function PropertyCard({
             </div>
           )}
 
-          <div className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2">
+          <div className="mt-auto grid grid-cols-[1fr_auto_auto] gap-2 pt-5">
             <Link href={`/post/${id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#115b30]">Részletek <ArrowUpRight size={16} /></Link>
             {phone && <a href={`tel:${phone}`} aria-label="Telefonhívás" className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded8ce] bg-[#faf8f4] text-[#445048] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"><Phone size={18} /></a>}
             <button type="button" onClick={() => setOpenModal(true)} aria-label="Üzenet küldése" className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded8ce] bg-[#faf8f4] text-[#445048] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"><MessageCircle size={18} /></button>

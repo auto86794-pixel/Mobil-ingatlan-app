@@ -240,8 +240,8 @@ export default function Home() {
 
             <div className="relative min-h-[360px] overflow-hidden lg:min-h-full">
               <img
-                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=85&w=1800&auto=format&fit=crop"
-                alt="Világos, modern otthon"
+                src="/debrecen-hero.webp"
+                alt="Modern debreceni otthon panorámával"
                 className="absolute inset-0 h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-white via-white/15 to-transparent lg:from-white/85 lg:via-white/10" />

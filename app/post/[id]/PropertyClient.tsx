@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, MessageCircle, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, Heart, MessageCircle, Phone, Share2 } from "lucide-react";
 
-import { db } from "@/app/lib/firebase";
+import { auth, db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
 import { formatPrice } from "@/app/lib/format";
 import ContactModal from "@/app/components/ContactModal";
@@ -32,6 +32,10 @@ export default function PropertyClient() {
   const [similarProperties, setSimilarProperties] = useState<PropertyWithId[]>([]);
   const [shareNotice, setShareNotice] = useState("");
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactMode, setContactMode] = useState<"inquiry" | "alert">("inquiry");
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteNotice, setFavoriteNotice] = useState("");
   const [detailFormStatus, setDetailFormStatus] = useState<"idle" | "success" | "error">("idle");
   const [detailFormMessage, setDetailFormMessage] = useState("");
 
@@ -79,6 +83,32 @@ export default function PropertyClient() {
     };
     fetchProperty();
   }, [params]);
+
+  useEffect(() => {
+    if (!property?.id) return;
+
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (!currentUser) {
+        setIsFavorite(false);
+        return;
+      }
+
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(db, "favorites"),
+            where("userId", "==", currentUser.uid),
+            where("postId", "==", property.id)
+          )
+        );
+        setIsFavorite(!snapshot.empty);
+      } catch (error) {
+        console.error("Kedvenc állapot betöltési hiba:", error);
+      }
+    });
+
+    return unsubscribe;
+  }, [property?.id]);
 
   const galleryImages = useMemo(() => {
     if (!property) return [];
@@ -131,6 +161,44 @@ export default function PropertyClient() {
       window.setTimeout(() => setShareNotice(""), 1800);
     } catch (error) {
       if ((error as DOMException)?.name !== "AbortError") console.error("Megosztási hiba:", error);
+    }
+  };
+
+  const handleFavorite = async () => {
+    if (!property || favoriteLoading) return;
+
+    if (!auth.currentUser) {
+      setFavoriteNotice("A kedvencek mentéséhez jelentkezz be.");
+      window.setTimeout(() => setFavoriteNotice(""), 2200);
+      return;
+    }
+
+    setFavoriteLoading(true);
+    try {
+      const favoritesRef = collection(db, "favorites");
+      const snapshot = await getDocs(
+        query(
+          favoritesRef,
+          where("userId", "==", auth.currentUser.uid),
+          where("postId", "==", property.id)
+        )
+      );
+
+      if (!snapshot.empty) {
+        await Promise.all(snapshot.docs.map((item) => deleteDoc(doc(db, "favorites", item.id))));
+        setIsFavorite(false);
+        setFavoriteNotice("Eltávolítva a kedvencekből.");
+      } else {
+        await addDoc(favoritesRef, { userId: auth.currentUser.uid, postId: property.id });
+        setIsFavorite(true);
+        setFavoriteNotice("Elmentve a kedvencek közé.");
+      }
+    } catch (error) {
+      console.error("Kedvenc módosítási hiba:", error);
+      setFavoriteNotice("A mentés most nem sikerült.");
+    } finally {
+      setFavoriteLoading(false);
+      window.setTimeout(() => setFavoriteNotice(""), 2200);
     }
   };
 
@@ -187,9 +255,14 @@ export default function PropertyClient() {
           <button type="button" onClick={() => router.push("/properties#results")} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#344139] shadow-sm hover:border-[#b9d1c0]">
             <ArrowLeft size={17} /> Vissza a találatokhoz
           </button>
-          <button type="button" onClick={handleShare} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#176b3a] shadow-sm hover:border-[#b9d1c0]">
-            <Share2 size={17} /> <span className="hidden sm:inline">Megosztás</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={handleFavorite} disabled={favoriteLoading} className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold shadow-sm transition disabled:opacity-60 ${isFavorite ? "border-rose-200 bg-rose-50 text-rose-600" : "border-[#ddd7cb] bg-white text-[#176b3a] hover:border-[#b9d1c0]"}`}>
+              <Heart size={17} fill={isFavorite ? "currentColor" : "none"} /> <span className="hidden sm:inline">{isFavorite ? "Mentve" : "Mentés"}</span>
+            </button>
+            <button type="button" onClick={handleShare} className="inline-flex items-center gap-2 rounded-full border border-[#ddd7cb] bg-white px-4 py-2.5 text-sm font-bold text-[#176b3a] shadow-sm hover:border-[#b9d1c0]">
+              <Share2 size={17} /> <span className="hidden sm:inline">Megosztás</span>
+            </button>
+          </div>
         </div>
         {selectedImage ? (
           <div className="relative overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white">
@@ -402,11 +475,24 @@ export default function PropertyClient() {
             </section>
           )}
 
+          <section className="mt-8 rounded-[28px] border border-[#d9e7dc] bg-[#f2f7f3] p-5 sm:p-7">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Ne maradj le</p>
+                <h2 className="mt-1 text-2xl font-black text-[#172019]">Kérsz értesítést hasonló ingatlanokról?</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667168]">Írd meg az elérhetőséged, és jelezheted, hogy ehhez hasonló debreceni ingatlanokat keresel.</p>
+              </div>
+              <button type="button" onClick={() => { setContactMode("alert"); setContactModalOpen(true); }} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-5 text-sm font-black text-white transition hover:bg-[#115b30]">
+                <Bell size={18} /> Értesítést kérek
+              </button>
+            </div>
+          </section>
+
           {property.lat && property.lng ? <div className="mt-10"><h2 className="mb-4 text-3xl font-black text-[#18201b]">📍 Elhelyezkedés</h2><PropertyMap lat={property.lat} lng={property.lng} title={property.title} /></div> : null}
         </div>
       </div>
 
-      {shareNotice && <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{shareNotice}</div>}
+      {(shareNotice || favoriteNotice) && <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{shareNotice || favoriteNotice}</div>}
 
       {!galleryOpen && (property.phone || property.email) && (
         <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-3 pb-3 pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
@@ -422,7 +508,7 @@ export default function PropertyClient() {
             {property.email ? (
               <button
                 type="button"
-                onClick={() => setContactModalOpen(true)}
+                onClick={() => { setContactMode("inquiry"); setContactModalOpen(true); }}
                 className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
               >
                 <MessageCircle size={18} /> Érdeklődöm
@@ -437,6 +523,10 @@ export default function PropertyClient() {
         setOpen={setContactModalOpen}
         propertyTitle={property.title}
         propertyId={property.id}
+        modalTitle={contactMode === "alert" ? "Hasonló ingatlan értesítő" : "Érdeklődöm"}
+        initialMessage={contactMode === "alert" ? `Kérek értesítést a(z) „${property.title}” ingatlanhoz hasonló debreceni ingatlanokról.` : undefined}
+        submitLabel={contactMode === "alert" ? "Értesítést kérek" : "Érdeklődés elküldése"}
+        successMessage={contactMode === "alert" ? "Megkaptuk a kérésed. Ha hasonló ingatlan érkezik, az érdeklődésed alapján fel tudjuk venni veled a kapcsolatot." : undefined}
       />
 
       {galleryOpen && selectedImage && (

@@ -152,7 +152,7 @@ export default function Home() {
   const toggleFavorite = async (id: string) => {
     try {
       if (!auth.currentUser) {
-        alert("Először jelentkezz be!");
+        setFavoriteNotice("A kedvencek mentéséhez jelentkezz be.");
         return;
       }
 

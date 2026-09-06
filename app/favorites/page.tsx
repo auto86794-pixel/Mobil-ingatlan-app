@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { Heart, LogIn, MapPin } from "lucide-react";
+import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
+import { Heart, LogIn, MapPin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { auth, db } from "@/app/lib/firebase";
@@ -14,6 +14,9 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<PropertyWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [favoriteDocs, setFavoriteDocs] = useState<Record<string, string>>({});
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -30,9 +33,15 @@ export default function FavoritesPage() {
         const favoritesSnapshot = await getDocs(
           query(collection(db, "favorites"), where("userId", "==", currentUser.uid))
         );
+        const favoriteDocMap: Record<string, string> = {};
         const postIds = favoritesSnapshot.docs
-          .map((item) => item.data().postId)
+          .map((item) => {
+            const postId = item.data().postId;
+            if (typeof postId === "string" && postId.length > 0) favoriteDocMap[postId] = item.id;
+            return postId;
+          })
           .filter((value): value is string => typeof value === "string" && value.length > 0);
+        setFavoriteDocs(favoriteDocMap);
 
         if (postIds.length === 0) {
           setFavorites([]);
@@ -57,6 +66,30 @@ export default function FavoritesPage() {
 
     return unsubscribe;
   }, []);
+
+  const removeFavorite = async (postId: string) => {
+    const favoriteDocId = favoriteDocs[postId];
+    if (!favoriteDocId || removingId) return;
+
+    setRemovingId(postId);
+    try {
+      await deleteDoc(doc(db, "favorites", favoriteDocId));
+      setFavorites((current) => current.filter((item) => item.id !== postId));
+      setFavoriteDocs((current) => {
+        const next = { ...current };
+        delete next[postId];
+        return next;
+      });
+      setNotice("Eltávolítva a kedvencekből.");
+      window.setTimeout(() => setNotice(""), 2200);
+    } catch (error) {
+      console.error("Kedvenc eltávolítási hiba:", error);
+      setNotice("Az eltávolítás most nem sikerült.");
+      window.setTimeout(() => setNotice(""), 2200);
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   if (loading || signedIn === null) {
     return <div className="flex min-h-[60vh] items-center justify-center bg-[#f7f4ee] text-lg font-bold text-[#18201b]">Kedvencek betöltése...</div>;
@@ -93,7 +126,10 @@ export default function FavoritesPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {favorites.map((post) => (
-            <article key={post.id} className="overflow-hidden rounded-[28px] border border-[#e2ddd3] bg-white shadow-sm">
+            <article key={post.id} className="relative overflow-hidden rounded-[28px] border border-[#e2ddd3] bg-white shadow-sm">
+              <button type="button" onClick={() => removeFavorite(post.id)} disabled={removingId === post.id} aria-label="Eltávolítás a kedvencekből" className="absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/95 text-rose-600 shadow-lg transition hover:scale-105 disabled:opacity-60">
+                <Trash2 size={18} />
+              </button>
               <img src={post.imageUrl} alt={post.title} className="h-60 w-full object-cover" loading="lazy" decoding="async" />
               <div className="p-6">
                 <h2 className="line-clamp-2 text-xl font-black leading-snug text-[#172019]">{post.title}</h2>
@@ -105,6 +141,7 @@ export default function FavoritesPage() {
           ))}
         </div>
       )}
+      {notice ? <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{notice}</div> : null}
     </main>
   );
 }

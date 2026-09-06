@@ -9,6 +9,10 @@ type ContactModalProps = {
   setOpen: (open: boolean) => void;
   propertyTitle?: string;
   propertyId?: string;
+  modalTitle?: string;
+  initialMessage?: string;
+  submitLabel?: string;
+  successMessage?: string;
 };
 
 const emptyForm = { name: "", phone: "", email: "", message: "", website: "" };
@@ -18,6 +22,10 @@ export default function ContactModal({
   setOpen,
   propertyTitle,
   propertyId,
+  modalTitle = "Érdeklődöm",
+  initialMessage,
+  submitLabel = "Érdeklődés elküldése",
+  successMessage = "Megkaptuk az üzeneted. Hamarosan felvesszük veled a kapcsolatot.",
 }: ContactModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,10 +43,10 @@ export default function ContactModal({
       setErrorText("");
       setForm((current) => ({
         ...current,
-        message: current.message || (propertyTitle ? `Érdeklődöm a(z) „${propertyTitle}” ingatlan iránt.` : ""),
+        message: initialMessage ?? (propertyTitle ? `Érdeklődöm a(z) „${propertyTitle}” ingatlan iránt.` : ""),
       }));
     }
-  }, [open, propertyTitle]);
+  }, [open, propertyTitle, initialMessage]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((current) => ({ ...current, [e.target.name]: e.target.value }));
@@ -91,12 +99,12 @@ export default function ContactModal({
           <div className="py-8 text-center" role="status" aria-live="polite">
             <CheckCircle2 className="mx-auto h-14 w-14 text-[#176b3a]" />
             <h2 className="mt-4 text-2xl font-black text-[#172019]">Köszönjük az érdeklődést!</h2>
-            <p className="mt-3 leading-7 text-[#5f6b63]">Megkaptuk az üzeneted. Hamarosan felvesszük veled a kapcsolatot.</p>
+            <p className="mt-3 leading-7 text-[#5f6b63]">{successMessage}</p>
             <button type="button" onClick={() => setOpen(false)} className="mt-6 w-full rounded-2xl bg-[#176b3a] px-5 py-3.5 font-bold text-white transition hover:bg-[#115b30]">Rendben</button>
           </div>
         ) : (
           <>
-            <h2 className="mb-2 text-2xl font-black text-[#172019]">Érdeklődöm</h2>
+            <h2 className="mb-2 text-2xl font-black text-[#172019]">{modalTitle}</h2>
             {propertyTitle && (
               <div className="mb-5 rounded-2xl bg-[#f2f7f3] px-4 py-3 text-sm text-[#4d5a51]">
                 <span className="font-bold text-[#176b3a]">Ingatlan:</span> {propertyTitle}
@@ -117,7 +125,7 @@ export default function ContactModal({
               {status === "error" ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">{errorText}</p> : null}
 
               <button type="submit" disabled={loading} className="min-h-12 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-50">
-                {loading ? "Küldés..." : "Érdeklődés elküldése"}
+                {loading ? "Küldés..." : submitLabel}
               </button>
             </form>
           </>

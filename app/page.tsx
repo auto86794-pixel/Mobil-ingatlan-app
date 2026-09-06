@@ -263,21 +263,21 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-6 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Aktív kínálat</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-[#172019] md:text-3xl">{filteredPosts.length} ingatlan felel meg</h2>
+            <h2 className="mt-1 text-xl font-black tracking-tight text-[#172019] md:text-2xl">{filteredPosts.length} ingatlan felel meg</h2>
           </div>
           <p className="text-sm text-[#7d877f]">Csak az aktuálisan elérhető hirdetések jelennek meg.</p>
         </div>
 
         {featuredPosts.length > 0 && (
-          <section className="mb-14">
-            <div className="mb-6 flex items-center justify-between">
+          <section className="mb-10">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">Kiemelt ingatlanok</h2>
               <span className="text-sm font-semibold text-[#176b3a]">{featuredPosts.length} kiemelt</span>
             </div>
-            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+            <div className={`grid gap-6 md:grid-cols-2 ${featuredPosts.length >= 3 ? "xl:grid-cols-3" : "xl:max-w-[980px]"}`}>
               {featuredPosts.map((post) => (
                 <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
               ))}
@@ -295,11 +295,11 @@ export default function Home() {
 
         {normalPosts.length > 0 && (
           <section>
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">Ingatlan kínálatunk</h2>
               <span className="text-sm text-[#6c776f] md:text-base">{normalPosts.length} további találat</span>
             </div>
-            <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
               {normalPosts.map((post) => (
                 <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
               ))}

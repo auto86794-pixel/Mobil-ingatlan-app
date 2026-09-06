@@ -40,6 +40,21 @@ export default function PropertyCard({
 }: PropertyCardProps) {
   const [openModal, setOpenModal] = useState(false);
 
+  const validArea = typeof area === "number" && Number.isFinite(area) && area > 0 ? area : null;
+  const validRooms = typeof rooms === "number" && Number.isFinite(rooms) && rooms > 0 ? rooms : null;
+  const cleanPropertyType = propertyType?.trim();
+  const inferredPropertyType = (() => {
+    if (cleanPropertyType) return cleanPropertyType;
+    const value = title.toLocaleLowerCase("hu-HU");
+    if (value.includes("ikerház")) return "Ikerház";
+    if (value.includes("sorház")) return "Sorház";
+    if (value.includes("családi ház") || value.includes("ház")) return "Családi ház";
+    if (value.includes("penthouse")) return "Penthouse";
+    if (value.includes("lakás")) return "Lakás";
+    if (value.includes("telek")) return "Telek";
+    return null;
+  })();
+
   return (
     <>
       <article className="group overflow-hidden rounded-[26px] border border-[#e2ddd3] bg-white shadow-[0_16px_45px_rgba(54,46,32,.08)] transition duration-300 hover:-translate-y-1 hover:border-[#c7d7cb] hover:shadow-[0_20px_55px_rgba(54,46,32,.12)]">
@@ -60,7 +75,7 @@ export default function PropertyCard({
           </button>
 
           <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-3">
-            <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{propertyType || "Ingatlan"}</div>
+            <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType || "Eladó ingatlan"}</div>
             <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{price.toLocaleString("hu-HU")} Ft</div>
           </div>
         </div>
@@ -71,10 +86,10 @@ export default function PropertyCard({
             <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{city}{district ? `, ${district}` : ""}</p>
           </div>
 
-          {(area || rooms) && (
+          {(validArea || validRooms) && (
             <div className="mt-5 flex gap-2 border-y border-[#eee8df] py-4 text-sm text-[#4d5a51]">
-              {area ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {area} m²</span> : null}
-              {rooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {rooms} szoba</span> : null}
+              {validArea ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {validArea} m²</span> : null}
+              {validRooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {validRooms} szoba</span> : null}
             </div>
           )}
 

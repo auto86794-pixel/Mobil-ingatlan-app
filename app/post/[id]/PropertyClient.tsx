@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useParams } from "next/navigation";
-import { ArrowLeft, MessageCircle, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageCircle, Phone, Share2 } from "lucide-react";
 
 import { db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
@@ -277,6 +277,27 @@ export default function PropertyClient() {
           <p className="mt-2 text-base text-[#6c776f] sm:mt-3 sm:text-xl">📍 {property.city}{property.district ? `, ${property.district}` : ""}</p>
           <p className="mt-3 text-[30px] font-black tracking-tight text-[#176b3a] sm:mt-6 sm:text-4xl">{formatPrice(property.price)}</p>
 
+          {(property.phone || property.email) && (
+            <div className="mt-5 hidden items-center justify-between gap-4 rounded-3xl border border-[#d9e7dc] bg-[#f2f7f3] p-5 md:flex">
+              <div>
+                <p className="text-sm font-black text-[#18201b]">Érdekel ez az ingatlan?</p>
+                <p className="mt-1 text-sm text-[#667168]">Kérdezz róla közvetlenül, vagy küldj érdeklődést pár másodperc alatt.</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {property.phone ? (
+                  <a href={`tel:${property.phone}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#b9d1c0] bg-white px-5 text-sm font-black text-[#176b3a] transition hover:border-[#8fbc9d]">
+                    <Phone size={18} /> Hívás
+                  </a>
+                ) : null}
+                {property.email ? (
+                  <button type="button" onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-5 text-sm font-black text-white transition hover:bg-[#115b30]">
+                    <MessageCircle size={18} /> Érdeklődöm
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
             {property.area ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">📐 {property.area} m²</div> : null}
             {property.rooms ? <div className="rounded-xl border border-[#ddd7cb] bg-white px-3 py-2.5 text-sm font-bold">🛏️ {property.rooms} szoba</div> : null}
@@ -291,10 +312,13 @@ export default function PropertyClient() {
           </div>
 
           <div className="mt-8 flex flex-col gap-6">
-            {property.phone && <a href={`tel:${property.phone}`} className="hidden w-fit rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30] md:inline-flex">📞 Hívás</a>}
-
-            {property.email && <div id="contact-form" className="w-full max-w-2xl scroll-mt-24 rounded-3xl border border-[#e2ddd3] bg-white p-5 sm:p-8">
-              <h2 className="mb-6 text-3xl font-black">✉️ Kapcsolatfelvétel</h2>
+            {property.email && <div id="contact-form" className="w-full max-w-2xl scroll-mt-24 rounded-3xl border border-[#e2ddd3] bg-white p-5 shadow-sm sm:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Gyors érdeklődés</p>
+              <h2 className="mt-1 text-3xl font-black">Kapcsolatfelvétel</h2>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#667168]">
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={16} className="text-[#176b3a]" /> Rövid űrlap</span>
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={16} className="text-[#176b3a]" /> Az ingatlan adatai automatikusan mennek</span>
+              </div>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
@@ -331,9 +355,9 @@ export default function PropertyClient() {
                 <div className="absolute left-[-9999px] h-px w-px overflow-hidden" aria-hidden="true"><label htmlFor="detail-website">Weboldal</label><input id="detail-website" type="text" name="website" tabIndex={-1} autoComplete="off" /></div>
                 <div className="rounded-2xl bg-[#f2f7f3] px-4 py-3 text-sm text-[#4d5a51]"><span className="font-bold text-[#176b3a]">Érdeklődés erről:</span> {property.title}</div>
                 <input type="text" name="name" placeholder="Név" autoComplete="name" required className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
-                <input type="tel" name="phone" placeholder="Telefonszám" autoComplete="tel" inputMode="tel" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                <input type="tel" name="phone" placeholder="Telefonszám (ajánlott)" autoComplete="tel" inputMode="tel" className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
                 <input type="email" name="email" placeholder="E-mail" autoComplete="email" required className="min-h-12 rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
-                <textarea name="message" placeholder="Üzenet" required className="min-h-[150px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" />
+                <textarea name="message" defaultValue={`Érdeklődöm a(z) „${property.title}” ingatlan iránt.`} required className="min-h-[150px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none focus:border-[#8fbc9d] focus:ring-2 focus:ring-[#d9eadf]" aria-label="Üzenet" />
                 {detailFormStatus !== "idle" ? (
                   <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ${detailFormStatus === "success" ? "bg-[#eef7f0] text-[#176b3a]" : "bg-red-50 text-red-700"}`} role={detailFormStatus === "error" ? "alert" : "status"} aria-live="polite">
                     {detailFormMessage}
@@ -361,7 +385,15 @@ export default function PropertyClient() {
                     <div className="p-4">
                       <p className="line-clamp-2 font-black leading-snug text-[#172019]">{item.title}</p>
                       <p className="mt-1 text-sm text-[#6c776f]">{item.city}{item.district ? `, ${item.district}` : ""}</p>
-                      <p className="mt-3 text-lg font-black text-[#176b3a]">{formatPrice(item.price)}</p>
+                      <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-bold text-[#59645c]">
+                        {item.area ? <span className="rounded-full bg-[#f3f0ea] px-2.5 py-1">{item.area} m²</span> : null}
+                        {item.rooms ? <span className="rounded-full bg-[#f3f0ea] px-2.5 py-1">{item.rooms} szoba</span> : null}
+                        {item.propertyType ? <span className="rounded-full bg-[#f3f0ea] px-2.5 py-1">{item.propertyType}</span> : null}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-lg font-black text-[#176b3a]">{formatPrice(item.price)}</p>
+                        <span className="text-sm font-black text-[#176b3a] transition group-hover:translate-x-0.5">Megnézem →</span>
+                      </div>
                     </div>
                   </a>
                 ))}

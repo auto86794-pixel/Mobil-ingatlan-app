@@ -19,6 +19,7 @@ type PropertyCardProps = {
   imageUrl: string;
   phone?: string;
   featured?: boolean;
+  isNew?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
 };
@@ -35,6 +36,7 @@ export default function PropertyCard({
   imageUrl,
   phone,
   featured = false,
+  isNew = false,
   isFavorite = false,
   onToggleFavorite,
 }: PropertyCardProps) {
@@ -68,9 +70,14 @@ export default function PropertyCard({
                 <Star size={12} fill="currentColor" /> Kiemelt
               </span>
             )}
+            {isNew && (
+              <span className="inline-flex items-center rounded-full border border-[#b9d1c0] bg-[#eef7f0]/95 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#176b3a] shadow-lg">
+                Új
+              </span>
+            )}
           </div>
 
-          <button type="button" onClick={onToggleFavorite} aria-label={isFavorite ? "Eltávolítás a kedvencekből" : "Hozzáadás a kedvencekhez"} className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-xl transition hover:scale-105 ${isFavorite ? "border-rose-200 bg-white text-rose-500" : "border-white/60 bg-white/[0.88] text-[#263129] hover:bg-white"}`}>
+          <button type="button" onClick={onToggleFavorite} aria-label={isFavorite ? "Eltávolítás a kedvencekből" : "Hozzáadás a kedvencekhez"} className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-xl transition duration-200 hover:scale-110 active:scale-90 ${isFavorite ? "border-rose-200 bg-white text-rose-500 shadow-lg ring-2 ring-white/70" : "border-white/60 bg-white/[0.88] text-[#263129] hover:bg-white"}`}>
             <Heart size={19} fill={isFavorite ? "currentColor" : "none"} />
           </button>
 
@@ -99,7 +106,7 @@ export default function PropertyCard({
           </div>
         </div>
       </article>
-      <ContactModal open={openModal} setOpen={setOpenModal} propertyTitle={title} />
+      <ContactModal open={openModal} setOpen={setOpenModal} propertyTitle={title} propertyId={id} />
     </>
   );
 }

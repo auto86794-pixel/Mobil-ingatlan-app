@@ -62,6 +62,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoriteNotice, setFavoriteNotice] = useState("");
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -119,14 +120,22 @@ export default function Home() {
       if (!snapshot.empty) {
         await deleteDoc(doc(db, "favorites", snapshot.docs[0].id));
         setFavorites((prev) => prev.filter((favoriteId) => favoriteId !== id));
+        setFavoriteNotice("Eltávolítva a kedvencekből.");
       } else {
         await addDoc(favoritesRef, { userId, postId: id });
         setFavorites((prev) => [...prev, id]);
+        setFavoriteNotice("Elmentve a kedvencek közé.");
       }
     } catch (error) {
       console.error("Kedvenc módosítási hiba:", error);
     }
   };
+
+  useEffect(() => {
+    if (!favoriteNotice) return;
+    const timer = window.setTimeout(() => setFavoriteNotice(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [favoriteNotice]);
 
   const activePosts = useMemo(
     () =>
@@ -180,6 +189,11 @@ export default function Home() {
       return timestampToMillis(b.createdAt) - timestampToMillis(a.createdAt);
     });
   }, [activePosts, filters]);
+
+  const isNewPost = (post: PropertyWithId) => {
+    const created = timestampToMillis(post.createdAt);
+    return created > 0 && Date.now() - created <= 7 * 24 * 60 * 60 * 1000;
+  };
 
   const featuredPosts = filteredPosts.filter((post) => post.featured);
   const normalPosts = filteredPosts.filter((post) => !post.featured);
@@ -272,24 +286,28 @@ export default function Home() {
         </div>
 
         {featuredPosts.length > 0 && (
-          <section className="mb-10">
+          <section className="mb-10 rounded-[30px] border border-[#e6d9b8] bg-gradient-to-br from-[#fffdf8] to-[#f8f4e9] p-4 shadow-[0_16px_45px_rgba(91,73,35,.07)] sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">Kiemelt ingatlanok</h2>
               <span className="text-sm font-semibold text-[#176b3a]">{featuredPosts.length} kiemelt</span>
             </div>
             <div className={`grid gap-6 md:grid-cols-2 ${featuredPosts.length >= 3 ? "xl:grid-cols-3" : "xl:max-w-[980px]"}`}>
               {featuredPosts.map((post) => (
-                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
+                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isNew={isNewPost(post)} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
               ))}
             </div>
           </section>
         )}
 
         {filteredPosts.length === 0 && (
-          <div className="rounded-[28px] border border-[#e2ddd3] bg-white p-10 text-center shadow-sm">
-            <p className="text-xl font-semibold text-[#172019]">Nincs találat a megadott feltételekkel.</p>
-            <p className="mt-2 text-[#6c776f]">Próbálj meg kevesebb szűrőt használni.</p>
-            <button type="button" onClick={() => setFilters(emptyFilters)} className="mt-6 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white hover:bg-[#115b30]">Összes szűrő törlése</button>
+          <div className="rounded-[30px] border border-[#e2ddd3] bg-white px-6 py-12 text-center shadow-sm sm:p-14">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#eef5ef] text-2xl">⌕</div>
+            <p className="mt-5 text-2xl font-black text-[#172019]">Most nincs pontos találat.</p>
+            <p className="mx-auto mt-2 max-w-xl leading-7 text-[#6c776f]">Semmi gond — töröld a szűrőket, vagy jelezd nekünk, milyen ingatlant keresel Debrecenben.</p>
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+              <button type="button" onClick={() => setFilters(emptyFilters)} className="rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white hover:bg-[#115b30]">Összes ingatlan mutatása</button>
+              <a href="mailto:info@debrecenhomes.hu?subject=Ingatlant%20keresek%20Debrecenben" className="rounded-2xl border border-[#d8d2c7] bg-[#faf8f4] px-5 py-3 font-bold text-[#263129] hover:border-[#b9d1c0]">Elmondom, mit keresek</a>
+            </div>
           </div>
         )}
 
@@ -301,10 +319,15 @@ export default function Home() {
             </div>
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
               {normalPosts.map((post) => (
-                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
+                <PropertyCard key={post.id} id={post.id} title={post.title} city={post.city} district={post.district} price={post.price} area={post.area} rooms={post.rooms} propertyType={post.propertyType} imageUrl={post.imageUrl} phone={post.phone} featured={post.featured} isNew={isNewPost(post)} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => toggleFavorite(post.id)} />
               ))}
             </div>
           </section>
+        )}
+        {favoriteNotice && (
+          <div className="fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-[#172019] px-5 py-3 text-sm font-bold text-white shadow-xl md:bottom-8">
+            {favoriteNotice}
+          </div>
         )}
       </main>
     </>

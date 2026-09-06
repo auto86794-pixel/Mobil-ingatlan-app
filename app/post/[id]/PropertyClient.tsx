@@ -250,6 +250,9 @@ export default function PropertyClient() {
                       message: formData.get("message"),
                       propertyEmail: property.email,
                       propertyTitle: property.title,
+                      propertyId: property.id,
+                      propertyUrl: `${window.location.origin}/post/${property.id}`,
+                      website: formData.get("website"),
                     }),
                   });
                   const data = await response.json();
@@ -263,6 +266,8 @@ export default function PropertyClient() {
                   setLoading(false);
                 }
               }} className="flex flex-col gap-4">
+                <div className="absolute left-[-9999px] h-px w-px overflow-hidden" aria-hidden="true"><label htmlFor="detail-website">Weboldal</label><input id="detail-website" type="text" name="website" tabIndex={-1} autoComplete="off" /></div>
+                <div className="rounded-2xl bg-[#f2f7f3] px-4 py-3 text-sm text-[#4d5a51]"><span className="font-bold text-[#176b3a]">Érdeklődés erről:</span> {property.title}</div>
                 <input type="text" name="name" placeholder="Név" required className="rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />
                 <input type="email" name="email" placeholder="Email" required className="rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />
                 <textarea name="message" placeholder="Üzenet" required className="min-h-[160px] rounded-2xl border border-[#d8d2c7] bg-[#f7f4ee] p-4 text-[#18201b] outline-none" />

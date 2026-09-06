@@ -7,12 +7,14 @@ type ContactModalProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
   propertyTitle?: string;
+  propertyId?: string;
 };
 
 export default function ContactModal({
   open,
   setOpen,
   propertyTitle,
+  propertyId,
 }: ContactModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,6 +53,8 @@ export default function ContactModal({
           email: form.email,
           message: form.message,
           propertyTitle,
+          propertyId,
+          propertyUrl: propertyId ? `${window.location.origin}/post/${propertyId}` : "",
           website: form.website,
         }),
       });

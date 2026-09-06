@@ -71,6 +71,8 @@ export async function POST(req: Request) {
     const email = cleanText(body.email, 254).toLowerCase();
     const message = cleanText(body.message, 3000);
     const propertyTitle = cleanText(body.propertyTitle, 200);
+    const propertyId = cleanText(body.propertyId, 100);
+    const propertyUrl = cleanText(body.propertyUrl, 500);
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -102,6 +104,8 @@ export async function POST(req: Request) {
     const safeEmail = escapeHtml(email);
     const safeMessage = escapeHtml(message).replace(/\r?\n/g, "<br />");
     const safePropertyTitle = escapeHtml(propertyTitle || "Ingatlan");
+    const safePropertyId = escapeHtml(propertyId);
+    const safePropertyUrl = escapeHtml(propertyUrl);
 
     const inquiryEmail = await resend.emails.send({
       from: "DebrecenHomes <inquiries@debrecenhomes.hu>",
@@ -112,6 +116,8 @@ export async function POST(req: Request) {
         <div style="font-family:Arial,Helvetica,sans-serif;padding:32px;color:#172019;line-height:1.7">
           <h2>Új ingatlanérdeklődés</h2>
           <p><strong>Ingatlan:</strong><br/>${safePropertyTitle}</p>
+          ${safePropertyId ? `<p><strong>Hirdetés azonosító:</strong><br/>${safePropertyId}</p>` : ""}
+          ${safePropertyUrl ? `<p><strong>Hirdetés:</strong><br/><a href="${safePropertyUrl}">${safePropertyUrl}</a></p>` : ""}
           <p><strong>Név:</strong><br/>${safeName}</p>
           <p><strong>E-mail:</strong><br/>${safeEmail}</p>
           <p><strong>Üzenet:</strong><br/>${safeMessage}</p>

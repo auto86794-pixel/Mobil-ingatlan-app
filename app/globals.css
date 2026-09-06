@@ -58,3 +58,24 @@ body {
 @media (max-width: 767px) {
   body { padding-bottom: 82px; }
 }
+
+
+/* 10. finomítás: egységes fókusz és mobil érintési viselkedés */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(23, 107, 58, 0.28);
+  outline-offset: 2px;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 
 import { db } from "@/app/lib/firebase";
@@ -33,7 +34,7 @@ export async function generateMetadata({
   }
 
   const location = [property.city, property.district].filter(Boolean).join(", ");
-  const title = `${property.title} | DebrecenHomes`;
+  const title = property.title;
   const description = [
     location,
     property.propertyType,
@@ -76,6 +77,7 @@ export async function generateMetadata({
 
 export default async function PropertyPage({ params }: { params: { id: string } }) {
   const property = await getProperty(params.id);
+  if (!property || property.status !== "active") notFound();
 
   const jsonLd = property
     ? {

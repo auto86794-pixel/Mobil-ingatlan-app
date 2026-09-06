@@ -405,7 +405,7 @@ export default function Home() {
           </section>
         )}
         {favoriteNotice && (
-          <div className="fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-[#172019] px-5 py-3 text-sm font-bold text-white shadow-xl md:bottom-8">
+          <div role="status" aria-live="polite" className="fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-[#172019] px-5 py-3 text-sm font-bold text-white shadow-xl md:bottom-8">
             {favoriteNotice}
           </div>
         )}

@@ -141,7 +141,7 @@ export default function FavoritesPage() {
           ))}
         </div>
       )}
-      {notice ? <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{notice}</div> : null}
+      {notice ? <div role="status" aria-live="polite" className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{notice}</div> : null}
     </main>
   );
 }

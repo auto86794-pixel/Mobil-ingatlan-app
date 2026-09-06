@@ -20,6 +20,7 @@ import { auth, db } from "./lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "./lib/types";
 
 const emptyFilters: SearchFilters = {
+  query: "",
   city: "",
   district: "",
   propertyType: "",
@@ -35,8 +36,17 @@ const emptyFilters: SearchFilters = {
   sort: "featured",
 };
 
+const normalizeSearchText = (value: string) =>
+  value
+    .toLocaleLowerCase("hu-HU")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9áéíóöőúüű\s-]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const includesText = (value: string, filter: string) =>
-  value.toLocaleLowerCase("hu-HU").includes(filter.toLocaleLowerCase("hu-HU"));
+  normalizeSearchText(value).includes(normalizeSearchText(filter));
 
 const timestampToMillis = (value: unknown) => {
   if (value && typeof value === "object" && "toMillis" in value) {
@@ -196,6 +206,22 @@ export default function Home() {
 
   const filteredPosts = useMemo(() => {
     const result = activePosts.filter((post) => {
+      if (filters.query) {
+        const searchable = [
+          post.title,
+          post.city,
+          post.district,
+          post.propertyType,
+          post.condition,
+          post.parking,
+          post.balcony,
+          post.heating,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        if (!includesText(searchable, filters.query)) return false;
+      }
+
       if (filters.city && !includesText(post.city, filters.city)) return false;
       if (filters.district && post.district !== filters.district) return false;
       if (filters.propertyType && post.propertyType !== filters.propertyType) return false;
@@ -308,11 +334,12 @@ export default function Home() {
               options={options}
               resultCount={filteredPosts.length}
               onReset={() => setFilters(emptyFilters)}
+              onShowResults={() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             />
           </div>
         </section>
 
-        <div className="mb-6 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+        <div id="results" className="mb-6 scroll-mt-24 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">Aktív kínálat</p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-[#172019] md:text-2xl">{filteredPosts.length} ingatlan felel meg</h2>

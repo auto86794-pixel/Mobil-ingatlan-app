@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
@@ -20,7 +20,10 @@ const statusLabel: Record<string, string> = {
 export default function PropertyClient() {
   const params = useParams();
   const [property, setProperty] = useState<PropertyWithId | null>(null);
-  const [selectedImage, setSelectedImage] = useState("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const swipeHandledRef = useRef(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function PropertyClient() {
         if (!docSnap.exists()) return;
         const data = propertyFromFirestore(docSnap.id, docSnap.data());
         setProperty(data);
-        setSelectedImage(data.imageUrl || data.images[0] || "");
+        setSelectedImageIndex(0);
       } catch (error) {
         console.error(error);
       }
@@ -39,9 +42,78 @@ export default function PropertyClient() {
     fetchProperty();
   }, [params]);
 
+  const galleryImages = useMemo(() => {
+    if (!property) return [];
+    return Array.from(
+      new Set([property.imageUrl, ...(property.images || [])].filter(Boolean))
+    );
+  }, [property]);
+
+  const showPreviousImage = () => {
+    if (galleryImages.length < 2) return;
+    setSelectedImageIndex((current) =>
+      current === 0 ? galleryImages.length - 1 : current - 1
+    );
+  };
+
+  const showNextImage = () => {
+    if (galleryImages.length < 2) return;
+    setSelectedImageIndex((current) =>
+      current === galleryImages.length - 1 ? 0 : current + 1
+    );
+  };
+
+  const handleTouchStart = (clientX: number) => {
+    setTouchStartX(clientX);
+    swipeHandledRef.current = false;
+  };
+
+  const handleTouchEnd = (clientX: number) => {
+    if (touchStartX === null) return;
+
+    const distance = clientX - touchStartX;
+    setTouchStartX(null);
+
+    if (Math.abs(distance) < 45) return;
+
+    swipeHandledRef.current = true;
+    if (distance > 0) showPreviousImage();
+    else showNextImage();
+  };
+
+  const handleMainImageClick = () => {
+    if (swipeHandledRef.current) {
+      swipeHandledRef.current = false;
+      return;
+    }
+    setGalleryOpen(true);
+  };
+
+  useEffect(() => {
+    if (!galleryOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGalleryOpen(false);
+      if (event.key === "ArrowLeft") showPreviousImage();
+      if (event.key === "ArrowRight") showNextImage();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [galleryOpen, galleryImages.length]);
+
   if (!property) {
     return <div className="flex min-h-screen items-center justify-center bg-[#f7f4ee] text-2xl text-[#18201b]">Betöltés...</div>;
   }
+
+  const selectedImage = galleryImages[selectedImageIndex] || "";
 
   const details = [
     ["Ingatlantípus", property.propertyType],
@@ -59,12 +131,82 @@ export default function PropertyClient() {
     <div className="min-h-screen bg-[#f7f4ee] p-6 text-[#18201b]">
       <div className="mx-auto max-w-6xl">
         {selectedImage ? (
-          <img src={selectedImage} alt={property.title} className="h-[500px] w-full rounded-3xl border border-[#e2ddd3] object-cover transition-all duration-300" />
+          <div className="relative overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white">
+            <button
+              type="button"
+              onClick={handleMainImageClick}
+              onTouchStart={(event) => handleTouchStart(event.touches[0].clientX)}
+              onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
+              className="block w-full touch-pan-y cursor-zoom-in"
+              aria-label="Galéria megnyitása"
+            >
+              <img
+                src={selectedImage}
+                alt={`${property.title} ${selectedImageIndex + 1}. kép`}
+                className="h-[320px] w-full object-cover transition-all duration-300 sm:h-[500px]"
+              />
+            </button>
+
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={showPreviousImage}
+                  className="absolute left-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl shadow-lg transition hover:bg-white sm:flex"
+                  aria-label="Előző kép"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={showNextImage}
+                  className="absolute right-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-2xl shadow-lg transition hover:bg-white sm:flex"
+                  aria-label="Következő kép"
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-sm font-bold text-white backdrop-blur-sm">
+              {selectedImageIndex + 1} / {galleryImages.length}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setGalleryOpen(true)}
+              className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1.5 text-sm font-bold text-[#18201b] shadow-sm backdrop-blur-sm"
+            >
+              Összes kép
+            </button>
+          </div>
         ) : (
           <div className="flex h-[360px] items-center justify-center rounded-3xl border border-[#e2ddd3] bg-white text-[#879087]">Nincs feltöltött kép</div>
         )}
 
-        {property.images.length > 1 && <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">{property.images.map((image, index) => <img key={image} src={image} alt={`${property.title} ${index + 1}. kép`} onClick={() => setSelectedImage(image)} className={`h-48 w-full cursor-pointer rounded-2xl border object-cover transition duration-300 hover:scale-[1.02] ${selectedImage === image ? "border-[#b99445]" : "border-[#e2ddd3]"}`} />)}</div>}
+        {galleryImages.length > 1 && (
+          <div className="-mx-2 mt-4 flex gap-2 overflow-x-auto px-2 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:px-0 md:grid-cols-5">
+            {galleryImages.map((image, index) => (
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                onClick={() => setSelectedImageIndex(index)}
+                className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-24 sm:w-auto ${
+                  selectedImageIndex === index
+                    ? "border-[#176b3a]"
+                    : "border-transparent opacity-80 hover:opacity-100"
+                }`}
+                aria-label={`${index + 1}. kép kiválasztása`}
+              >
+                <img
+                  src={image}
+                  alt={`${property.title} ${index + 1}. bélyegkép`}
+                  className="h-full w-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mt-10">
           <div className="flex flex-wrap items-center gap-3">
@@ -125,6 +267,83 @@ export default function PropertyClient() {
           {property.lat && property.lng ? <div className="mt-10"><h2 className="mb-4 text-3xl font-black text-[#18201b]">📍 Elhelyezkedés</h2><PropertyMap lat={property.lat} lng={property.lng} title={property.title} /></div> : null}
         </div>
       </div>
+
+      {galleryOpen && selectedImage && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col bg-black"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ingatlan galéria"
+          onTouchStart={(event) => handleTouchStart(event.touches[0].clientX)}
+          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0].clientX)}
+        >
+          <div className="flex h-16 shrink-0 items-center justify-between px-4 text-white sm:px-6">
+            <div className="text-sm font-bold sm:text-base">{selectedImageIndex + 1} / {galleryImages.length}</div>
+            <button
+              type="button"
+              onClick={() => setGalleryOpen(false)}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-3xl leading-none transition hover:bg-white/25"
+              aria-label="Galéria bezárása"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 items-center justify-center sm:px-16">
+            <img
+              src={selectedImage}
+              alt={`${property.title} ${selectedImageIndex + 1}. kép`}
+              className="max-h-full max-w-full select-none object-contain"
+              draggable={false}
+            />
+
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={showPreviousImage}
+                  className="absolute left-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-4xl text-white transition hover:bg-white/25 sm:flex"
+                  aria-label="Előző kép"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={showNextImage}
+                  className="absolute right-4 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-4xl text-white transition hover:bg-white/25 sm:flex"
+                  aria-label="Következő kép"
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+
+          {galleryImages.length > 1 && (
+            <div className="flex shrink-0 gap-2 overflow-x-auto px-4 py-4 sm:justify-center sm:px-6">
+              {galleryImages.map((image, index) => (
+                <button
+                  key={`fullscreen-${image}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-20 sm:w-28 ${
+                    selectedImageIndex === index
+                      ? "border-white"
+                      : "border-transparent opacity-55 hover:opacity-100"
+                  }`}
+                  aria-label={`${index + 1}. kép megnyitása`}
+                >
+                  <img src={image} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="pb-[max(env(safe-area-inset-bottom),8px)] text-center text-xs text-white/60 sm:hidden">
+            Húzd jobbra vagy balra a lapozáshoz
+          </div>
+        </div>
+      )}
     </div>
   );
 }

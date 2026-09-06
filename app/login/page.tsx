@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Building2, Heart, Mail, Search, ShieldCheck } from "lucide-react";
+import { FirebaseError } from "firebase/app";
 
 import { auth, db } from "../lib/firebase";
 import { authErrorMessage } from "../lib/authErrors";
@@ -26,6 +27,7 @@ export default function Login() {
   const [notice, setNotice] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
+  const [accountExists, setAccountExists] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -81,6 +83,7 @@ export default function Login() {
       setLoading(true);
       setError("");
       setNotice("");
+      setAccountExists(false);
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       await credential.user.reload();
       const refreshedUser = auth.currentUser;
@@ -106,6 +109,7 @@ export default function Login() {
       setLoading(true);
       setError("");
       setNotice("");
+      setAccountExists(false);
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await setDoc(doc(db, "users", credential.user.uid), {
         email: credential.user.email,
@@ -117,6 +121,7 @@ export default function Login() {
       setNotice("A regisztráció sikerült. Küldtünk egy megerősítő e-mailt. A fiókod a link megnyitása után használható.");
     } catch (err) {
       console.error(err);
+      setAccountExists(err instanceof FirebaseError && err.code === "auth/email-already-in-use");
       setError(authErrorMessage(err));
     } finally {
       setLoading(false);
@@ -204,8 +209,8 @@ export default function Login() {
 
               {!unverifiedUser && (
                 <div className="mt-7 grid grid-cols-2 rounded-2xl bg-[#f5f2ec] p-1">
-                  <button type="button" onClick={() => {setMode("login");setError("");setNotice("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "login" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Belépés</button>
-                  <button type="button" onClick={() => {setMode("register");setError("");setNotice("");}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "register" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Regisztráció</button>
+                  <button type="button" onClick={() => {setMode("login");setError("");setNotice("");setAccountExists(false);}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "login" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Belépés</button>
+                  <button type="button" onClick={() => {setMode("register");setError("");setNotice("");setAccountExists(false);}} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${mode === "register" ? "bg-white text-[#176b3a] shadow-sm" : "text-[#818a84]"}`}>Regisztráció</button>
                 </div>
               )}
 
@@ -228,6 +233,12 @@ export default function Login() {
                   <input className="dh-input mt-2 rounded-2xl px-4 py-3.5" type="password" placeholder="Legalább 6 karakter" value={password} onChange={(e)=>setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
 
                   {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+                  {accountExists && mode === "register" && (
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button type="button" onClick={() => { setMode("login"); setError(""); setNotice("Add meg a jelszavad, és jelentkezz be a meglévő fiókodba."); setAccountExists(false); }} className="rounded-xl border border-[#b9d1c0] bg-[#f3f8f4] px-3 py-2.5 text-sm font-bold text-[#176b3a]">Belépés ezzel a címmel</button>
+                      <button type="button" onClick={handlePasswordReset} disabled={loading} className="rounded-xl border border-[#ded8ce] bg-white px-3 py-2.5 text-sm font-bold text-[#59645d] disabled:opacity-60">Új jelszót kérek</button>
+                    </div>
+                  )}
                   {notice && <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</div>}
 
                   <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} className="mt-6 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Feldolgozás..." : mode === "login" ? "Belépés" : "Fiók létrehozása"}</button>

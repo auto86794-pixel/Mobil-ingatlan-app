@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
 import MobileBottomNav from "./components/MobileBottomNav";
+import VerificationStatusBar from "./components/VerificationStatusBar";
 
 const siteUrl = "https://debrecenhomes.hu";
 
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="hu">
       <body className="bg-[#f7f4ee] text-[#172019] antialiased">
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+        <VerificationStatusBar />
         <Navbar />
         <main>{children}</main>
         <footer className="hidden border-t border-[#e5dfd5] bg-white/70 md:block">

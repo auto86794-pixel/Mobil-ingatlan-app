@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus } from "lucide-react";
+import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { auth } from "../lib/firebase";
@@ -44,7 +44,7 @@ export default function Navbar() {
             <Link href="/favorites" className={navLink}>
               <span className="inline-flex items-center gap-2"><Heart size={15} /> Kedvencek</span>
             </Link>
-            {user && (
+            {user?.emailVerified && (
               <Link href="/dashboard" className={navLink}>
                 <span className="inline-flex items-center gap-2"><LayoutDashboard size={15} /> Saját hirdetések</span>
               </Link>
@@ -66,12 +66,21 @@ export default function Navbar() {
             </Link>
           ) : (
             <>
-              <Link
-                href="/create"
-                className="inline-flex items-center gap-2 rounded-2xl border border-[#b9d1c0] bg-[#f3f8f4] px-4 py-2.5 text-sm font-bold text-[#176b3a] transition hover:bg-[#e9f3ec]"
-              >
-                <Plus size={16} /> Új hirdetés
-              </Link>
+              {user.emailVerified ? (
+                <Link
+                  href="/create"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[#b9d1c0] bg-[#f3f8f4] px-4 py-2.5 text-sm font-bold text-[#176b3a] transition hover:bg-[#e9f3ec]"
+                >
+                  <Plus size={16} /> Új hirdetés
+                </Link>
+              ) : (
+                <Link
+                  href="/login?verify=1"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-100"
+                >
+                  <ShieldCheck size={16} /> Megerősítés
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={handleLogout}

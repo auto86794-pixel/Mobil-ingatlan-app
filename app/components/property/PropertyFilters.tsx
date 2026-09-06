@@ -14,12 +14,14 @@ export default function PropertyFilters({ filters, setFilters, options, resultCo
   const [mobileOpen, setMobileOpen] = useState(false);
   const update = (key:keyof SearchFilters, value:string) => setFilters({ ...filters, [key]:value } as SearchFilters);
   const advancedCount = [filters.district, filters.minPrice, filters.minArea, filters.maxArea, filters.minRooms, filters.condition, filters.parking, filters.balcony, filters.heating].filter(Boolean).length;
+  const activeCount = [filters.city, filters.propertyType, filters.maxPrice, filters.district, filters.minPrice, filters.minArea, filters.maxArea, filters.minRooms, filters.condition, filters.parking, filters.balcony, filters.heating].filter(Boolean).length;
+  const resetAll = () => { onReset(); setMobileOpen(false); };
 
   return <div className="rounded-[28px] border border-[#e2ddd3] bg-white/95 p-4 shadow-[0_18px_55px_rgba(54,46,32,.10)] backdrop-blur-2xl md:p-5">
     <div className="md:hidden">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div><p className="flex items-center gap-2 text-sm font-bold text-[#172019]"><SlidersHorizontal size={16}/> Ingatlankereső</p><p className="mt-1 text-xs text-[#7c877f]">{resultCount} aktív találat</p></div>
-        <button type="button" onClick={onReset} className="text-xs font-bold text-[#176b3a]">Törlés</button>
+        <button type="button" onClick={resetAll} className={`text-xs font-bold text-[#176b3a] ${activeCount === 0 ? "invisible" : ""}`}>Törlés</button>
       </div>
       <div className="grid gap-2">
         <input className={fieldClass} placeholder="Hol keresel? (pl. Debrecen)" value={filters.city} onChange={e=>update("city",e.target.value)}/>
@@ -29,7 +31,7 @@ export default function PropertyFilters({ filters, setFilters, options, resultCo
         </div>
       </div>
       <button type="button" onClick={()=>setMobileOpen(v=>!v)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#f4f1eb] px-4 py-3 text-sm font-bold text-[#334039]">
-        {mobileOpen ? "Kevesebb szűrő" : "További szűrők"}{advancedCount > 0 ? ` (${advancedCount})` : ""}<ChevronDown size={16} className={`transition ${mobileOpen?"rotate-180":""}`}/>
+        {mobileOpen ? "Kevesebb szűrő" : "További szűrők"}{advancedCount > 0 ? ` · ${advancedCount} aktív` : ""}<ChevronDown size={16} className={`transition ${mobileOpen?"rotate-180":""}`}/>
       </button>
     </div>
 
@@ -57,7 +59,7 @@ export default function PropertyFilters({ filters, setFilters, options, resultCo
       </div>
       <div className="mt-2 grid gap-2 md:mt-3 md:grid-cols-[1fr_auto] md:gap-3">
         <select className={fieldClass} value={filters.sort} onChange={e=>update("sort",e.target.value)}><option value="featured">Kiemeltek elöl</option><option value="newest">Legújabb elöl</option><option value="priceAsc">Ár szerint növekvő</option><option value="priceDesc">Ár szerint csökkenő</option></select>
-        <button type="button" onClick={onReset} className="hidden items-center justify-center gap-2 rounded-2xl border border-[#ded8ce] bg-[#faf8f4] px-5 py-3.5 text-sm font-semibold text-[#59645d] transition hover:border-[#b9d1c0] hover:text-[#176b3a] md:inline-flex"><RotateCcw size={16}/> Szűrők törlése</button>
+        <button type="button" onClick={resetAll} className="hidden items-center justify-center gap-2 rounded-2xl border border-[#ded8ce] bg-[#faf8f4] px-5 py-3.5 text-sm font-semibold text-[#59645d] transition hover:border-[#b9d1c0] hover:text-[#176b3a] md:inline-flex"><RotateCcw size={16}/> Szűrők törlése</button>
       </div>
     </div>
   </div>;

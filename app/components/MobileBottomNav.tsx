@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { Heart, Home, LayoutDashboard, LogIn, Plus } from "lucide-react";
+import { Heart, Home, LayoutDashboard, LogIn, Plus, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -14,22 +14,28 @@ export default function MobileBottomNav() {
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
-  const navItems = user
+  const navItems = user?.emailVerified
     ? [
         { href: "/", label: "Ingatlanok", icon: Home },
         { href: "/favorites", label: "Kedvencek", icon: Heart },
         { href: "/create", label: "Hirdetés", icon: Plus },
         { href: "/dashboard", label: "Saját", icon: LayoutDashboard },
       ]
-    : [
-        { href: "/", label: "Ingatlanok", icon: Home },
-        { href: "/favorites", label: "Kedvencek", icon: Heart },
-        { href: "/login", label: "Belépés", icon: LogIn },
-      ];
+    : user
+      ? [
+          { href: "/", label: "Ingatlanok", icon: Home },
+          { href: "/favorites", label: "Kedvencek", icon: Heart },
+          { href: "/login?verify=1", label: "Megerősítés", icon: ShieldCheck },
+        ]
+      : [
+          { href: "/", label: "Ingatlanok", icon: Home },
+          { href: "/favorites", label: "Kedvencek", icon: Heart },
+          { href: "/login", label: "Belépés", icon: LogIn },
+        ];
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e5dfd5] bg-white/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_35px_rgba(48,42,30,.08)] backdrop-blur-2xl md:hidden">
-      <div className={`mx-auto grid max-w-md ${user ? "grid-cols-4" : "grid-cols-3"} gap-1`}>
+      <div className={`mx-auto grid max-w-md ${user?.emailVerified ? "grid-cols-4" : "grid-cols-3"} gap-1`}>
         {navItems.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;

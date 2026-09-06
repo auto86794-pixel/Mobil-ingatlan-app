@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
+import { MessageCircle, Phone } from "lucide-react";
 
 import { db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
@@ -275,23 +276,23 @@ export default function PropertyClient() {
       </div>
 
       {!galleryOpen && (property.phone || property.email) && (
-        <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
-          <div className="mx-auto flex max-w-6xl gap-3">
+        <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-3 pb-3 pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
+          <div className="mx-auto flex max-w-md gap-2.5">
             {property.phone ? (
               <a
                 href={`tel:${property.phone}`}
-                className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-[#176b3a] bg-white px-4 font-bold text-[#176b3a]"
+                className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-[#b9d1c0] bg-[#f3f8f4] px-4 text-sm font-black text-[#176b3a] active:scale-[0.99]"
               >
-                📞 Hívás
+                <Phone size={18} /> Hívás
               </a>
             ) : null}
             {property.email ? (
               <button
                 type="button"
                 onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="flex min-h-12 flex-[1.35] items-center justify-center rounded-2xl bg-[#176b3a] px-4 font-bold text-white"
+                className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
               >
-                Érdeklődöm
+                <MessageCircle size={18} /> Érdeklődöm
               </button>
             ) : null}
           </div>

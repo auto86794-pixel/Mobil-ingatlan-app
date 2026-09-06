@@ -86,12 +86,11 @@ export default function PropertyCard({
             <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{city}{district ? `, ${district}` : ""}</p>
           </div>
 
-          {(validArea || validRooms) && (
-            <div className="mt-5 flex gap-2 border-y border-[#eee8df] py-4 text-sm text-[#4d5a51]">
-              {validArea ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {validArea} m²</span> : null}
-              {validRooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {validRooms} szoba</span> : null}
-            </div>
-          )}
+          <div className="mt-5 flex min-h-[62px] items-center gap-2 border-y border-[#eee8df] py-3 text-sm text-[#4d5a51]">
+            {validArea ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {validArea} m²</span> : null}
+            {validRooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {validRooms} szoba</span> : null}
+            {!validArea && !validRooms ? <span className="text-xs font-semibold text-[#8a938c]">További adatok az ingatlan adatlapján</span> : null}
+          </div>
 
           <div className="mt-auto grid grid-cols-[1fr_auto_auto] gap-2 pt-5">
             <Link href={`/post/${id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#115b30]">Részletek <ArrowUpRight size={16} /></Link>

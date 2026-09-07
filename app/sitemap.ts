@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import { db } from "./lib/firebase";
 import { propertyFromFirestore } from "./lib/types";
@@ -23,7 +23,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const snapshot = await getDocs(collection(db, "posts"));
+    const snapshot = await getDocs(
+      query(collection(db, "posts"), where("status", "==", "active"))
+    );
     const properties = snapshot.docs
       .map((item) => propertyFromFirestore(item.id, item.data()))
       .filter((property) => property.status === "active");

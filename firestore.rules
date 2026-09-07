@@ -16,15 +16,32 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
+    function validPostStatus(status) {
+      return status in ["active", "draft", "sold", "inactive"];
+    }
+
+    function validListingType(data) {
+      return !("listingType" in data) || data.listingType in ["sale", "rent"];
+    }
+
     match /posts/{postId} {
-      allow read: if true;
+      // Nyilvánosan kizárólag az aktív hirdetések olvashatók.
+      // A tulajdonos a saját hirdetéseit státusztól függetlenül látja,
+      // az admin pedig minden hirdetéshez hozzáfér.
+      allow read: if resource.data.status == "active"
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || isAdmin();
 
       allow create: if verified()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.featured == false;
+        && request.resource.data.featured == false
+        && request.resource.data.listingType in ["sale", "rent"]
+        && validPostStatus(request.resource.data.status);
 
       allow update: if verified()
         && request.resource.data.userId == resource.data.userId
+        && validPostStatus(request.resource.data.status)
+        && validListingType(request.resource.data)
         && (
           isAdmin()
           || (

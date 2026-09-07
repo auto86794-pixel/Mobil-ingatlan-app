@@ -16,6 +16,7 @@ export type SearchFilters = {
   city: string;
   district: string;
   propertyType: string;
+  listingType: string;
   minPrice: string;
   maxPrice: string;
   minArea: string;
@@ -94,6 +95,7 @@ export default function PropertyFilters({
     filters.query,
     filters.city,
     filters.propertyType,
+    filters.listingType,
     filters.maxPrice,
     filters.district,
     filters.minPrice,
@@ -112,6 +114,7 @@ export default function PropertyFilters({
     if (filters.city) chips.push({ key: "city", label: filters.city });
     if (filters.district) chips.push({ key: "district", label: filters.district });
     if (filters.propertyType) chips.push({ key: "propertyType", label: filters.propertyType });
+    if (filters.listingType) chips.push({ key: "listingType", label: filters.listingType === "rent" ? "Kiadó" : "Eladó" });
     if (filters.condition) chips.push({ key: "condition", label: filters.condition });
     if (filters.minPrice) chips.push({ key: "minPrice", label: `Min. ${moneyLabel(filters.minPrice)}` });
     if (filters.maxPrice) chips.push({ key: "maxPrice", label: `Max. ${moneyLabel(filters.maxPrice)}` });
@@ -184,6 +187,14 @@ export default function PropertyFilters({
             <select className={fieldClass} value={filters.propertyType} onChange={(event) => update("propertyType", event.target.value)}><option value="">Ingatlantípus</option>{options.propertyTypes.map((item) => <option key={item}>{item}</option>)}</select>
             <input className={fieldClass} type="number" min="0" inputMode="numeric" placeholder="Max. ár (Ft)" value={filters.maxPrice} onChange={(event) => update("maxPrice", event.target.value)} />
           </div>
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-[#7b857e]">Hirdetés típusa</label>
+              <select value={filters.listingType} onChange={(e) => update("listingType", e.target.value)} className={fieldClass}>
+                <option value="">Eladó + kiadó</option>
+                <option value="sale">Eladó</option>
+                <option value="rent">Kiadó</option>
+              </select>
+            </div>
         </div>
         <button type="button" onClick={() => setMobileOpen((value) => !value)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#f4f1eb] px-4 py-3 text-sm font-bold text-[#334039]">
           {mobileOpen ? "Kevesebb szűrő" : "További szűrők"}{advancedCount > 0 ? ` · ${advancedCount} aktív` : ""}<ChevronDown size={16} className={`transition ${mobileOpen ? "rotate-180" : ""}`} />
@@ -195,10 +206,11 @@ export default function PropertyFilters({
           <div><p className="text-sm font-black text-[#172019]">Részletes ingatlankereső</p><p className="mt-1 text-xs text-[#7c877f]">Állítsd be a számodra fontos feltételeket.</p></div>
           <span className="rounded-full bg-[#edf5ef] px-3 py-1.5 text-xs font-bold text-[#176b3a]">{resultCount} találat</span>
         </div>
-        <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
+        <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-5">
           <input className={fieldClass} placeholder="Város" value={filters.city} onChange={(event) => update("city", event.target.value)} />
           <select className={fieldClass} value={filters.district} onChange={(event) => update("district", event.target.value)}><option value="">Minden városrész</option>{options.districts.map((item) => <option key={item}>{item}</option>)}</select>
           <select className={fieldClass} value={filters.propertyType} onChange={(event) => update("propertyType", event.target.value)}><option value="">Minden ingatlantípus</option>{options.propertyTypes.map((item) => <option key={item}>{item}</option>)}</select>
+          <select className={fieldClass} value={filters.listingType} onChange={(event) => update("listingType", event.target.value)}><option value="">Eladó + kiadó</option><option value="sale">Eladó</option><option value="rent">Kiadó</option></select>
           <select className={fieldClass} value={filters.condition} onChange={(event) => update("condition", event.target.value)}><option value="">Minden állapot</option>{options.conditions.map((item) => <option key={item}>{item}</option>)}</select>
         </div>
         <div className="grid gap-2 md:mt-3 md:grid-cols-2 md:gap-3 xl:grid-cols-4">

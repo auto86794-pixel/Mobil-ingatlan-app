@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
-import { useParams, useRouter } from "next/navigation";
+import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, where } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, CheckCircle2, Heart, MessageCircle, Phone, Share2 } from "lucide-react";
 
 import { auth, db } from "@/app/lib/firebase";
@@ -20,10 +20,9 @@ const statusLabel: Record<string, string> = {
   inactive: "Inaktív",
 };
 
-export default function PropertyClient() {
-  const params = useParams();
+export default function PropertyClient({ initialProperty }: { initialProperty: PropertyWithId }) {
   const router = useRouter();
-  const [property, setProperty] = useState<PropertyWithId | null>(null);
+  const [property] = useState<PropertyWithId | null>(initialProperty);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -40,16 +39,12 @@ export default function PropertyClient() {
   const [detailFormMessage, setDetailFormMessage] = useState("");
 
   useEffect(() => {
-    const fetchProperty = async () => {
-      if (!params?.id) return;
+    const fetchSimilarProperties = async () => {
+      const data = initialProperty;
       try {
-        const docSnap = await getDoc(doc(db, "posts", params.id as string));
-        if (!docSnap.exists()) return;
-        const data = propertyFromFirestore(docSnap.id, docSnap.data());
-        setProperty(data);
-        setSelectedImageIndex(0);
-
-        const allSnapshot = await getDocs(collection(db, "posts"));
+        const allSnapshot = await getDocs(
+          query(collection(db, "posts"), where("status", "==", "active"), limit(24))
+        );
         const rankedCandidates = allSnapshot.docs
           .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
           .filter((item) => item.id !== data.id && item.status === "active" && Boolean(item.imageUrl))
@@ -57,6 +52,7 @@ export default function PropertyClient() {
             const sameCity = Boolean(item.city && data.city && item.city === data.city);
             const sameDistrict = Boolean(item.district && data.district && item.district === data.district);
             const sameType = Boolean(item.propertyType && data.propertyType && item.propertyType === data.propertyType);
+            const sameListingType = item.listingType === data.listingType;
             const priceDifference = data.price > 0 ? Math.abs(item.price - data.price) / data.price : 1;
             const areaDifference = data.area > 0 ? Math.abs(item.area - data.area) / data.area : 1;
 
@@ -64,6 +60,7 @@ export default function PropertyClient() {
               (sameDistrict ? 7 : 0) +
               (sameCity ? 4 : 0) +
               (sameType ? 5 : 0) +
+              (sameListingType ? 4 : 0) +
               (priceDifference <= 0.15 ? 4 : priceDifference <= 0.3 ? 2 : 0) +
               (areaDifference <= 0.2 ? 3 : areaDifference <= 0.35 ? 1 : 0);
 
@@ -72,17 +69,17 @@ export default function PropertyClient() {
           .sort((a, b) => b.score - a.score || a.priceDifference - b.priceDifference);
 
         const strongMatches = rankedCandidates.filter(({ score }) => score >= 5);
-        const candidates = (strongMatches.length >= 3 ? strongMatches : rankedCandidates)
-          .slice(0, 3)
-          .map(({ item }) => item);
-
-        setSimilarProperties(candidates);
+        setSimilarProperties(
+          (strongMatches.length >= 3 ? strongMatches : rankedCandidates)
+            .slice(0, 3)
+            .map(({ item }) => item)
+        );
       } catch (error) {
-        console.error(error);
+        console.error("Hasonló ingatlanok betöltési hiba:", error);
       }
     };
-    fetchProperty();
-  }, [params]);
+    void fetchSimilarProperties();
+  }, [initialProperty]);
 
   useEffect(() => {
     if (!property?.id) return;

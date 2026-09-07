@@ -125,7 +125,19 @@ export default async function PropertyPage({ params }: { params: { id: string } 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       ) : null}
-      <PropertyClient />
+      <PropertyClient
+        initialProperty={{
+          ...property,
+          createdAt:
+            property.createdAt &&
+            typeof property.createdAt === "object" &&
+            "toMillis" in property.createdAt &&
+            typeof (property.createdAt as { toMillis?: unknown }).toMillis === "function"
+              ? (property.createdAt as { toMillis: () => number }).toMillis()
+              : undefined,
+          updatedAt: undefined,
+        }}
+      />
     </>
   );
 }

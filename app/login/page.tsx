@@ -111,23 +111,14 @@ export default function Login() {
       setNotice("");
       setAccountExists(false);
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-
-      // A megerősítő levél küldése ne függjön a Firestore-profil mentésétől.
-      // Ha a profilírás átmenetileg hibázik, a felhasználó akkor is kapja meg
-      // az első megerősítő levelet, és nem marad félkész regisztrációban.
+      await setDoc(doc(db, "users", credential.user.uid), {
+        email: credential.user.email,
+        role: "user",
+        createdAt: serverTimestamp(),
+      });
       await sendEmailVerification(credential.user);
       setUnverifiedUser(credential.user);
       setNotice("A regisztráció sikerült. Küldtünk egy megerősítő e-mailt. A fiókod a link megnyitása után használható.");
-
-      try {
-        await setDoc(doc(db, "users", credential.user.uid), {
-          email: credential.user.email,
-          role: "user",
-          createdAt: serverTimestamp(),
-        });
-      } catch (profileError) {
-        console.error("A felhasználói profil mentése nem sikerült.", profileError);
-      }
     } catch (err) {
       console.error(err);
       setAccountExists(err instanceof FirebaseError && err.code === "auth/email-already-in-use");

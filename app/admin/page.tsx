@@ -12,13 +12,11 @@ import {
   getDocs,
   serverTimestamp,
   updateDoc,
-  writeBatch,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import {
   Eye,
   Pencil,
-  Database,
   Search,
   ShieldCheck,
   Star,
@@ -67,7 +65,6 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [migrationBusy, setMigrationBusy] = useState(false);
   const [propertySearch, setPropertySearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PropertyStatus>("all");
@@ -167,76 +164,6 @@ export default function AdminPage() {
       [item.email, item.role].some((value) => value.toLowerCase().includes(needle))
     );
   }, [users, userSearch]);
-
-  const migrateLegacyPosts = async () => {
-    const confirmed = window.confirm(
-      "Régi hirdetések migrálása\n\n" +
-        "Csak a hiányzó mezőket tölti ki:\n" +
-        "• status → active\n" +
-        "• listingType → a cím alapján sale / rent\n\n" +
-        "Meglévő status vagy listingType értéket nem ír felül.\n\n" +
-        "Folytatod?"
-    );
-    if (!confirmed) return;
-
-    try {
-      setMigrationBusy(true);
-
-      const snapshot = await getDocs(collection(db, "posts"));
-      const candidates = snapshot.docs.filter((item) => {
-        const data = item.data();
-        return !("status" in data) || !("listingType" in data);
-      });
-
-      if (candidates.length === 0) {
-        toast.success("Nincs migrálandó régi hirdetés.");
-        return;
-      }
-
-      const batch = writeBatch(db);
-      let statusAdded = 0;
-      let listingTypeAdded = 0;
-
-      candidates.forEach((item) => {
-        const data = item.data();
-        const updates: Record<string, unknown> = {
-          updatedAt: serverTimestamp(),
-        };
-
-        if (!("status" in data)) {
-          updates.status = "active";
-          statusAdded += 1;
-        }
-
-        if (!("listingType" in data)) {
-          const title =
-            typeof data.title === "string"
-              ? data.title.toLocaleLowerCase("hu-HU")
-              : "";
-
-          updates.listingType =
-            title.includes("kiadó") || title.includes("kiado")
-              ? "rent"
-              : "sale";
-          listingTypeAdded += 1;
-        }
-
-        batch.update(item.ref, updates);
-      });
-
-      await batch.commit();
-      await loadAdminData();
-
-      toast.success(
-        `Migráció kész: ${candidates.length} hirdetés, ${statusAdded} status, ${listingTypeAdded} hirdetéstípus.`
-      );
-    } catch (error) {
-      console.error("Régi hirdetések migrációs hiba:", error);
-      toast.error("A migráció nem sikerült. Semmit ne módosíts kézzel; nézd meg a konzolt.");
-    } finally {
-      setMigrationBusy(false);
-    }
-  };
 
   const changeStatus = async (post: PropertyWithId, status: PropertyStatus) => {
     if (post.status === status) return;
@@ -362,31 +289,6 @@ export default function AdminPage() {
           <StatCard label="Piszkozat" value={stats.draft} />
           <StatCard label="Eladva" value={stats.sold} />
           <StatCard label="Kiemelt" value={stats.featured} />
-        </section>
-
-        <section className="mb-8 rounded-3xl border border-[#d8d2c7] bg-white p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2 font-black">
-                <Database size={19} className="text-[#176b3a]" />
-                Régi hirdetések egyszeri migrálása
-              </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6c776f]">
-                A régi dokumentumokból hiányzó <strong>status</strong> és
-                <strong> listingType</strong> mezőket tölti ki. Meglévő értéket nem ír felül.
-                A hiányzó státusz aktív lesz; a kiadó hirdetéseket a cím alapján ismeri fel.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void migrateLegacyPosts()}
-              disabled={migrationBusy}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#176b3a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#125b31] disabled:cursor-wait disabled:opacity-60"
-            >
-              <Database size={17} />
-              {migrationBusy ? "Migráció folyamatban..." : "Migráció indítása"}
-            </button>
-          </div>
         </section>
 
         <section className="mb-12">

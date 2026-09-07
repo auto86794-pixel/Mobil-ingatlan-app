@@ -1,5 +1,4 @@
 export type PropertyStatus = "active" | "draft" | "sold" | "inactive";
-export type ListingType = "sale" | "rent";
 
 export type Property = {
   id?: string;
@@ -8,7 +7,6 @@ export type Property = {
   district: string;
   price: number;
   propertyType: string;
-  listingType: ListingType;
   area: number;
   rooms: number;
   condition: string;
@@ -48,15 +46,6 @@ export function propertyFromFirestore(
   const legacyImage = stringValue(raw.imageUrl);
   const images = rawImages.length > 0 ? rawImages : legacyImage ? [legacyImage] : [];
 
-  const rawListingType = stringValue(raw.listingType);
-  const titleForListingType = stringValue(raw.title).toLocaleLowerCase("hu-HU");
-  const listingType: ListingType =
-    rawListingType === "rent" || rawListingType === "sale"
-      ? rawListingType
-      : titleForListingType.includes("kiadó") || titleForListingType.includes("kiado")
-        ? "rent"
-        : "sale";
-
   const rawStatus = stringValue(raw.status, "active");
   const status: PropertyStatus = ["active", "draft", "sold", "inactive"].includes(rawStatus)
     ? (rawStatus as PropertyStatus)
@@ -69,7 +58,6 @@ export function propertyFromFirestore(
     district: stringValue(raw.district),
     price: numberValue(raw.price),
     propertyType: stringValue(raw.propertyType),
-    listingType,
     area: numberValue(raw.area),
     rooms: numberValue(raw.rooms),
     condition: stringValue(raw.condition),

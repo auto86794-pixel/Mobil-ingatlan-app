@@ -9,7 +9,7 @@ import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage
 
 import { auth, db, storage } from "../../lib/firebase";
 import { createSafeImageName, validateImageFile } from "../../lib/imageUpload";
-import { propertyFromFirestore, type ListingType, type PropertyStatus } from "../../lib/types";
+import { propertyFromFirestore, type PropertyStatus } from "../../lib/types";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
 const inputClass = "w-full rounded-2xl border border-[#d8d2c7] bg-[#f5f2ec] px-5 py-4 outline-none transition focus:border-[#b99445]";
@@ -27,7 +27,6 @@ export default function EditPropertyPage() {
   const [district, setDistrict] = useState("");
   const [price, setPrice] = useState("");
   const [propertyType, setPropertyType] = useState("lakás");
-  const [listingType, setListingType] = useState<ListingType>("sale");
   const [area, setArea] = useState("");
   const [rooms, setRooms] = useState("");
   const [condition, setCondition] = useState("");
@@ -64,7 +63,7 @@ export default function EditPropertyPage() {
         }
 
         setTitle(property.title); setCity(property.city); setDistrict(property.district);
-        setPrice(property.price ? String(property.price) : ""); setPropertyType(property.propertyType || "lakás"); setListingType(property.listingType);
+        setPrice(property.price ? String(property.price) : ""); setPropertyType(property.propertyType || "lakás");
         setArea(property.area ? String(property.area) : ""); setRooms(property.rooms ? String(property.rooms) : "");
         setCondition(property.condition); setFloor(property.floor); setBalcony(property.balcony);
         setParking(property.parking); setHeating(property.heating); setStatus(property.status);
@@ -137,7 +136,7 @@ export default function EditPropertyPage() {
       setSaving(true);
       await updateDoc(doc(db, "posts", params.id as string), {
         title: title.trim(), city: city.trim(), district: district.trim(), price: Number(price),
-        propertyType, listingType, area: Number(area), rooms: Number(rooms), condition: condition.trim(),
+        propertyType, area: Number(area), rooms: Number(rooms), condition: condition.trim(),
         floor: floor.trim(), balcony: balcony.trim(), parking: parking.trim(), heating: heating.trim(),
         status, description: description.trim(), phone: phone.trim(), email: email.trim(),
         imageUrl: images[0] || "", images, lat, lng, updatedAt: serverTimestamp(),
@@ -165,9 +164,8 @@ export default function EditPropertyPage() {
         {field("Ingatlan neve", title, setTitle)}
         <div className="grid gap-4 md:grid-cols-2">{field("Város", city, setCity)}{field("Városrész", district, setDistrict)}</div>
         <div className="grid gap-4 md:grid-cols-3">{field("Ár (Ft)", price, setPrice, "", "number")}{field("Alapterület (m²)", area, setArea, "", "number")}{field("Szobák száma", rooms, setRooms, "", "number")}</div>
-        <div className="mb-4 grid gap-4 md:grid-cols-3">
+        <div className="mb-4 grid gap-4 md:grid-cols-2">
           <div><label className="mb-2 block text-[#6c776f]">Ingatlantípus</label><select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputClass}><option value="lakás">Lakás</option><option value="családi ház">Családi ház</option><option value="ikerház">Ikerház</option><option value="sorház">Sorház</option><option value="telek">Telek</option><option value="egyéb">Egyéb</option></select></div>
-          <div><label className="mb-2 block text-[#6c776f]">Hirdetés típusa</label><select value={listingType} onChange={(e) => setListingType(e.target.value as ListingType)} className={inputClass}><option value="sale">Eladó</option><option value="rent">Kiadó</option></select></div>
           <div><label className="mb-2 block text-[#6c776f]">Státusz</label><select value={status} onChange={(e) => setStatus(e.target.value as PropertyStatus)} className={inputClass}><option value="active">Aktív</option><option value="draft">Piszkozat</option><option value="sold">Eladva</option><option value="inactive">Inaktív</option></select></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">{field("Állapot", condition, setCondition)}{field("Emelet", floor, setFloor)}{field("Erkély / terasz", balcony, setBalcony)}{field("Parkolás / garázs", parking, setParking)}{field("Fűtés", heating, setHeating)}</div>

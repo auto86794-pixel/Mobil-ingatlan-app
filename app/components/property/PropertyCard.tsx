@@ -17,7 +17,6 @@ type PropertyCardProps = {
   area?: number;
   rooms?: number;
   propertyType?: string;
-  listingType?: "sale" | "rent";
   imageUrl: string;
   phone?: string;
   featured?: boolean;
@@ -35,7 +34,6 @@ export default function PropertyCard({
   area,
   rooms,
   propertyType,
-  listingType,
   imageUrl,
   phone,
   featured = false,
@@ -85,7 +83,7 @@ export default function PropertyCard({
           </button>
 
           <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-3">
-            <div className="flex gap-2"><span className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-black text-[#176b3a] backdrop-blur-xl">{listingType === "rent" ? "Kiadó" : "Eladó"}</span><span className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType || "Ingatlan"}</span></div>
+            <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType || "Eladó ingatlan"}</div>
             <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{formatPrice(price)}</div>
           </div>
         </div>

@@ -9,7 +9,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { auth, db, storage } from "../lib/firebase";
 import { createSafeImageName, validateImageFile } from "../lib/imageUpload";
-import type { ListingType, PropertyStatus } from "../lib/types";
+import type { PropertyStatus } from "../lib/types";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
 
@@ -25,7 +25,6 @@ export default function Create() {
   const [district, setDistrict] = useState("");
   const [price, setPrice] = useState("");
   const [propertyType, setPropertyType] = useState("lakás");
-  const [listingType, setListingType] = useState<ListingType>("sale");
   const [area, setArea] = useState("");
   const [rooms, setRooms] = useState("");
   const [condition, setCondition] = useState("");
@@ -101,7 +100,6 @@ export default function Create() {
         district: district.trim(),
         price: Number(price),
         propertyType,
-        listingType,
         area: Number(area),
         rooms: Number(rooms),
         condition: condition.trim(),
@@ -162,17 +160,11 @@ export default function Create() {
           {field("Szobák száma", rooms, setRooms, "3", "number")}
         </div>
 
-        <div className="mb-4 grid gap-4 md:grid-cols-3">
+        <div className="mb-4 grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-[#6c776f]">Ingatlantípus</label>
             <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputClass}>
               <option value="lakás">Lakás</option><option value="családi ház">Családi ház</option><option value="ikerház">Ikerház</option><option value="sorház">Sorház</option><option value="telek">Telek</option><option value="egyéb">Egyéb</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-2 block text-sm text-[#6c776f]">Hirdetés típusa</label>
-            <select value={listingType} onChange={(e) => setListingType(e.target.value as ListingType)} className={inputClass}>
-              <option value="sale">Eladó</option><option value="rent">Kiadó</option>
             </select>
           </div>
           <div>

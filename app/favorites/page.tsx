@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
 import { Heart, LogIn, MapPin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -48,11 +48,10 @@ export default function FavoritesPage() {
           return;
         }
 
-        const postSnapshots = await Promise.all(
-          postIds.map((postId) => getDoc(doc(db, "posts", postId)))
-        );
-        const posts = postSnapshots
-          .filter((item) => item.exists())
+        const postsSnapshot = await getDocs(collection(db, "posts"));
+        const favoriteIdSet = new Set(postIds);
+        const posts = postsSnapshot.docs
+          .filter((item) => favoriteIdSet.has(item.id))
           .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
           .filter((item) => item.status === "active" && Boolean(item.title && item.imageUrl));
 

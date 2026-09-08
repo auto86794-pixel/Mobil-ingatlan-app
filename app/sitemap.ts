@@ -6,6 +6,11 @@ import { propertyFromFirestore } from "./lib/types";
 
 const SITE_URL = "https://debrecenhomes.hu";
 
+// Az aktív ingatlanok változhatnak deploy nélkül is, ezért a sitemap minden
+// lekéréskor a Firestore aktuális állapotából készül.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes: MetadataRoute.Sitemap = [
     {

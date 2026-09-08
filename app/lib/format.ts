@@ -9,3 +9,11 @@ export function formatPrice(price: number) {
   }
   return `${price.toLocaleString("hu-HU")} Ft`;
 }
+
+export function normalizeHungarianPhone(phone?: string): string | null {
+  if (!phone) return null;
+  const compact = phone.trim().replace(/[\s()./-]/g, "");
+  const normalized = compact.startsWith("06") ? `+36${compact.slice(2)}` : compact;
+  if (!/^\+36\d{9}$/.test(normalized) || /1234567/.test(normalized)) return null;
+  return normalized;
+}

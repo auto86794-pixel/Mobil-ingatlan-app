@@ -17,7 +17,9 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if true;
+      allow read: if resource.data.status == "active"
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || isAdmin();
 
       allow create: if verified()
         && request.resource.data.userId == request.auth.uid

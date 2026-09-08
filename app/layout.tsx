@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="hidden border-t border-[#e5dfd5] bg-white/70 md:block">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 text-xs text-[#7d877f]">
             <span>© 2026 DebrecenHomes</span>
-            <span>Eladó és kiadó ingatlanok Debrecenben.</span>
+            <div className="flex items-center gap-5"><span>Eladó és kiadó ingatlanok Debrecenben.</span><Link href="/adatvedelem" className="hover:text-[#176b3a]">Adatvédelem</Link><Link href="/impresszum" className="hover:text-[#176b3a]">Impresszum</Link></div>
           </div>
         </footer>
         <MobileBottomNav />

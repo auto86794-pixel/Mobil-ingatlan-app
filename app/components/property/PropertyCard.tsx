@@ -6,7 +6,8 @@ import { ArrowUpRight, BedDouble, Heart, MapPin, Maximize2, MessageCircle, Phone
 import { useState } from "react";
 
 import ContactModal from "../ContactModal";
-import { formatPrice } from "../../lib/format";
+import { formatPrice, normalizeHungarianPhone } from "../../lib/format";
+import type { ListingPurpose } from "../../lib/types";
 
 type PropertyCardProps = {
   id: string;
@@ -17,6 +18,7 @@ type PropertyCardProps = {
   area?: number;
   rooms?: number;
   propertyType?: string;
+  listingPurpose?: ListingPurpose;
   imageUrl: string;
   phone?: string;
   featured?: boolean;
@@ -34,6 +36,7 @@ export default function PropertyCard({
   area,
   rooms,
   propertyType,
+  listingPurpose = "sale",
   imageUrl,
   phone,
   featured = false,
@@ -47,16 +50,19 @@ export default function PropertyCard({
   const validRooms = typeof rooms === "number" && Number.isFinite(rooms) && rooms > 0 ? rooms : null;
   const cleanPropertyType = propertyType?.trim();
   const inferredPropertyType = (() => {
-    if (cleanPropertyType) return cleanPropertyType;
     const value = title.toLocaleLowerCase("hu-HU");
+    const isRental = listingPurpose === "rent" || value.includes("kiadó") || value.includes("kiado");
+    if (isRental) return cleanPropertyType ? `Kiadó ${cleanPropertyType}` : "Kiadó ingatlan";
+    if (cleanPropertyType) return cleanPropertyType;
     if (value.includes("ikerház")) return "Ikerház";
     if (value.includes("sorház")) return "Sorház";
     if (value.includes("családi ház") || value.includes("ház")) return "Családi ház";
     if (value.includes("penthouse")) return "Penthouse";
     if (value.includes("lakás")) return "Lakás";
     if (value.includes("telek")) return "Telek";
-    return null;
+    return "Ingatlan";
   })();
+  const callablePhone = normalizeHungarianPhone(phone);
 
   return (
     <>
@@ -83,7 +89,7 @@ export default function PropertyCard({
           </button>
 
           <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-3">
-            <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType || "Eladó ingatlan"}</div>
+            <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType}</div>
             <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{formatPrice(price)}</div>
           </div>
         </div>
@@ -102,7 +108,7 @@ export default function PropertyCard({
 
           <div className="mt-auto grid grid-cols-[1fr_auto_auto] gap-2 pt-5">
             <Link href={`/post/${id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#115b30]">Részletek <ArrowUpRight size={16} /></Link>
-            {phone && <a href={`tel:${phone}`} aria-label="Telefonhívás" className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded8ce] bg-[#faf8f4] text-[#445048] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"><Phone size={18} /></a>}
+            {callablePhone && <a href={`tel:${callablePhone}`} aria-label="Telefonhívás" className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded8ce] bg-[#faf8f4] text-[#445048] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"><Phone size={18} /></a>}
             <button type="button" onClick={() => setOpenModal(true)} aria-label="Üzenet küldése" className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ded8ce] bg-[#faf8f4] text-[#445048] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"><MessageCircle size={18} /></button>
           </div>
         </div>

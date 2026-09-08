@@ -9,7 +9,8 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { auth, db, storage } from "../lib/firebase";
 import { createSafeImageName, validateImageFile } from "../lib/imageUpload";
-import type { PropertyStatus } from "../lib/types";
+import type { ListingPurpose, PropertyStatus } from "../lib/types";
+import { normalizeHungarianPhone } from "../lib/format";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), { ssr: false });
 
@@ -25,6 +26,7 @@ export default function Create() {
   const [district, setDistrict] = useState("");
   const [price, setPrice] = useState("");
   const [propertyType, setPropertyType] = useState("lakás");
+  const [listingPurpose, setListingPurpose] = useState<ListingPurpose>("sale");
   const [area, setArea] = useState("");
   const [rooms, setRooms] = useState("");
   const [condition, setCondition] = useState("");
@@ -92,6 +94,10 @@ export default function Create() {
       alert("A cím, város, ár, alapterület és szobaszám megadása kötelező.");
       return;
     }
+    if (phone.trim() && !normalizeHungarianPhone(phone)) {
+      alert("Érvénytelen magyar telefonszám. Példa: +36 30 555 1234");
+      return;
+    }
     try {
       setSaving(true);
       await addDoc(collection(db, "posts"), {
@@ -100,6 +106,7 @@ export default function Create() {
         district: district.trim(),
         price: Number(price),
         propertyType,
+        listingPurpose,
         area: Number(area),
         rooms: Number(rooms),
         condition: condition.trim(),
@@ -108,7 +115,7 @@ export default function Create() {
         parking: parking.trim(),
         heating: heating.trim(),
         description: description.trim(),
-        phone: phone.trim(),
+        phone: normalizeHungarianPhone(phone) || "",
         email: email.trim(),
         imageUrl: images[0] || "",
         images,
@@ -161,6 +168,12 @@ export default function Create() {
         </div>
 
         <div className="mb-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm text-[#6c776f]">Hirdetés típusa</label>
+            <select value={listingPurpose} onChange={(e) => setListingPurpose(e.target.value as ListingPurpose)} className={inputClass}>
+              <option value="sale">Eladó</option><option value="rent">Kiadó</option>
+            </select>
+          </div>
           <div>
             <label className="mb-2 block text-sm text-[#6c776f]">Ingatlantípus</label>
             <select value={propertyType} onChange={(e) => setPropertyType(e.target.value)} className={inputClass}>

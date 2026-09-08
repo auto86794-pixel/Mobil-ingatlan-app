@@ -1,4 +1,5 @@
 export type PropertyStatus = "active" | "draft" | "sold" | "inactive";
+export type ListingPurpose = "sale" | "rent";
 
 export type Property = {
   id?: string;
@@ -7,6 +8,7 @@ export type Property = {
   district: string;
   price: number;
   propertyType: string;
+  listingPurpose: ListingPurpose;
   area: number;
   rooms: number;
   condition: string;
@@ -50,6 +52,9 @@ export function propertyFromFirestore(
   const status: PropertyStatus = ["active", "draft", "sold", "inactive"].includes(rawStatus)
     ? (rawStatus as PropertyStatus)
     : "active";
+  const rawPurpose = stringValue(raw.listingPurpose);
+  const searchableTitle = stringValue(raw.title).toLocaleLowerCase("hu-HU");
+  const listingPurpose: ListingPurpose = rawPurpose === "rent" || searchableTitle.includes("kiadó") || searchableTitle.includes("kiado") ? "rent" : "sale";
 
   return {
     id,
@@ -58,6 +63,7 @@ export function propertyFromFirestore(
     district: stringValue(raw.district),
     price: numberValue(raw.price),
     propertyType: stringValue(raw.propertyType),
+    listingPurpose,
     area: numberValue(raw.area),
     rooms: numberValue(raw.rooms),
     condition: stringValue(raw.condition),

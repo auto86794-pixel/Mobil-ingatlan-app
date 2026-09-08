@@ -8,8 +8,9 @@ import { ArrowLeft, Bell, CheckCircle2, Heart, MessageCircle, Phone, Share2 } fr
 
 import { auth, db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
-import { formatPrice } from "@/app/lib/format";
+import { formatPrice, normalizeHungarianPhone } from "@/app/lib/format";
 import ContactModal from "@/app/components/ContactModal";
+import PropertyDescription from "@/app/components/property/PropertyDescription";
 
 const PropertyMap = dynamic(() => import("@/app/components/map/PropertyMap"), { ssr: false });
 
@@ -49,7 +50,7 @@ export default function PropertyClient() {
         setProperty(data);
         setSelectedImageIndex(0);
 
-        const allSnapshot = await getDocs(collection(db, "posts"));
+        const allSnapshot = await getDocs(query(collection(db, "posts"), where("status", "==", "active")));
         const rankedCandidates = allSnapshot.docs
           .map((item) => propertyFromFirestore(item.id, item.data() as Record<string, unknown>))
           .filter((item) => item.id !== data.id && item.status === "active" && Boolean(item.imageUrl))
@@ -235,6 +236,7 @@ export default function PropertyClient() {
   }
 
   const selectedImage = galleryImages[selectedImageIndex] || "";
+  const callablePhone = normalizeHungarianPhone(property.phone);
 
   const details = [
     ["Ingatlantípus", property.propertyType],
@@ -351,15 +353,15 @@ export default function PropertyClient() {
           <p className="mt-2 text-base text-[#6c776f] sm:mt-3 sm:text-xl">📍 {property.city}{property.district ? `, ${property.district}` : ""}</p>
           <p className="mt-3 text-[30px] font-black tracking-tight text-[#176b3a] sm:mt-6 sm:text-4xl">{formatPrice(property.price)}</p>
 
-          {(property.phone || property.email) && (
+          {(callablePhone || property.email) && (
             <div className="mt-5 hidden items-center justify-between gap-4 rounded-3xl border border-[#d9e7dc] bg-[#f2f7f3] p-5 md:flex">
               <div>
                 <p className="text-sm font-black text-[#18201b]">Érdekel ez az ingatlan?</p>
                 <p className="mt-1 text-sm text-[#667168]">Kérdezz róla közvetlenül, vagy küldj érdeklődést pár másodperc alatt.</p>
               </div>
               <div className="flex shrink-0 gap-2">
-                {property.phone ? (
-                  <a href={`tel:${property.phone}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#b9d1c0] bg-white px-5 text-sm font-black text-[#176b3a] transition hover:border-[#8fbc9d]">
+                {callablePhone ? (
+                  <a href={`tel:${callablePhone}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#b9d1c0] bg-white px-5 text-sm font-black text-[#176b3a] transition hover:border-[#8fbc9d]">
                     <Phone size={18} /> Hívás
                   </a>
                 ) : null}
@@ -382,7 +384,7 @@ export default function PropertyClient() {
 
           <div className="mt-6 rounded-3xl border border-[#e2ddd3] bg-white p-5 sm:mt-8 sm:p-8">
             <h2 className="mb-4 text-2xl font-bold">Leírás</h2>
-            <p className="whitespace-pre-line leading-8 text-[#4d5a51]">{property.description || "Nincs megadott leírás."}</p>
+            <PropertyDescription value={property.description} />
           </div>
 
           <div className="mt-8 flex flex-col gap-6">
@@ -494,12 +496,12 @@ export default function PropertyClient() {
 
       {(shareNotice || favoriteNotice) && <div className="fixed right-4 top-20 z-[90] rounded-full bg-[#172019] px-4 py-2.5 text-sm font-bold text-white shadow-xl">{shareNotice || favoriteNotice}</div>}
 
-      {!galleryOpen && (property.phone || property.email) && (
+      {!galleryOpen && (callablePhone || property.email) && (
         <div className="fixed inset-x-0 bottom-[76px] z-40 border-t border-[#ddd7cb] bg-white/95 px-3 pb-3 pt-3 shadow-[0_-8px_28px_rgba(24,32,27,0.10)] backdrop-blur-md md:hidden">
           <div className="mx-auto flex max-w-md gap-2.5">
-            {property.phone ? (
+            {callablePhone ? (
               <a
-                href={`tel:${property.phone}`}
+                href={`tel:${callablePhone}`}
                 className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-[#b9d1c0] bg-[#f3f8f4] px-4 text-sm font-black text-[#176b3a] active:scale-[0.99]"
               >
                 <Phone size={18} /> Hívás

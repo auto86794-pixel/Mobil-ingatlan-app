@@ -1,6 +1,9 @@
 import { FirebaseError } from "firebase/app";
 
 export function authErrorMessage(error: unknown): string {
+  if (error instanceof Error && !(error instanceof FirebaseError)) {
+    return error.message || "Váratlan hiba történt. Próbáld újra.";
+  }
   if (!(error instanceof FirebaseError)) {
     return "Váratlan hiba történt. Próbáld újra.";
   }

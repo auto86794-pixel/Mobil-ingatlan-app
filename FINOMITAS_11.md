@@ -13,6 +13,8 @@
 - A Brevo automatikus válasz hibája már nem okoz téves sikertelenséget és dupla érdeklődést.
 - A kapcsolatfelvételi API saját domaines és kérésméret-ellenőrzést kapott.
 - Firebase CLI konfiguráció került a projektbe, így a Firestore- és Storage-szabályok közvetlenül telepíthetők.
+- A regisztrációs megerősítő e-mailt ismét közvetlenül a Firebase Authentication küldi.
+- A Brevo kizárólag a kapcsolatfelvételi levelezést kezeli; a Firebase Admin köztes API eltávolításra került.
 
 ## Publikálás előtt kötelező
 

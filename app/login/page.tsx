@@ -77,6 +77,12 @@ export default function Login() {
     return true;
   };
 
+  const sendVerificationEmail = async (user: User) => {
+    await sendEmailVerification(user, {
+      url: "https://debrecenhomes.hu/login",
+    });
+  };
+
   const handleLogin = async () => {
     if (!validate()) return;
     try {
@@ -115,7 +121,7 @@ export default function Login() {
       // A megerősítő levél küldése ne függjön a Firestore-profil mentésétől.
       // Ha a profilírás átmenetileg hibázik, a felhasználó akkor is kapja meg
       // az első megerősítő levelet, és nem marad félkész regisztrációban.
-      await sendEmailVerification(credential.user);
+      await sendVerificationEmail(credential.user);
       setUnverifiedUser(credential.user);
       setNotice("A regisztráció sikerült. Küldtünk egy megerősítő e-mailt. A fiókod a link megnyitása után használható.");
 
@@ -142,7 +148,7 @@ export default function Login() {
     try {
       setLoading(true);
       setError("");
-      await sendEmailVerification(unverifiedUser);
+      await sendVerificationEmail(unverifiedUser);
       setNotice("Új megerősítő e-mailt küldtünk. Nézd meg a Beérkezett és a Spam mappát is.");
     } catch (err) {
       console.error(err);

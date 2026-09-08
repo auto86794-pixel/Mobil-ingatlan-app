@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -78,9 +77,13 @@ export default function Login() {
   };
 
   const sendVerificationEmail = async (user: User) => {
-    await sendEmailVerification(user, {
-      url: "https://debrecenhomes.hu/login",
+    const idToken = await user.getIdToken(true);
+    const response = await fetch("/api/auth/send-verification", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${idToken}` },
     });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "A megerősítő levél küldése nem sikerült.");
   };
 
   const handleLogin = async () => {

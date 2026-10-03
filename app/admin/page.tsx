@@ -366,6 +366,7 @@ export default function AdminPage() {
                             )}
                             <div>
                               <p className="max-w-xs font-bold">{post.title || "Névtelen hirdetés"}</p>
+                              {(!post.area || !post.rooms) && <Link href={`/edit/${post.id}`} className="mt-2 block text-xs font-semibold text-amber-800 underline">Hiányzó adatok: {[!post.area ? "alapterület" : "", !post.rooms ? "szobaszám" : ""].filter(Boolean).join(", ")} – kitöltés</Link>}
                               <p className="mt-1 text-xs text-[#879087]">
                                 {[post.city, post.district].filter(Boolean).join(", ") || "Nincs helyszín"}
                               </p>

@@ -103,7 +103,7 @@ export default function PropertyCard({
           <div className="mt-5 flex min-h-[62px] items-center gap-2 border-y border-[#eee8df] py-3 text-sm text-[#4d5a51]">
             {validArea ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {validArea} m²</span> : null}
             {validRooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {validRooms} szoba</span> : null}
-            {!validArea && !validRooms ? <span className="text-xs font-semibold text-[#8a938c]">További adatok az ingatlan adatlapján</span> : null}
+            {!validArea && !validRooms ? <span className="text-xs font-semibold text-[#8a938c]">Alapterület és szobaszám nincs megadva</span> : null}
           </div>
 
           <div className="mt-auto grid grid-cols-[1fr_auto_auto] gap-2 pt-5">

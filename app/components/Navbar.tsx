@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { auth } from "../lib/firebase";
+import { useAccount } from "../lib/useAccount";
 
 const navLink =
   "rounded-full px-4 py-2 text-sm font-semibold transition";
@@ -16,9 +16,7 @@ const navLinkClass = (active: boolean) =>
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => onAuthStateChanged(auth, setUser), []);
+  const { user, isAdmin } = useAccount();
 
   const handleLogout = async () => {
     try {
@@ -31,7 +29,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 hidden border-b border-[#e7e1d7] bg-white/92 backdrop-blur-2xl md:block">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-3">
           <Link href="/" className="group flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d9c28c] bg-[#fbf6e9] text-[#a98335] transition group-hover:bg-[#f5ecd7]">
               <Building2 size={22} strokeWidth={1.8} />
@@ -49,6 +47,7 @@ export default function Navbar() {
             <Link href="/favorites" className={navLinkClass(pathname.startsWith("/favorites"))}>
               <span className="inline-flex items-center gap-2"><Heart size={15} /> Kedvencek</span>
             </Link>
+            {isAdmin && <Link href="/admin" className={navLinkClass(pathname.startsWith("/admin"))}><span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Összes ingatlan kezelése</span></Link>}
             {user?.emailVerified && (
               <Link href="/dashboard" className={navLinkClass(pathname.startsWith("/dashboard"))}>
                 <span className="inline-flex items-center gap-2"><LayoutDashboard size={15} /> Saját hirdetések</span>
@@ -59,7 +58,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2">
           {user && (
-            <span className="hidden max-w-[190px] truncate px-2 text-xs text-[#8b938c] xl:block">{user.email}</span>
+            <span className="hidden max-w-[140px] truncate px-2 text-xs text-[#8b938c] xl:block">{user.email}</span>
           )}
 
           {!user ? (

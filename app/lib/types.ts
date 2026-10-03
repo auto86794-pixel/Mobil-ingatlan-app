@@ -35,8 +35,14 @@ export type PropertyWithId = Property & { id: string };
 const stringValue = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : fallback;
 
-const numberValue = (value: unknown, fallback = 0) =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+const numberValue = (value: unknown, fallback = 0) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && /^\d+(?:[.,]\d+)?$/.test(value.trim())) {
+    const parsed = Number(value.trim().replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
 
 export function propertyFromFirestore(
   id: string,

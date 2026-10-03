@@ -21,6 +21,7 @@ export default function EditPropertyPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   const [title, setTitle] = useState("");
@@ -59,6 +60,7 @@ export default function EditPropertyPage() {
         const property = propertyFromFirestore(snapshot.id, snapshot.data());
         const userSnapshot = await getDoc(doc(db, "users", currentUser.uid));
         const isAdmin = userSnapshot.exists() && userSnapshot.data().role === "admin";
+        setIsAdmin(isAdmin);
         if (property.userId !== currentUser.uid && !isAdmin) {
           alert("Ezt az ingatlant nem szerkesztheted.");
           return router.replace("/dashboard");
@@ -134,6 +136,9 @@ export default function EditPropertyPage() {
       alert("A cím, város, ár, alapterület és szobaszám megadása kötelező.");
       return;
     }
+    if (![Number(price), Number(area), Number(rooms)].every((value) => Number.isFinite(value) && value > 0)) {
+      alert("Az ár, alapterület és szobaszám pozitív szám legyen."); return;
+    }
     if (phone.trim() && !normalizeHungarianPhone(phone)) {
       alert("Érvénytelen magyar telefonszám. Példa: +36 30 555 1234");
       return;
@@ -148,7 +153,8 @@ export default function EditPropertyPage() {
         imageUrl: images[0] || "", images, lat, lng, updatedAt: serverTimestamp(),
       });
       alert("Ingatlan frissítve ✅");
-      router.push("/dashboard");
+      router.push(isAdmin ? "/admin" : "/dashboard");
+      router.refresh();
     } catch (err) {
       console.error(err);
       alert("Hiba mentés közben.");

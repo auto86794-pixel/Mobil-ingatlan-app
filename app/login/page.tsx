@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Building2, Heart, Mail, Search, ShieldCheck } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 
@@ -29,6 +28,13 @@ export default function Login() {
   const [accountExists, setAccountExists] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    const openManagement = async (user: User) => {
+      try {
+        const profile = await getDoc(doc(db, "users", user.uid));
+        if (!cancelled && auth.currentUser?.uid === user.uid) router.replace(profile.data()?.role === "admin" ? "/admin" : "/dashboard");
+      } catch { if (!cancelled && auth.currentUser?.uid === user.uid) router.replace("/dashboard"); }
+    };
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setUnverifiedUser(null);
@@ -38,7 +44,7 @@ export default function Login() {
       await user.reload();
       const refreshedUser = auth.currentUser;
       if (refreshedUser?.emailVerified) {
-        router.replace("/dashboard");
+        await openManagement(refreshedUser);
         return;
       }
 
@@ -46,7 +52,7 @@ export default function Login() {
       setEmail((current) => current || refreshedUser?.email || "");
       setNotice("A fiókod még nincs megerősítve. Nyisd meg a tőlünk kapott e-mailt, majd kattints a megerősítő linkre.");
     });
-    return () => unsubscribe();
+    return () => { cancelled = true; unsubscribe(); };
   }, [router]);
 
   const validateEmail = () => {
@@ -103,7 +109,8 @@ export default function Login() {
         return;
       }
 
-      router.replace("/dashboard");
+      const profile = await getDoc(doc(db, "users", refreshedUser.uid));
+      router.replace(profile.data()?.role === "admin" ? "/admin" : "/dashboard");
     } catch (err) {
       console.error(err);
       setError(authErrorMessage(err));
@@ -168,7 +175,8 @@ export default function Login() {
       setError("");
       await unverifiedUser.reload();
       if (auth.currentUser?.emailVerified) {
-        router.replace("/dashboard");
+        const profile = await getDoc(doc(db, "users", auth.currentUser.uid));
+        router.replace(profile.data()?.role === "admin" ? "/admin" : "/dashboard");
       } else {
         setError("Az e-mail cím még nincs megerősítve. Előbb nyisd meg a levélben található linket.");
       }
@@ -182,8 +190,14 @@ export default function Login() {
     try {
       setLoading(true);
       setError("");
-      await sendPasswordResetEmail(auth, email.trim());
-      setNotice("Ha ehhez az e-mail címhez tartozik fiók, elküldtük a jelszó-visszaállító levelet.");
+      setNotice("");
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }), signal: AbortSignal.timeout(30_000),
+      });
+      const result = await response.json();
+      if (!response.ok) { setError(result.error || "A levélküldés nem sikerült."); return; }
+      setNotice("Ha ehhez az e-mail-címhez tartozik fiók, a levelezőrendszer elfogadta a jelszó-visszaállító levél küldését. A kézbesítés pár percet igénybe vehet; ellenőrizd a Spam mappát is.");
     } catch (err) {
       console.error(err);
       setError(authErrorMessage(err));

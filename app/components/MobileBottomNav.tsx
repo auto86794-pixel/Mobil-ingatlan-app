@@ -1,25 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { onAuthStateChanged, type User } from "firebase/auth";
+
 import { Heart, Home, LayoutDashboard, LogIn, Plus, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
-import { auth } from "../lib/firebase";
+import { useAccount } from "../lib/useAccount";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => onAuthStateChanged(auth, setUser), []);
+  const { user, isAdmin } = useAccount();
 
   const navItems = user?.emailVerified
     ? [
         { href: "/properties#ingatlanok", label: "Ingatlanok", icon: Home },
         { href: "/favorites", label: "Kedvencek", icon: Heart },
         { href: "/create", label: "Hirdetés", icon: Plus },
-        { href: "/dashboard", label: "Saját", icon: LayoutDashboard },
+        { href: isAdmin ? "/admin" : "/dashboard", label: isAdmin ? "Kezelés" : "Saját", icon: isAdmin ? ShieldCheck : LayoutDashboard },
       ]
     : user
       ? [

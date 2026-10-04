@@ -7,7 +7,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   onSnapshot,
   getDocs,
   query,
@@ -42,12 +41,12 @@ const statusLabel: Record<string, string> = {
   archived: "Archivált",
 };
 
-export default function PropertyClient() {
+export default function PropertyClient({ initialProperty }: { initialProperty: PropertyWithId }) {
   const params = useParams();
   const submissionId = useRef("");
   const router = useRouter();
   const [unavailable, setUnavailable] = useState(false);
-  const [property, setProperty] = useState<PropertyWithId | null>(null);
+  const [property, setProperty] = useState<PropertyWithId | null>(initialProperty);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -77,12 +76,14 @@ export default function PropertyClient() {
       doc(db, "posts", params.id as string),
       async (docSnap) => {
         try {
+          if (!active) return;
           if (!docSnap.exists()) {
             setProperty(null);
             setUnavailable(true);
             return;
           }
           const data = propertyFromFirestore(docSnap.id, docSnap.data());
+          if (data.status !== "active") { setProperty(null); setUnavailable(true); return; }
           setProperty(data);
           setSelectedImageIndex(0);
 

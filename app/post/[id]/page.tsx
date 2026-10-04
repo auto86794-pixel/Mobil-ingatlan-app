@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { knownDate, propertySeo, serializableProperty, jsonLdString } from "@/app/lib/propertySeo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
@@ -8,7 +10,9 @@ import PropertyClient from "./PropertyClient";
 
 const SITE_URL = "https://debrecenhomes.hu";
 
-async function getProperty(id: string) {
+export const dynamic = "force-dynamic";
+
+const getProperty = cache(async (id: string) => {
   try {
     const snapshot = await getDoc(doc(db, "posts", id));
     if (!snapshot.exists()) return null;
@@ -16,7 +20,7 @@ async function getProperty(id: string) {
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({
   params,
@@ -33,18 +37,7 @@ export async function generateMetadata({
     };
   }
 
-  const location = [property.city, property.district].filter(Boolean).join(", ");
-  const title = property.title;
-  const description = [
-    location,
-    property.propertyType,
-    property.area ? `${property.area} m²` : "",
-    property.rooms ? `${property.rooms} szoba` : "",
-    property.price ? `${property.price.toLocaleString("hu-HU")} Ft` : "",
-  ]
-    .filter(Boolean)
-    .join(" • ")
-    .slice(0, 160);
+  const { title, description } = propertySeo(property);
 
   const url = `${SITE_URL}/post/${property.id}`;
   const images = property.imageUrl ? [{ url: property.imageUrl, alt: property.title }] : [];
@@ -87,10 +80,7 @@ export default async function PropertyPage({ params }: { params: { id: string } 
         description: property.description || undefined,
         url: `${SITE_URL}/post/${property.id}`,
         image: property.images.length ? property.images : property.imageUrl ? [property.imageUrl] : undefined,
-        datePosted:
-          property.createdAt && typeof property.createdAt === "object" && "toDate" in property.createdAt
-            ? (property.createdAt as { toDate: () => Date }).toDate().toISOString()
-            : undefined,
+        datePosted: knownDate(property.createdAt)?.toISOString(),
         offers: {
           "@type": "Offer",
           priceCurrency: "HUF",
@@ -122,10 +112,10 @@ export default async function PropertyPage({ params }: { params: { id: string } 
       {jsonLd ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
         />
       ) : null}
-      <PropertyClient />
+      <PropertyClient key={property.id} initialProperty={serializableProperty(property)} />
     </>
   );
 }

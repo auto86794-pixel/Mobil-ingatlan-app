@@ -1,79 +1,48 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    function verified() {
-      return signedIn() && request.auth.token.email_verified == true;
-    }
-
-    function isAdmin() {
-      return verified()
+    function signedIn() { return request.auth != null; }
+    function usable() {
+      return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('disabled', false) == false
+        && !(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountState', '') in ['deleting', 'deleted']);
     }
-
+    function verified() { return usable() && request.auth.token.email_verified == true; }
+    function isAdmin() {
+      return verified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
     match /posts/{postId} {
-      allow read: if resource.data.status == "active"
-        || (signedIn() && resource.data.userId == request.auth.uid)
-        || isAdmin();
-
-      allow create: if verified()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.featured == false;
-
-      allow update: if verified()
-        && request.resource.data.userId == resource.data.userId
-        && (
-          isAdmin()
-          || (
-            resource.data.userId == request.auth.uid
-            && request.resource.data.featured == resource.data.featured
-          )
-        );
-
-      allow delete: if verified()
-        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if resource.data.status == 'active'
+        || (usable() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if verified() && request.resource.data.userId == request.auth.uid
+        && request.resource.data.featured == false
+        && request.resource.data.status in ['active', 'draft', 'sold', 'inactive']
+        && request.resource.data.get('version', 0) == 0
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.city is string && request.resource.data.city.size() > 0
+        && request.resource.data.price is number && request.resource.data.price > 0
+        && request.resource.data.area is number && request.resource.data.area > 0
+        && request.resource.data.rooms is number && request.resource.data.rooms > 0;
+      // All changes go through the authenticated API and its atomic history transaction.
+      allow update, delete: if false;
     }
-
     match /favorites/{favoriteId} {
-      allow read: if signedIn()
-        && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == request.auth.uid;
-      allow delete: if signedIn()
-        && resource.data.userId == request.auth.uid;
+      allow read, delete: if usable() && resource.data.userId == request.auth.uid;
+      allow create: if usable() && request.resource.data.userId == request.auth.uid;
+      allow update: if usable() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
     }
-
     match /users/{userId} {
-      allow read: if signedIn()
-        && (request.auth.uid == userId || isAdmin());
-
-      allow create: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.role == "user";
-
-      allow update: if signedIn()
-        && (
-          (
-            request.auth.uid == userId
-            && request.resource.data.role == resource.data.role
-          )
-          || isAdmin()
-        );
-
-      allow delete: if verified()
-        && (request.auth.uid == userId || isAdmin());
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if signedIn() && request.auth.uid == userId
+        && !exists(/databases/$(database)/documents/accountOperations/$(userId))
+        && request.resource.data.keys().hasOnly(['email', 'role', 'createdAt', 'displayName'])
+        && request.resource.data.role == 'user' && request.resource.data.email == request.auth.token.email;
+      allow update: if usable() && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      allow delete: if false;
     }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    // Inquiries, histories, account journals and throttles are accessible only via the server API.
+    match /{document=**} { allow read, write: if false; }
   }
 }

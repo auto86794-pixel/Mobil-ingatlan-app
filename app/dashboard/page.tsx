@@ -1,29 +1,29 @@
 "use client";
+import { useConfirmation } from "@/app/lib/useConfirmation";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
-  deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   query,
-  serverTimestamp,
-  updateDoc,
   where,
 } from "firebase/firestore";
-import { deleteObject, ref } from "firebase/storage";
 import toast from "react-hot-toast";
 import {
   CirclePlus,
   Eye,
   Pencil,
   Star,
-  Trash2,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 
-import { auth, db, storage } from "../lib/firebase";
+import { managementRequest } from "@/app/lib/managementClient";
+import { auth, db } from "../lib/firebase";
 import {
   propertyFromFirestore,
   type PropertyStatus,
@@ -42,9 +42,11 @@ const STATUS_OPTIONS: StatusOption[] = [
   { value: "draft", label: "Piszkozat" },
   { value: "sold", label: "Eladva" },
   { value: "inactive", label: "Inaktív" },
+  { value: "archived", label: "Archivált" },
 ];
 
 const statusClass: Record<PropertyStatus, string> = {
+  archived: "border-stone-300 bg-stone-100 text-stone-700",
   active: "border-emerald-500/30 bg-[#176b3a]/10 text-[#176b3a]",
   draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   sold: "border-blue-500/30 bg-[#176b3a]/10 text-blue-300",
@@ -52,6 +54,8 @@ const statusClass: Record<PropertyStatus, string> = {
 };
 
 export default function Dashboard() {
+  const { confirm: confirmAction, dialog: confirmationDialog } =
+    useConfirmation();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,11 +83,11 @@ export default function Dashboard() {
       setLoading(true);
       const propertyQuery = query(
         collection(db, "posts"),
-        where("userId", "==", uid)
+        where("userId", "==", uid),
       );
       const snapshot = await getDocs(propertyQuery);
       const data = snapshot.docs.map((item) =>
-        propertyFromFirestore(item.id, item.data())
+        propertyFromFirestore(item.id, item.data()),
       );
       setPosts(data);
     } catch (error) {
@@ -94,6 +98,19 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (!user) return;
+    return onSnapshot(
+      query(collection(db, "posts"), where("userId", "==", user.uid)),
+      (snapshot) =>
+        setPosts(
+          snapshot.docs.map((item) =>
+            propertyFromFirestore(item.id, item.data()),
+          ),
+        ),
+      () => toast.error("Az élő frissítés megszakadt. Frissítsd az oldalt."),
+    );
+  }, [user]);
   const stats = useMemo(
     () => ({
       all: posts.length,
@@ -101,7 +118,7 @@ export default function Dashboard() {
       draft: posts.filter((post) => post.status === "draft").length,
       sold: posts.filter((post) => post.status === "sold").length,
     }),
-    [posts]
+    [posts],
   );
 
   const handleStatusChange = async (post: Post, nextStatus: PropertyStatus) => {
@@ -109,57 +126,51 @@ export default function Dashboard() {
 
     try {
       setBusyId(post.id);
-      await updateDoc(doc(db, "posts", post.id), {
-        status: nextStatus,
-        updatedAt: serverTimestamp(),
-      });
-      setPosts((current) =>
-        current.map((item) =>
-          item.id === post.id ? { ...item, status: nextStatus } : item
-        )
+      await managementRequest(
+        `/api/posts/${post.id}`,
+        {
+          action: "update",
+          expectedVersion: post.version || 0,
+          patch: { status: nextStatus },
+        },
+        "PATCH",
       );
       toast.success("Státusz frissítve.");
     } catch (error) {
       console.error(error);
-      toast.error("Nem sikerült módosítani a státuszt.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nem sikerült módosítani a státuszt.",
+      );
     } finally {
       setBusyId(null);
     }
   };
 
-  const removeStoredImages = async (post: Post) => {
-    const urls = Array.from(
-      new Set([post.imageUrl, ...post.images].filter(Boolean))
-    );
-
-    await Promise.allSettled(
-      urls.map(async (url) => {
-        try {
-          await deleteObject(ref(storage, url));
-        } catch (error) {
-          // Régi, más struktúrában tárolt képnél a fájl törlése meghiúsulhat.
-          // Ettől a hirdetés Firestore törlése még biztonságosan végrehajtható.
-          console.warn("Kép nem törölhető a Storage-ból:", url, error);
-        }
-      })
-    );
-  };
-
   const handleDelete = async (post: Post) => {
-    const confirmed = window.confirm(
-      `Biztosan végleg törlöd ezt a hirdetést?\n\n${post.title}`
+    const confirmed = await confirmAction(
+      `Biztosan ${post.status === "archived" ? "visszaállítod" : "archiválod"} ezt a hirdetést?\n\n${post.title}`,
     );
     if (!confirmed) return;
 
     try {
       setBusyId(post.id);
-      await deleteDoc(doc(db, "posts", post.id));
-      await removeStoredImages(post);
-      setPosts((current) => current.filter((item) => item.id !== post.id));
-      toast.success("A hirdetés törölve.");
+      await managementRequest(
+        `/api/posts/${post.id}`,
+        {
+          action: post.status === "archived" ? "unarchive" : "archive",
+          expectedVersion: post.version || 0,
+        },
+        "PATCH",
+      );
+      if (user) await fetchPosts(user.uid);
+      toast.success("Hirdetés állapota módosítva.");
     } catch (error) {
       console.error(error);
-      toast.error("Nem sikerült törölni a hirdetést.");
+      toast.error(
+        error instanceof Error ? error.message : "A művelet nem sikerült.",
+      );
     } finally {
       setBusyId(null);
     }
@@ -175,6 +186,7 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-4 py-8 text-[#18201b] sm:px-6">
+      {confirmationDialog}
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -206,7 +218,9 @@ export default function Dashboard() {
 
         {posts.length === 0 ? (
           <div className="rounded-3xl border border-[#e2ddd3] bg-white p-10 text-center">
-            <h2 className="text-xl font-bold">Még nincs feltöltött ingatlanod.</h2>
+            <h2 className="text-xl font-bold">
+              Még nincs feltöltött ingatlanod.
+            </h2>
             <p className="mt-2 text-[#6c776f]">
               Az első hirdetésedet az „Új ingatlan” gombbal hozhatod létre.
             </p>
@@ -275,16 +289,20 @@ export default function Dashboard() {
                       </label>
                       <select
                         value={post.status}
-                        disabled={busy}
+                        disabled={busy || post.status === "archived"}
                         onChange={(event) =>
                           void handleStatusChange(
                             post,
-                            event.target.value as PropertyStatus
+                            event.target.value as PropertyStatus,
                           )
                         }
                         className="w-full rounded-xl border border-[#d8d2c7] bg-[#f5f2ec] px-3 py-2 text-sm outline-none focus:border-[#176b3a] disabled:opacity-50"
                       >
-                        {STATUS_OPTIONS.map((option) => (
+                        {STATUS_OPTIONS.filter(
+                          (option) =>
+                            option.value !== "archived" ||
+                            post.status === "archived",
+                        ).map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -311,8 +329,16 @@ export default function Dashboard() {
                         onClick={() => void handleDelete(post)}
                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2 font-semibold transition hover:bg-red-500 disabled:opacity-50"
                       >
-                        <Trash2 size={17} />
-                        {busy ? "Művelet..." : "Hirdetés törlése"}
+                        {post.status === "archived" ? (
+                          <RotateCcw size={17} />
+                        ) : (
+                          <Archive size={17} />
+                        )}
+                        {busy
+                          ? "Művelet..."
+                          : post.status === "archived"
+                            ? "Visszaállítás"
+                            : "Archiválás"}
                       </button>
                     </div>
 

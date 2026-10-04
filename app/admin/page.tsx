@@ -1,4 +1,5 @@
 "use client";
+import { useConfirmation } from "@/app/lib/useConfirmation";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -6,12 +7,10 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  serverTimestamp,
-  updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import {
@@ -20,10 +19,15 @@ import {
   Search,
   ShieldCheck,
   Star,
-  Trash2,
+  Archive,
+  RotateCcw,
   Users,
 } from "lucide-react";
 
+import UserManagement from "@/app/components/admin/UserManagement";
+import InquiryManagement from "@/app/components/admin/InquiryManagement";
+import { missingPropertyFields } from "@/app/lib/managementPolicy";
+import { managementRequest } from "@/app/lib/managementClient";
 import { auth, db } from "../lib/firebase";
 import {
   propertyFromFirestore,
@@ -48,9 +52,11 @@ const STATUS_OPTIONS: StatusOption[] = [
   { value: "draft", label: "Piszkozat" },
   { value: "sold", label: "Eladva" },
   { value: "inactive", label: "Inaktív" },
+  { value: "archived", label: "Archivált" },
 ];
 
 const statusClass: Record<PropertyStatus, string> = {
+  archived: "border-stone-300 bg-stone-100 text-stone-700",
   active: "border-emerald-500/30 bg-[#176b3a]/10 text-[#176b3a]",
   draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   sold: "border-blue-500/30 bg-[#176b3a]/10 text-blue-300",
@@ -59,6 +65,8 @@ const statusClass: Record<PropertyStatus, string> = {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { confirm: confirmAction, dialog: confirmationDialog } =
+    useConfirmation();
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<PropertyWithId[]>([]);
@@ -66,8 +74,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [propertySearch, setPropertySearch] = useState("");
-  const [userSearch, setUserSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | PropertyStatus>("all");
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | PropertyStatus>(
+    "all",
+  );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -111,8 +121,8 @@ export default function AdminPage() {
 
     setPosts(
       postSnapshot.docs.map((item) =>
-        propertyFromFirestore(item.id, item.data())
-      )
+        propertyFromFirestore(item.id, item.data()),
+      ),
     );
 
     setUsers(
@@ -124,10 +134,23 @@ export default function AdminPage() {
           role: data.role === "admin" ? "admin" : "user",
           createdAt: data.createdAt,
         };
-      })
+      }),
     );
   };
 
+  useEffect(() => {
+    if (!currentUser) return;
+    return onSnapshot(
+      collection(db, "posts"),
+      (snapshot) =>
+        setPosts(
+          snapshot.docs.map((item) =>
+            propertyFromFirestore(item.id, item.data()),
+          ),
+        ),
+      () => toast.error("Az élő frissítés megszakadt. Frissítsd az oldalt."),
+    );
+  }, [currentUser]);
   const stats = useMemo(
     () => ({
       users: users.length,
@@ -138,49 +161,51 @@ export default function AdminPage() {
       sold: posts.filter((item) => item.status === "sold").length,
       featured: posts.filter((item) => item.featured).length,
     }),
-    [posts, users]
+    [posts, users],
   );
 
   const filteredPosts = useMemo(() => {
     const needle = propertySearch.trim().toLowerCase();
 
     return posts.filter((post) => {
-      const matchesStatus = statusFilter === "all" || post.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || post.status === statusFilter;
       const matchesSearch =
         !needle ||
         [post.title, post.city, post.district, post.email, post.propertyType]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(needle));
 
-      return matchesStatus && matchesSearch;
+      return (
+        matchesStatus &&
+        matchesSearch &&
+        (!incompleteOnly || missingPropertyFields(post).length > 0)
+      );
     });
-  }, [posts, propertySearch, statusFilter]);
-
-  const filteredUsers = useMemo(() => {
-    const needle = userSearch.trim().toLowerCase();
-    if (!needle) return users;
-
-    return users.filter((item) =>
-      [item.email, item.role].some((value) => value.toLowerCase().includes(needle))
-    );
-  }, [users, userSearch]);
+  }, [posts, propertySearch, statusFilter, incompleteOnly]);
 
   const changeStatus = async (post: PropertyWithId, status: PropertyStatus) => {
     if (post.status === status) return;
 
     try {
       setBusyId(post.id);
-      await updateDoc(doc(db, "posts", post.id), {
-        status,
-        updatedAt: serverTimestamp(),
-      });
-      setPosts((current) =>
-        current.map((item) => (item.id === post.id ? { ...item, status } : item))
+      await managementRequest(
+        `/api/posts/${post.id}`,
+        {
+          action: "update",
+          expectedVersion: post.version || 0,
+          patch: { status },
+        },
+        "PATCH",
       );
       toast.success("Hirdetés státusza frissítve.");
     } catch (error) {
       console.error(error);
-      toast.error("Nem sikerült módosítani a státuszt.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nem sikerült módosítani a státuszt.",
+      );
     } finally {
       setBusyId(null);
     }
@@ -190,68 +215,51 @@ export default function AdminPage() {
     try {
       setBusyId(post.id);
       const featured = !post.featured;
-      await updateDoc(doc(db, "posts", post.id), {
-        featured,
-        updatedAt: serverTimestamp(),
-      });
-      setPosts((current) =>
-        current.map((item) =>
-          item.id === post.id ? { ...item, featured } : item
-        )
+      await managementRequest(
+        `/api/posts/${post.id}`,
+        {
+          action: "update",
+          expectedVersion: post.version || 0,
+          patch: { featured },
+        },
+        "PATCH",
       );
       toast.success(featured ? "Hirdetés kiemelve." : "Kiemelés megszüntetve.");
     } catch (error) {
       console.error(error);
-      toast.error("Nem sikerült módosítani a kiemelést.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nem sikerült módosítani a kiemelést.",
+      );
     } finally {
       setBusyId(null);
     }
   };
 
   const deletePost = async (post: PropertyWithId) => {
-    const confirmed = window.confirm(
-      `Biztosan törlöd ezt a hirdetést?\n\n${post.title}`
+    const confirmed = await confirmAction(
+      `Biztosan ${post.status === "archived" ? "visszaállítod" : "archiválod"} ezt a hirdetést?\n\n${post.title}`,
     );
     if (!confirmed) return;
 
     try {
       setBusyId(post.id);
-      await deleteDoc(doc(db, "posts", post.id));
-      setPosts((current) => current.filter((item) => item.id !== post.id));
-      toast.success("Hirdetés törölve.");
-    } catch (error) {
-      console.error(error);
-      toast.error("Nem sikerült törölni a hirdetést.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const changeUserRole = async (item: AdminUser, role: "user" | "admin") => {
-    if (item.role === role) return;
-
-    if (currentUser?.uid === item.id) {
-      toast.error("A saját admin jogosultságodat itt nem módosíthatod.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      role === "admin"
-        ? `Biztosan admin jogosultságot adsz ennek a felhasználónak?\n\n${item.email}`
-        : `Biztosan visszavonod az admin jogosultságot?\n\n${item.email}`
-    );
-    if (!confirmed) return;
-
-    try {
-      setBusyId(item.id);
-      await updateDoc(doc(db, "users", item.id), { role });
-      setUsers((current) =>
-        current.map((user) => (user.id === item.id ? { ...user, role } : user))
+      await managementRequest(
+        `/api/posts/${post.id}`,
+        {
+          action: post.status === "archived" ? "unarchive" : "archive",
+          expectedVersion: post.version || 0,
+        },
+        "PATCH",
       );
-      toast.success("Felhasználói jogosultság frissítve.");
+      await loadAdminData();
+      toast.success("Hirdetés állapota módosítva.");
     } catch (error) {
       console.error(error);
-      toast.error("Nem sikerült módosítani a jogosultságot.");
+      toast.error(
+        error instanceof Error ? error.message : "A művelet nem sikerült.",
+      );
     } finally {
       setBusyId(null);
     }
@@ -267,22 +275,28 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-4 py-8 text-[#18201b] sm:px-6">
+      {confirmationDialog}
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#b9d1c0] bg-[#176b3a]/10 px-4 py-2 text-sm text-[#176b3a]">
             <ShieldCheck size={16} /> Adminisztráció
           </div>
-          <h1 className="mt-4 text-3xl font-black sm:text-4xl">DebrecenHomes Admin PRO</h1>
+          <h1 className="mt-4 text-3xl font-black sm:text-4xl">
+            DebrecenHomes Admin PRO
+          </h1>
           <p className="mt-2 text-[#6c776f]">
-            Valós idejű platformkezelés: hirdetések, kiemelések, státuszok és felhasználói jogosultságok.
+            Valós idejű platformkezelés: hirdetések, kiemelések, státuszok és
+            felhasználói jogosultságok.
           </p>
           {currentUser?.email && (
-            <p className="mt-2 text-sm text-[#879087]">Admin: {currentUser.email}</p>
+            <p className="mt-2 text-sm text-[#879087]">
+              Admin: {currentUser.email}
+            </p>
           )}
         </header>
 
         <section className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          <StatCard label="Felhasználók" value={stats.users} />
+          <StatCard label="Felhasználói profilok" value={stats.users} />
           <StatCard label="Adminok" value={stats.admins} />
           <StatCard label="Hirdetések" value={stats.allPosts} />
           <StatCard label="Aktív" value={stats.active} />
@@ -301,8 +315,19 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_180px]">
+              <label className="col-span-full flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={incompleteOnly}
+                  onChange={(e) => setIncompleteOnly(e.target.checked)}
+                />{" "}
+                Csak hiányos adatokkal
+              </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#879087]" size={17} />
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#879087]"
+                  size={17}
+                />
                 <input
                   value={propertySearch}
                   onChange={(event) => setPropertySearch(event.target.value)}
@@ -346,11 +371,14 @@ export default function AdminPage() {
                   {filteredPosts.map((post) => {
                     const busy = busyId === post.id;
                     const statusLabel =
-                      STATUS_OPTIONS.find((item) => item.value === post.status)?.label ??
-                      post.status;
+                      STATUS_OPTIONS.find((item) => item.value === post.status)
+                        ?.label ?? post.status;
 
                     return (
-                      <tr key={post.id} className="border-b border-[#e2ddd3]/70 last:border-0">
+                      <tr
+                        key={post.id}
+                        className="border-b border-[#e2ddd3]/70 last:border-0"
+                      >
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {post.imageUrl ? (
@@ -365,10 +393,32 @@ export default function AdminPage() {
                               </div>
                             )}
                             <div>
-                              <p className="max-w-xs font-bold">{post.title || "Névtelen hirdetés"}</p>
-                              {(!post.area || !post.rooms) && <Link href={`/edit/${post.id}`} className="mt-2 block text-xs font-semibold text-amber-800 underline">Hiányzó adatok: {[!post.area ? "alapterület" : "", !post.rooms ? "szobaszám" : ""].filter(Boolean).join(", ")} – kitöltés</Link>}
+                              <p className="max-w-xs font-bold">
+                                {post.title || "Névtelen hirdetés"}
+                              </p>
+                              <p className="mt-2 text-xs">
+                                Kitöltöttség:{" "}
+                                {Math.round(
+                                  ((5 - missingPropertyFields(post).length) /
+                                    5) *
+                                    100,
+                                )}
+                                %
+                              </p>
+                              {missingPropertyFields(post).length > 0 && (
+                                <Link
+                                  href={`/edit/${post.id}`}
+                                  className="mt-1 block text-xs font-semibold text-amber-800 underline"
+                                >
+                                  Hiányzik:{" "}
+                                  {missingPropertyFields(post).join(", ")} –
+                                  kitöltés
+                                </Link>
+                              )}
                               <p className="mt-1 text-xs text-[#879087]">
-                                {[post.city, post.district].filter(Boolean).join(", ") || "Nincs helyszín"}
+                                {[post.city, post.district]
+                                  .filter(Boolean)
+                                  .join(", ") || "Nincs helyszín"}
                               </p>
                             </div>
                           </div>
@@ -378,18 +428,27 @@ export default function AdminPage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-2">
-                            <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass[post.status]}`}>
+                            <span
+                              className={`w-fit rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass[post.status]}`}
+                            >
                               {statusLabel}
                             </span>
                             <select
                               value={post.status}
-                              disabled={busy}
+                              disabled={busy || post.status === "archived"}
                               onChange={(event) =>
-                                void changeStatus(post, event.target.value as PropertyStatus)
+                                void changeStatus(
+                                  post,
+                                  event.target.value as PropertyStatus,
+                                )
                               }
                               className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] px-2 py-1.5 text-xs outline-none disabled:opacity-50"
                             >
-                              {STATUS_OPTIONS.map((option) => (
+                              {STATUS_OPTIONS.filter(
+                                (option) =>
+                                  option.value !== "archived" ||
+                                  post.status === "archived",
+                              ).map((option) => (
                                 <option key={option.value} value={option.value}>
                                   {option.label}
                                 </option>
@@ -400,7 +459,7 @@ export default function AdminPage() {
                         <td className="px-5 py-4">
                           <button
                             type="button"
-                            disabled={busy}
+                            disabled={busy || post.status === "archived"}
                             onClick={() => void toggleFeatured(post)}
                             className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${
                               post.featured
@@ -408,13 +467,19 @@ export default function AdminPage() {
                                 : "border border-[#d8d2c7] bg-[#f5f2ec] text-[#4d5a51] hover:border-[#b99445]"
                             }`}
                           >
-                            <Star size={14} fill={post.featured ? "currentColor" : "none"} />
+                            <Star
+                              size={14}
+                              fill={post.featured ? "currentColor" : "none"}
+                            />
                             {post.featured ? "Kiemelt" : "Kiemelés"}
                           </button>
                         </td>
                         <td className="px-5 py-4 text-xs text-[#6c776f]">
                           <div>{post.email || "Nincs e-mail"}</div>
-                          <div className="mt-1 max-w-40 truncate text-[#9aa29b]" title={post.userId}>
+                          <div
+                            className="mt-1 max-w-40 truncate text-[#9aa29b]"
+                            title={post.userId}
+                          >
                             {post.userId || "Nincs userId"}
                           </div>
                         </td>
@@ -439,9 +504,17 @@ export default function AdminPage() {
                               disabled={busy}
                               onClick={() => void deletePost(post)}
                               className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-300 transition hover:bg-red-500/20 disabled:opacity-50"
-                              title="Törlés"
+                              title={
+                                post.status === "archived"
+                                  ? "Visszaállítás"
+                                  : "Archiválás"
+                              }
                             >
-                              <Trash2 size={16} />
+                              {post.status === "archived" ? (
+                                <RotateCcw size={16} />
+                              ) : (
+                                <Archive size={16} />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -454,95 +527,12 @@ export default function AdminPage() {
           )}
         </section>
 
-        <section>
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-2xl font-black">
-                <Users size={22} /> Felhasználók
-              </h2>
-              <p className="mt-1 text-sm text-[#879087]">
-                Jogosultságkezelés a Firestore felhasználói profiljai alapján.
-              </p>
-            </div>
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#879087]" size={17} />
-              <input
-                value={userSearch}
-                onChange={(event) => setUserSearch(event.target.value)}
-                placeholder="E-mail vagy szerepkör..."
-                className="w-full rounded-xl border border-[#d8d2c7] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#176b3a]"
-              />
-            </div>
-          </div>
-
-          {filteredUsers.length === 0 ? (
-            <EmptyState text="Nincs a keresésnek megfelelő felhasználó." />
-          ) : (
-            <div className="overflow-x-auto rounded-3xl border border-[#e2ddd3] bg-white">
-              <table className="min-w-[720px] w-full text-left text-sm">
-                <thead className="border-b border-[#e2ddd3] text-xs uppercase tracking-wide text-[#879087]">
-                  <tr>
-                    <th className="px-5 py-4">E-mail</th>
-                    <th className="px-5 py-4">Azonosító</th>
-                    <th className="px-5 py-4">Szerepkör</th>
-                    <th className="px-5 py-4 text-right">Módosítás</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((item) => {
-                    const isSelf = currentUser?.uid === item.id;
-                    const busy = busyId === item.id;
-
-                    return (
-                      <tr key={item.id} className="border-b border-[#e2ddd3]/70 last:border-0">
-                        <td className="px-5 py-4 font-semibold">
-                          {item.email}
-                          {isSelf && (
-                            <span className="ml-2 rounded-full bg-[#176b3a]/10 px-2 py-1 text-xs text-[#176b3a]">
-                              Te
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-xs text-[#879087]">
-                          <span className="block max-w-64 truncate" title={item.id}>
-                            {item.id}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${
-                              item.role === "admin"
-                                ? "bg-[#176b3a]/10 text-[#176b3a]"
-                                : "bg-[#f5f2ec] text-[#4d5a51]"
-                            }`}
-                          >
-                            {item.role === "admin" ? "Admin" : "Felhasználó"}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <select
-                            value={item.role}
-                            disabled={busy || isSelf}
-                            onChange={(event) =>
-                              void changeUserRole(
-                                item,
-                                event.target.value as "user" | "admin"
-                              )
-                            }
-                            className="rounded-xl border border-[#d8d2c7] bg-[#f5f2ec] px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <option value="user">Felhasználó</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        {currentUser && (
+          <>
+            <InquiryManagement />
+            <UserManagement actorUid={currentUser.uid} />
+          </>
+        )}
       </div>
     </main>
   );

@@ -1,4 +1,8 @@
+import { captureInquiry } from "@/app/lib/inquiryCapture";
 import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
@@ -20,7 +24,7 @@ function isRateLimited(ip: string): boolean {
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
 
   const recent = (rateLimitStore.get(ip) || []).filter(
-    (timestamp) => timestamp > cutoff
+    (timestamp) => timestamp > cutoff,
   );
 
   if (recent.length >= RATE_LIMIT_MAX) {
@@ -56,9 +60,7 @@ function escapeHtml(value: string): string {
 }
 
 function cleanText(value: unknown, maxLength: number): string {
-  return typeof value === "string"
-    ? value.trim().slice(0, maxLength)
-    : "";
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
 type SendBrevoEmailParams = {
@@ -114,6 +116,7 @@ async function sendBrevoEmail({
       "api-key": apiKey,
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(12000),
   });
 
   const responseText = await response.text();
@@ -139,19 +142,30 @@ async function sendBrevoEmail({
 }
 
 export async function POST(req: Request) {
+  let saved: Awaited<ReturnType<typeof captureInquiry>> | undefined;
   try {
     const origin = req.headers.get("origin");
-    const allowedOrigins = new Set(["https://debrecenhomes.hu", "https://www.debrecenhomes.hu"]);
+    const allowedOrigins = new Set([
+      "https://debrecenhomes.hu",
+      "https://www.debrecenhomes.hu",
+    ]);
     if (process.env.NODE_ENV === "development") {
       allowedOrigins.add("http://localhost:3000");
+      allowedOrigins.add("http://127.0.0.1:3000");
     }
     if (origin && !allowedOrigins.has(origin)) {
-      return NextResponse.json({ success: false, error: "Érvénytelen kérés." }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Érvénytelen kérés." },
+        { status: 403 },
+      );
     }
 
     const contentLength = Number(req.headers.get("content-length") || "0");
     if (contentLength > 20_000) {
-      return NextResponse.json({ success: false, error: "A kérés túl nagy." }, { status: 413 });
+      return NextResponse.json(
+        { success: false, error: "A kérés túl nagy." },
+        { status: 413 },
+      );
     }
 
     const ip = getClientIp(req);
@@ -168,7 +182,7 @@ export async function POST(req: Request) {
           headers: {
             "Retry-After": "600",
           },
-        }
+        },
       );
     }
 
@@ -184,7 +198,7 @@ export async function POST(req: Request) {
         },
         {
           status: 200,
-        }
+        },
       );
     }
 
@@ -205,7 +219,7 @@ export async function POST(req: Request) {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
@@ -219,10 +233,16 @@ export async function POST(req: Request) {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
+    saved = await captureInquiry(
+      { name, phone, email, message, propertyTitle, propertyId, propertyUrl },
+      body.submissionId,
+      ip,
+    );
+    if (saved.duplicate) return NextResponse.json({ success: true });
     const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.BREVO_FROM_EMAIL;
     const recipientEmail = process.env.BREVO_TO_EMAIL;
@@ -234,29 +254,17 @@ export async function POST(req: Request) {
         hasRecipientEmail: Boolean(recipientEmail),
       });
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Az üzenetküldés átmenetileg nem elérhető.",
-        },
-        {
-          status: 500,
-        }
-      );
+      await saved.ref.update({ delivery: "failed" });
+      return NextResponse.json({ success: true });
     }
 
     const safeName = escapeHtml(name);
     const safePhone = escapeHtml(phone);
     const safeEmail = escapeHtml(email);
 
-    const safeMessage = escapeHtml(message).replace(
-      /\r?\n/g,
-      "<br />"
-    );
+    const safeMessage = escapeHtml(message).replace(/\r?\n/g, "<br />");
 
-    const safePropertyTitle = escapeHtml(
-      propertyTitle || "Ingatlan"
-    );
+    const safePropertyTitle = escapeHtml(propertyTitle || "Ingatlan");
 
     const safePropertyId = escapeHtml(propertyId);
     const safePropertyUrl = escapeHtml(propertyUrl);
@@ -341,6 +349,7 @@ export async function POST(req: Request) {
       `,
     });
 
+    await saved.ref.update({ delivery: "sent" });
     //
     // 2. Automatikus visszaigazolás az érdeklődőnek
     //
@@ -396,10 +405,21 @@ export async function POST(req: Request) {
       },
       {
         status: 200,
-      }
+      },
     );
   } catch (error) {
-    console.error("CONTACT_API_ERROR", error);
+    console.error("CONTACT_API_ERROR", {
+      code: (error as { code?: string }).code || "INTERNAL",
+    });
+    if (saved) {
+      await saved.ref.update({ delivery: "failed" }).catch(() => {});
+      return NextResponse.json({ success: true });
+    }
+    if ((error as Error).message === "RATE_LIMIT")
+      return NextResponse.json(
+        { error: "Túl sok üzenet. Próbáld újra tíz perc múlva." },
+        { status: 429 },
+      );
 
     return NextResponse.json(
       {
@@ -408,7 +428,7 @@ export async function POST(req: Request) {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 }

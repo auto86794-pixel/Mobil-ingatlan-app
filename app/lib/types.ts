@@ -1,4 +1,9 @@
-export type PropertyStatus = "active" | "draft" | "sold" | "inactive";
+export type PropertyStatus =
+  | "active"
+  | "draft"
+  | "sold"
+  | "inactive"
+  | "archived";
 export type ListingPurpose = "sale" | "rent";
 
 export type Property = {
@@ -28,6 +33,7 @@ export type Property = {
   lng: number;
   createdAt?: unknown;
   updatedAt?: unknown;
+  version?: number;
 };
 
 export type PropertyWithId = Property & { id: string };
@@ -46,21 +52,33 @@ const numberValue = (value: unknown, fallback = 0) => {
 
 export function propertyFromFirestore(
   id: string,
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
 ): PropertyWithId {
   const rawImages = Array.isArray(raw.images)
     ? raw.images.filter((item): item is string => typeof item === "string")
     : [];
   const legacyImage = stringValue(raw.imageUrl);
-  const images = rawImages.length > 0 ? rawImages : legacyImage ? [legacyImage] : [];
+  const images =
+    rawImages.length > 0 ? rawImages : legacyImage ? [legacyImage] : [];
 
   const rawStatus = stringValue(raw.status, "active");
-  const status: PropertyStatus = ["active", "draft", "sold", "inactive"].includes(rawStatus)
+  const status: PropertyStatus = [
+    "active",
+    "draft",
+    "sold",
+    "inactive",
+    "archived",
+  ].includes(rawStatus)
     ? (rawStatus as PropertyStatus)
     : "active";
   const rawPurpose = stringValue(raw.listingPurpose);
   const searchableTitle = stringValue(raw.title).toLocaleLowerCase("hu-HU");
-  const listingPurpose: ListingPurpose = rawPurpose === "rent" || searchableTitle.includes("kiadó") || searchableTitle.includes("kiado") ? "rent" : "sale";
+  const listingPurpose: ListingPurpose =
+    rawPurpose === "rent" ||
+    searchableTitle.includes("kiadó") ||
+    searchableTitle.includes("kiado")
+      ? "rent"
+      : "sale";
 
   return {
     id,
@@ -89,5 +107,6 @@ export function propertyFromFirestore(
     lng: numberValue(raw.lng, 21.6273),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
+    version: numberValue(raw.version),
   };
 }

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run build"
+    "check": "npm run typecheck && npm run build",
+    "test": "node --test tests/management.test.cjs",
+    "test:rules": "node --test tests/rules.test.cjs"
   },
   "dependencies": {
     "firebase": "10.12.5",

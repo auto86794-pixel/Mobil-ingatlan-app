@@ -290,12 +290,12 @@ export default function AdminPage() {
           </p>
           {currentUser?.email && (
             <p className="mt-2 text-sm text-[#879087]">
-              Admin: {currentUser.email}
+              Admin: <span className="break-all">{currentUser.email}</span>
             </p>
           )}
         </header>
 
-        <section className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <section className="mb-10 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
           <StatCard label="Felhasználói profilok" value={stats.users} />
           <StatCard label="Adminok" value={stats.admins} />
           <StatCard label="Hirdetések" value={stats.allPosts} />
@@ -356,7 +356,7 @@ export default function AdminPage() {
             <EmptyState text="Nincs a szűrésnek megfelelő hirdetés." />
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-[#e2ddd3] bg-white">
-              <table className="min-w-[1050px] w-full text-left text-sm">
+              <table className="dh-admin-table min-w-[1050px] w-full text-left text-sm">
                 <thead className="border-b border-[#e2ddd3] text-xs uppercase tracking-wide text-[#879087]">
                   <tr>
                     <th className="px-5 py-4">Ingatlan</th>
@@ -379,7 +379,7 @@ export default function AdminPage() {
                         key={post.id}
                         className="border-b border-[#e2ddd3]/70 last:border-0"
                       >
-                        <td className="px-5 py-4">
+                        <td data-label="Ingatlan" className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {post.imageUrl ? (
                               <img
@@ -423,10 +423,10 @@ export default function AdminPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-semibold text-[#176b3a]">
+                        <td data-label="Ár" className="px-5 py-4 font-semibold text-[#176b3a]">
                           {post.price.toLocaleString("hu-HU")} Ft
                         </td>
-                        <td className="px-5 py-4">
+                        <td data-label="Státusz" className="px-5 py-4">
                           <div className="flex flex-col gap-2">
                             <span
                               className={`w-fit rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass[post.status]}`}
@@ -442,7 +442,7 @@ export default function AdminPage() {
                                   event.target.value as PropertyStatus,
                                 )
                               }
-                              className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] px-2 py-1.5 text-xs outline-none disabled:opacity-50"
+                              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] px-2 py-1.5 text-xs outline-none disabled:opacity-50"
                             >
                               {STATUS_OPTIONS.filter(
                                 (option) =>
@@ -456,7 +456,7 @@ export default function AdminPage() {
                             </select>
                           </div>
                         </td>
-                        <td className="px-5 py-4">
+                        <td data-label="Kiemelés" className="px-5 py-4">
                           <button
                             type="button"
                             disabled={busy || post.status === "archived"}
@@ -474,7 +474,7 @@ export default function AdminPage() {
                             {post.featured ? "Kiemelt" : "Kiemelés"}
                           </button>
                         </td>
-                        <td className="px-5 py-4 text-xs text-[#6c776f]">
+                        <td data-label="Tulajdonos" className="px-5 py-4 text-xs text-[#6c776f]">
                           <div>{post.email || "Nincs e-mail"}</div>
                           <div
                             className="mt-1 max-w-40 truncate text-[#9aa29b]"
@@ -483,8 +483,8 @@ export default function AdminPage() {
                             {post.userId || "Nincs userId"}
                           </div>
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-2">
+                        <td data-label="Műveletek" className="px-5 py-4">
+                          <div className="flex flex-wrap justify-end gap-2">
                             <Link
                               href={`/post/${post.id}`}
                               className="rounded-lg border border-[#d8d2c7] bg-[#f5f2ec] p-2 transition hover:border-emerald-500"

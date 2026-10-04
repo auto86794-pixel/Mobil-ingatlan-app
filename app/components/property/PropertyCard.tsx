@@ -88,19 +88,19 @@ export default function PropertyCard({
             <Heart size={19} fill={isFavorite ? "currentColor" : "none"} />
           </button>
 
-          <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-3">
+          <div className="absolute inset-x-4 bottom-4 flex flex-wrap items-end justify-between gap-3">
             <div className="rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-[#334039] backdrop-blur-xl">{inferredPropertyType}</div>
-            <div className="text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{formatPrice(price)}</div>
+            <div className="ml-auto text-right text-xl font-black tracking-tight text-white drop-shadow-lg">{formatPrice(price)}</div>
           </div>
         </div>
 
         <div className="flex flex-1 flex-col p-5 sm:p-6">
           <div className="min-h-[72px] sm:min-h-[82px]">
             <h2 className="line-clamp-2 text-xl font-black leading-snug tracking-tight text-[#172019] sm:text-[22px]">{title}</h2>
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{city}{district ? `, ${district}` : ""}</p>
+            <p className="mt-2 flex items-start gap-1.5 break-words text-sm text-[#6c776f]"><MapPin size={15} className="mt-0.5 shrink-0 text-[#176b3a]" />{city}{district ? `, ${district}` : ""}</p>
           </div>
 
-          <div className="mt-5 flex min-h-[62px] items-center gap-2 border-y border-[#eee8df] py-3 text-sm text-[#4d5a51]">
+          <div className="mt-5 flex min-h-[62px] flex-wrap items-center gap-2 border-y border-[#eee8df] py-3 text-sm text-[#4d5a51]">
             {validArea ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><Maximize2 size={14} className="text-[#7d887f]" /> {validArea} m²</span> : null}
             {validRooms ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f5ef] px-3 py-1.5"><BedDouble size={14} className="text-[#7d887f]" /> {validRooms} szoba</span> : null}
             {!validArea && !validRooms ? <span className="text-xs font-semibold text-[#8a938c]">Alapterület és szobaszám nincs megadva</span> : null}

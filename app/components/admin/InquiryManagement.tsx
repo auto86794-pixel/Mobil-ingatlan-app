@@ -159,15 +159,15 @@ function InquiryCard({
     }
   }
   return (
-    <article className="rounded-2xl border p-4">
+    <article className="break-words rounded-2xl border p-4">
       <div className="flex flex-wrap justify-between gap-2">
-        <h3 className="font-bold">{item.name}</h3>
+        <h3 className="break-words font-bold">{item.name}</h3>
         <time className="text-sm text-[#6c776f]">
           {new Date(item.createdAt).toLocaleString("hu-HU")}
         </time>
       </div>
       <div className="my-2 flex flex-wrap gap-4">
-        <a className="text-[#176b3a] underline" href={`mailto:${item.email}`}>
+        <a className="break-all text-[#176b3a] underline" href={`mailto:${item.email}`}>
           {item.email}
         </a>
         {item.phone && (

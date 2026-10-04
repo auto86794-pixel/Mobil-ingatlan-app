@@ -55,8 +55,8 @@ body {
   background: white;
 }
 
-@media (max-width: 767px) {
-  body { padding-bottom: 82px; }
+@media (max-width: 1279px) {
+  body { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
 }
 
 
@@ -78,4 +78,21 @@ button, a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+.dh-nav-action { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: .5rem; border-radius: .75rem; padding: .65rem 1rem; font-size: .875rem; font-weight: 700; }
+@media (max-width: 1279px) { input, select, textarea { font-size: 16px !important; } }
+
+@media (max-width: 1279px) {
+  .dh-admin-table { display: block; min-width: 0; width: 100%; }
+  .dh-admin-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .dh-admin-table tbody { display: block; }
+  .dh-admin-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 1rem; gap: 1rem; }
+  .dh-admin-table td { display: block; min-width: 0; padding: 0; overflow-wrap: anywhere; }
+  .dh-admin-table td::before { content: attr(data-label); display: block; margin-bottom: .4rem; font-size: .75rem; color: #69736c; }
+  .dh-admin-table td:first-child, .dh-admin-table td:last-child { grid-column: 1 / -1; }
+  .dh-admin-table td:first-child::before, .dh-admin-table td:last-child::before { display: none; }
+  .dh-admin-table td:first-child > div > div:last-child { min-width: 0; }
+  .dh-admin-table td:first-child img, .dh-admin-table td:first-child > div > div:first-child { flex-shrink: 0; }
+  .dh-admin-table td:last-child > div { justify-content: flex-start; }
 }

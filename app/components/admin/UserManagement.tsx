@@ -225,7 +225,7 @@ export default function UserManagement({ actorUid }: { actorUid: string }) {
       )}
       {selected && preview && (
         <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-5">
-          <h3 className="text-lg font-bold">
+          <h3 className="break-words text-lg font-bold">
             Végleges fióktörlés: {preview.email}
           </h3>
           <p className="mt-2">
@@ -268,7 +268,7 @@ export default function UserManagement({ actorUid }: { actorUid: string }) {
               autoComplete="off"
             />
           </label>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               className={`${button} bg-red-700 text-white`}
               disabled={busy || confirmation !== preview.email || !recipient}

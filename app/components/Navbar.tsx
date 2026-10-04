@@ -1,101 +1,71 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Plus, ShieldCheck } from "lucide-react";
+import { Building2, Heart, LayoutDashboard, LogIn, LogOut, Menu, Plus, ShieldCheck, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-
+import toast from "react-hot-toast";
 import { auth } from "../lib/firebase";
 import { useAccount } from "../lib/useAccount";
-
-const navLink =
-  "rounded-full px-4 py-2 text-sm font-semibold transition";
-
-const navLinkClass = (active: boolean) =>
-  `${navLink} ${active ? "bg-[#edf5ef] text-[#176b3a]" : "text-[#3f4a43] hover:bg-[#f3efe7] hover:text-[#176b3a]"}`;
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, isAdmin } = useAccount();
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Kijelentkezési hiba:", error);
-    }
+  const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const panel = dialog.current;
+    if (!panel) return;
+    panel.showModal();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { panel.close(); document.body.style.overflow = previous; };
+  }, [open]);
+  const logout = async () => {
+    setLoggingOut(true);
+    try { await signOut(auth); setOpen(false); }
+    catch { toast.error("A kijelentkezés nem sikerült. Próbáld újra."); }
+    finally { setLoggingOut(false); }
   };
-
-  return (
-    <nav className="sticky top-0 z-50 hidden border-b border-[#e7e1d7] bg-white/92 backdrop-blur-2xl md:block">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d9c28c] bg-[#fbf6e9] text-[#a98335] transition group-hover:bg-[#f5ecd7]">
-              <Building2 size={22} strokeWidth={1.8} />
-            </div>
-            <div>
-              <div className="text-base font-black tracking-tight text-[#172019]">
-                Debrecen<span className="text-[#176b3a]">Homes</span>
-              </div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b938c]">Debreceni ingatlanok</div>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <Link href="/properties#ingatlanok" className={navLinkClass(pathname.startsWith("/properties"))}>Ingatlanok</Link>
-            <Link href="/favorites" className={navLinkClass(pathname.startsWith("/favorites"))}>
-              <span className="inline-flex items-center gap-2"><Heart size={15} /> Kedvencek</span>
-            </Link>
-            {isAdmin && <Link href="/admin" className={navLinkClass(pathname.startsWith("/admin"))}><span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Összes ingatlan kezelése</span></Link>}
-            {user?.emailVerified && (
-              <Link href="/dashboard" className={navLinkClass(pathname.startsWith("/dashboard"))}>
-                <span className="inline-flex items-center gap-2"><LayoutDashboard size={15} /> Saját hirdetések</span>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {user && (
-            <span className="hidden max-w-[140px] truncate px-2 text-xs text-[#8b938c] xl:block">{user.email}</span>
-          )}
-
-          {!user ? (
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#176b3a] px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(23,107,58,.16)] transition hover:bg-[#115b30]"
-            >
-              <LogIn size={16} /> Belépés
-            </Link>
-          ) : (
-            <>
-              {user.emailVerified ? (
-                <Link
-                  href="/create"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[#b9d1c0] bg-[#f3f8f4] px-4 py-2.5 text-sm font-bold text-[#176b3a] transition hover:bg-[#e9f3ec]"
-                >
-                  <Plus size={16} /> Új hirdetés
-                </Link>
-              ) : (
-                <Link
-                  href="/login?verify=1"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-100"
-                >
-                  <ShieldCheck size={16} /> Megerősítés
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex items-center gap-2 rounded-2xl border border-[#ded8ce] bg-white px-4 py-2.5 text-sm font-semibold text-[#4e5a52] transition hover:bg-[#f7f4ee]"
-              >
-                <LogOut size={16} /> Kilépés
-              </button>
-            </>
-          )}
-        </div>
+  const links = [
+    { href: "/properties#ingatlanok", label: "Ingatlanok", icon: Building2 },
+    { href: "/favorites", label: "Kedvencek", icon: Heart },
+    ...(isAdmin ? [{ href: "/admin", label: "Összes ingatlan kezelése", icon: ShieldCheck }] : []),
+    ...(user?.emailVerified ? [{ href: "/dashboard", label: "Saját hirdetések", icon: LayoutDashboard }] : []),
+  ];
+  const active = (href: string) => pathname === href.split("#")[0] || pathname.startsWith(href.split("#")[0] + "/");
+  const actions = <>
+    {!user ? <Link href="/login" onClick={() => setOpen(false)} className="dh-nav-action bg-[#176b3a] text-white"><LogIn size={18} /> Belépés</Link> : <>
+      <Link href={user.emailVerified ? "/create" : "/login?verify=1"} onClick={() => setOpen(false)} className="dh-nav-action border border-[#b9d1c0] text-[#176b3a]">{user.emailVerified ? <Plus size={18} /> : <ShieldCheck size={18} />}{user.emailVerified ? "Új hirdetés" : "E-mail megerősítése"}</Link>
+      <button type="button" disabled={loggingOut} onClick={() => void logout()} className="dh-nav-action border border-[#ded8ce] disabled:opacity-50"><LogOut size={18} />{loggingOut ? "Kilépés…" : "Kilépés"}</button>
+    </>}
+  </>;
+  return <>
+    <header className="sticky top-0 z-50 border-b border-[#e7e1d7] bg-white/95 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <Link href="/" aria-label="DebrecenHomes kezdőlap" className="flex shrink-0 items-center gap-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d9c28c] bg-[#fbf6e9] text-[#a98335]"><Building2 size={22} /></span>
+          <span className="font-black tracking-tight">Debrecen<span className="text-[#176b3a]">Homes</span><span className="hidden text-[10px] font-semibold uppercase tracking-[.15em] text-[#879087] sm:block">Debreceni ingatlanok</span></span>
+        </Link>
+        <nav aria-label="Főmenü" className="hidden items-center gap-1 xl:flex">
+          {links.map(item => <Link key={item.href} href={item.href} aria-current={active(item.href) ? "page" : undefined} className={"rounded-full px-3 py-3 text-sm font-semibold " + (active(item.href) ? "bg-[#edf5ef] text-[#176b3a]" : "hover:bg-[#f3efe7]")}>{item.href === "/admin" ? "Admin" : item.label}</Link>)}
+        </nav>
+        <div className="hidden shrink-0 gap-2 xl:flex">{actions}</div>
+        <button type="button" aria-haspopup="dialog" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(true)} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#ded8ce] px-3 font-semibold xl:hidden"><Menu size={20} />Menü</button>
       </div>
-    </nav>
-  );
+    </header>
+    <dialog ref={dialog} id="mobile-menu" aria-labelledby="menu-title" onCancel={() => setOpen(false)} onClose={() => setOpen(false)} onClick={e => { if (e.target === e.currentTarget) setOpen(false); }} className="fixed inset-x-0 top-0 m-0 max-h-[100dvh] w-full max-w-none overflow-y-auto rounded-b-3xl bg-white p-0 text-[#172019] shadow-2xl backdrop:bg-black/40">
+      <div className="mx-auto max-w-xl p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3"><h2 id="menu-title" className="text-xl font-black">Menü</h2><button type="button" autoFocus aria-label="Menü bezárása" onClick={() => setOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-xl border"><X size={22} /></button></div>
+        {user && <p className="mt-3 break-all rounded-xl bg-[#f7f4ee] p-3 text-sm">{user.email}<span className="mt-1 block text-[#69736c]">{isAdmin ? "Adminisztrátor" : "Bejelentkezve"}</span></p>}
+        <nav aria-label="Mobil főmenü" className="my-4 space-y-1">{links.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} aria-current={active(item.href) ? "page" : undefined} className={"flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 font-semibold " + (active(item.href) ? "bg-[#edf5ef] text-[#176b3a]" : "hover:bg-[#f7f4ee]")}><item.icon size={20} />{item.label}</Link>)}</nav>
+        <div className="flex flex-wrap gap-2 border-t pt-4">{actions}</div>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm text-[#69736c]"><Link href="/adatvedelem" onClick={() => setOpen(false)} className="py-3">Adatvédelem</Link><Link href="/impresszum" onClick={() => setOpen(false)} className="py-3">Impresszum</Link></div>
+      </div>
+    </dialog>
+  </>;
 }

@@ -169,10 +169,10 @@ export default function Create() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f4ee] p-6 text-[#18201b]">
-      <div className="w-full max-w-3xl rounded-[32px] border border-[#e2ddd3] bg-white p-8 shadow-[0_24px_70px_rgba(55,47,33,.10)]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f4ee] p-3 sm:p-6 text-[#18201b]">
+      <div className="w-full max-w-3xl rounded-[32px] border border-[#e2ddd3] bg-white p-4 sm:p-8 shadow-[0_24px_70px_rgba(55,47,33,.10)]">
         <div className="mb-8">
-          <h1 className="text-4xl font-black tracking-tight">Új ingatlan</h1>
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tight">Új ingatlan</h1>
           <p className="mt-2 text-[#6c776f]">
             Egységes DebrecenHomes ingatlan-adatlap.
           </p>

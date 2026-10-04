@@ -228,9 +228,11 @@ export default function EditPropertyPage() {
     type = "text",
   ) => (
     <div className="mb-4">
-      <label className="mb-2 block text-[#6c776f]">{label}</label>
+      <label htmlFor={label} className="mb-2 block text-[#6c776f]">{label}</label>
       <input
+        id={label}
         type={type}
+        inputMode={type === "number" ? "decimal" : type === "email" ? "email" : label === "Telefonszám" ? "tel" : undefined}
         value={value}
         placeholder={placeholder}
         onChange={(e) => setter(e.target.value)}
@@ -247,11 +249,11 @@ export default function EditPropertyPage() {
     );
 
   return (
-    <div className="flex min-h-screen justify-center bg-[#f7f4ee] p-6 text-[#18201b]">
+    <div className="flex min-h-screen justify-center bg-[#f7f4ee] p-3 sm:p-6 text-[#18201b]">
       {confirmationDialog}
-      <div className="w-full max-w-3xl rounded-[32px] border border-[#e2ddd3] bg-white p-8 shadow-[0_24px_70px_rgba(55,47,33,.10)]">
+      <div className="w-full max-w-3xl rounded-[32px] border border-[#e2ddd3] bg-white p-4 sm:p-8 shadow-[0_24px_70px_rgba(55,47,33,.10)]">
         <div className="mb-8">
-          <h1 className="text-4xl font-black">Ingatlan szerkesztése</h1>
+          <h1 className="text-2xl sm:text-4xl font-black">Ingatlan szerkesztése</h1>
           <p className="mt-2 text-[#6c776f]">Minden ingatlanadat egy helyen.</p>
         </div>
         <PropertyHistory

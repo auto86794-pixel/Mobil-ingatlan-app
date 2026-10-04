@@ -31,16 +31,17 @@ export default function MobileBottomNav() {
         ];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e5dfd5] bg-white/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_35px_rgba(48,42,30,.08)] backdrop-blur-2xl md:hidden">
+    <nav aria-label="Gyors navigáció" className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e5dfd5] bg-white/95 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_35px_rgba(48,42,30,.08)] backdrop-blur-2xl xl:hidden">
       <div className={`mx-auto grid max-w-md ${user?.emailVerified ? "grid-cols-4" : "grid-cols-3"} gap-1`}>
         {navItems.map((item) => {
           const active = item.href.startsWith("/properties")
-            ? pathname.startsWith("/properties")
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            ? pathname === "/" || pathname.startsWith("/properties")
+            : pathname === item.href.split("?")[0] || pathname.startsWith(`${item.href.split("?")[0]}/`);
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
+              aria-current={active ? "page" : undefined}
               href={item.href}
               className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition ${
                 active ? "bg-[#edf5ef] text-[#176b3a]" : "text-[#7c877f]"
@@ -52,6 +53,6 @@ export default function MobileBottomNav() {
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

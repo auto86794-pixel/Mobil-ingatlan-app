@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
   addDoc,
   collection,
@@ -388,12 +389,15 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
               className="block w-full touch-pan-y cursor-zoom-in"
               aria-label="Galéria megnyitása"
             >
-              <img
+              <Image
                 src={selectedImage}
                 alt={`${property.title} ${selectedImageIndex + 1}. kép`}
+                width={1440}
+                height={900}
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) calc(100vw - 48px), 1152px"
+                quality={75}
+                priority
                 className="h-[300px] w-full object-cover transition-all duration-300 sm:h-[500px]"
-                decoding="async"
-                fetchPriority="high"
               />
             </button>
 
@@ -450,13 +454,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                 }`}
                 aria-label={`${index + 1}. kép kiválasztása`}
               >
-                <img
-                  src={image}
-                  alt={`${property.title} ${index + 1}. bélyegkép`}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
+                <Image src={image} alt={`${property.title} ${index + 1}. bélyegkép`} fill sizes="(max-width: 640px) 112px, 240px" quality={65} className="object-cover" />
               </button>
             ))}
           </div>
@@ -728,14 +726,8 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                     href={`/post/${item.id}`}
                     className="group overflow-hidden rounded-3xl border border-[#e2ddd3] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <div className="h-44 overflow-hidden bg-[#ece7de]">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                      />
+                    <div className="relative h-44 overflow-hidden bg-[#ece7de]">
+                      <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 384px" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                     </div>
                     <div className="p-4">
                       <p className="line-clamp-2 font-black leading-snug text-[#172019]">
@@ -901,12 +893,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
           </div>
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center sm:px-16">
-            <img
-              src={selectedImage}
-              alt={`${property.title} ${selectedImageIndex + 1}. kép`}
-              className="max-h-full max-w-full select-none object-contain"
-              draggable={false}
-            />
+            <Image src={selectedImage} alt={`${property.title} ${selectedImageIndex + 1}. kép`} fill sizes="100vw" quality={85} className="select-none object-contain" draggable={false} />
 
             {galleryImages.length > 1 && (
               <>
@@ -937,20 +924,14 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                   key={`fullscreen-${image}-${index}`}
                   type="button"
                   onClick={() => setSelectedImageIndex(index)}
-                  className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-20 sm:w-28 ${
+                  className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-20 sm:w-28 ${
                     selectedImageIndex === index
                       ? "border-white"
                       : "border-transparent opacity-55 hover:opacity-100"
                   }`}
                   aria-label={`${index + 1}. kép megnyitása`}
                 >
-                  <img
-                    src={image}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <Image src={image} alt="" fill sizes="112px" quality={65} className="object-cover" />
                 </button>
               ))}
             </div>

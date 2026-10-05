@@ -47,9 +47,9 @@ const STATUS_OPTIONS: StatusOption[] = [
 
 const statusClass: Record<PropertyStatus, string> = {
   archived: "border-stone-300 bg-stone-100 text-stone-700",
-  active: "border-emerald-500/30 bg-[#176b3a]/10 text-[#176b3a]",
+  active: "border-emerald-500/30 bg-[#008000]/10 text-[#176b3a]",
   draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  sold: "border-blue-500/30 bg-[#176b3a]/10 text-blue-300",
+  sold: "border-blue-500/30 bg-[#008000]/10 text-blue-300",
   inactive: "border-[#cbc4b7] bg-[#f5f2ec] text-[#4d5a51]",
 };
 
@@ -190,7 +190,7 @@ export default function Dashboard() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center rounded-full border border-[#b9d1c0] bg-[#176b3a]/10 px-4 py-2 text-sm text-[#176b3a]">
+            <div className="inline-flex items-center rounded-full border border-[#b9d1c0] bg-[#008000]/10 px-4 py-2 text-sm text-[#176b3a]">
               Saját hirdetések
             </div>
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
@@ -203,7 +203,7 @@ export default function Dashboard() {
 
           <Link
             href="/create"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white transition hover:bg-[#115b30]"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#008000] px-5 py-3 font-bold text-white transition hover:bg-[#006b00]"
           >
             <CirclePlus size={20} /> Új ingatlan
           </Link>
@@ -313,13 +313,13 @@ export default function Dashboard() {
                     <div className="mt-5 grid grid-cols-2 gap-2">
                       <Link
                         href={`/post/${post.id}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#176b3a] px-3 py-2 font-semibold text-white transition hover:bg-[#115b30]"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#008000] px-3 py-2 font-semibold text-white transition hover:bg-[#006b00]"
                       >
                         <Eye size={17} /> Megnézem
                       </Link>
                       <Link
                         href={`/edit/${post.id}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#176b3a] px-3 py-2 font-semibold text-white transition hover:bg-[#115b30]"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#008000] px-3 py-2 font-semibold text-white transition hover:bg-[#006b00]"
                       >
                         <Pencil size={17} /> Szerkesztés
                       </Link>

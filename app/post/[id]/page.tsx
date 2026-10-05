@@ -8,7 +8,7 @@ import { db } from "@/app/lib/firebase";
 import { propertyFromFirestore } from "@/app/lib/types";
 import PropertyClient from "./PropertyClient";
 
-const SITE_URL = "https://debrecenhomes.hu";
+import { SITE_URL } from "@/app/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +31,8 @@ export async function generateMetadata({
 
   if (!property) {
     return {
-      title: "Ingatlan | DebrecenHomes",
-      description: "Eladó és kiadó ingatlanok Debrecenben a DebrecenHomes kínálatából.",
+      title: "Ingatlan | Debreceni Otthonok",
+      description: "Eladó és kiadó ingatlanok Debrecenben a Debreceni Otthonok kínálatából.",
       robots: { index: false, follow: true },
     };
   }
@@ -50,7 +50,7 @@ export async function generateMetadata({
       type: "article",
       locale: "hu_HU",
       url,
-      siteName: "DebrecenHomes",
+      siteName: "Debreceni Otthonok",
       title,
       description,
       images,

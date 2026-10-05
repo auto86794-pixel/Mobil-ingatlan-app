@@ -224,7 +224,7 @@ function InquiryCard({
         />
       </label>
       <button
-        className="mt-3 rounded-xl bg-[#176b3a] px-4 py-3 font-bold text-white disabled:opacity-50"
+        className="mt-3 rounded-xl bg-[#008000] px-4 py-3 font-bold text-white disabled:opacity-50"
         disabled={busy}
         onClick={() => void save()}
       >

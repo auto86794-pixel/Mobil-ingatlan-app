@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Adatvédelmi tájékoztató",
-  description: "A DebrecenHomes adatkezelési tájékoztatója.",
+  description: "A Debreceni Otthonok adatkezelési tájékoztatója.",
   alternates: { canonical: "/adatvedelem" },
 };
 
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <article className="mx-auto max-w-4xl px-5 py-12 text-[#263129] sm:py-16">
       <div className="rounded-[30px] border border-[#e2ddd3] bg-white p-6 shadow-sm sm:p-10">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">
-          DebrecenHomes
+          Debreceni Otthonok
         </p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">
           Adatvédelmi tájékoztató
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
               Adatkezelő és kapcsolat
             </h2>
             <p className="mt-2">
-              A szolgáltatás adatkezelője a DebrecenHomes. Adatvédelmi kérdésben
+              A szolgáltatás adatkezelője a Debreceni Otthonok. Adatvédelmi kérdésben
               az{" "}
               <a
                 className="font-bold text-[#176b3a] underline"

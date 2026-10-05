@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/app/lib/site";
 import { createHash } from "node:crypto";
 import { getFirestore } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
@@ -60,17 +61,17 @@ export async function POST(request: Request) {
       throw error;
     }
     const link = await admin.generatePasswordResetLink(email, {
-      url: "https://debrecenhomes.hu/login", handleCodeInApp: false,
+      url: `${SITE_URL}/login`, handleCodeInApp: false,
     });
     const safeLink = link.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const result = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST", signal: AbortSignal.timeout(15_000),
       headers: { "content-type": "application/json", "api-key": apiKey, accept: "application/json" },
       body: JSON.stringify({
-        sender: { name: "DebrecenHomes", email: sender }, to: [{ email }],
-        subject: "DebrecenHomes – jelszó-visszaállítás",
+        sender: { name: "Debreceni Otthonok", email: sender }, to: [{ email }],
+        subject: "Debreceni Otthonok – jelszó-visszaállítás",
         textContent: `Új jelszó beállításához nyisd meg ezt a linket: ${link}\nHa nem te kérted, hagyd figyelmen kívül ezt a levelet.`,
-        htmlContent: `<h1>DebrecenHomes – jelszó-visszaállítás</h1><p><a href="${safeLink}">Új jelszó beállítása</a></p><p>Ha nem te kérted, hagyd figyelmen kívül ezt a levelet.</p>`,
+        htmlContent: `<h1>Debreceni Otthonok – jelszó-visszaállítás</h1><p><a href="${safeLink}">Új jelszó beállítása</a></p><p>Ha nem te kérted, hagyd figyelmen kívül ezt a levelet.</p>`,
       }),
     });
     if (!result.ok) throw new Error(`BREVO_SEND_FAILED_${result.status}`);

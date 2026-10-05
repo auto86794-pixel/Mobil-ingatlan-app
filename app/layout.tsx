@@ -9,27 +9,27 @@ import Navbar from "./components/Navbar";
 import MobileBottomNav from "./components/MobileBottomNav";
 import VerificationStatusBar from "./components/VerificationStatusBar";
 
-const siteUrl = "https://debrecenhomes.hu";
+import { SITE_URL as siteUrl } from "@/app/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "DebrecenHomes – Eladó és kiadó ingatlanok Debrecenben",
-    template: "%s | DebrecenHomes",
+    default: "Debreceni Otthonok – Eladó és kiadó ingatlanok Debrecenben",
+    template: "%s | Debreceni Otthonok",
   },
   description: "Eladó és kiadó lakások, családi házak és új építésű ingatlanok Debrecenben. Egyszerű keresés, átlátható információk, egy helyen.",
-  keywords: ["Debrecen ingatlan", "eladó lakás Debrecen", "eladó ház Debrecen", "kiadó lakás Debrecen", "DebrecenHomes", "ingatlan Debrecen"],
-  applicationName: "DebrecenHomes",
-  authors: [{ name: "DebrecenHomes" }],
-  creator: "DebrecenHomes",
-  publisher: "DebrecenHomes",
+  keywords: ["Debrecen ingatlan", "eladó lakás Debrecen", "eladó ház Debrecen", "kiadó lakás Debrecen", "Debreceni Otthonok", "ingatlan Debrecen"],
+  applicationName: "Debreceni Otthonok",
+  authors: [{ name: "Debreceni Otthonok" }],
+  creator: "Debreceni Otthonok",
+  publisher: "Debreceni Otthonok",
   alternates: { canonical: "/" },
   openGraph: {
-    type: "website", locale: "hu_HU", url: siteUrl, siteName: "DebrecenHomes",
-    title: "DebrecenHomes – Ingatlanok Debrecenben",
+    type: "website", locale: "hu_HU", url: siteUrl, siteName: "Debreceni Otthonok",
+    title: "Debreceni Otthonok – Ingatlanok Debrecenben",
     description: "Eladó és kiadó ingatlanok egyszerű kereséssel, átlátható információkkal, egy helyen.",
   },
-  twitter: { card: "summary_large_image", title: "DebrecenHomes – Ingatlanok Debrecenben", description: "Eladó és kiadó ingatlanok Debrecenben, egyszerű kereséssel." },
+  twitter: { card: "summary_large_image", title: "Debreceni Otthonok – Ingatlanok Debrecenben", description: "Eladó és kiadó ingatlanok Debrecenben, egyszerű kereséssel." },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
 };
 
@@ -40,11 +40,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <VerificationStatusBar />
         <Navbar />
-        <main>{children}</main>
-        <footer className="hidden border-t border-[#e5dfd5] bg-white/70 md:block">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 text-xs text-[#7d877f]">
-            <span>© 2026 DebrecenHomes</span>
-            <div className="flex items-center gap-5"><span>Eladó és kiadó ingatlanok Debrecenben.</span><Link href="/adatvedelem" className="hover:text-[#176b3a]">Adatvédelem</Link><Link href="/impresszum" className="hover:text-[#176b3a]">Impresszum</Link></div>
+        <div>{children}</div>
+        <footer className="border-t border-[#e5dfd5] bg-white/70">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 items-center justify-between px-6 py-7 text-sm lg:flex-row text-[#7d877f]">
+            <span>© {new Date().getFullYear()} Debreceni Otthonok</span>
+            <div className="flex flex-wrap justify-center items-center gap-5"><span>Eladó és kiadó ingatlanok Debrecenben.</span><Link href="/adatvedelem" className="hover:text-[#176b3a]">Adatvédelem</Link><Link href="/impresszum" className="hover:text-[#176b3a]">Impresszum</Link></div>
           </div>
         </footer>
         <MobileBottomNav />

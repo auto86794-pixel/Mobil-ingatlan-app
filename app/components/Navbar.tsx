@@ -32,27 +32,32 @@ export default function Navbar() {
     finally { setLoggingOut(false); }
   };
   const links = [
-    { href: "/properties#ingatlanok", label: "Ingatlanok", icon: Building2 },
+    { href: "/#ingatlanok", label: "Keresés", icon: Building2 },
+    { href: "/properties?purpose=sale#results", label: "Eladó ingatlanok", icon: Building2 },
+    { href: "/properties?purpose=rent#results", label: "Kiadó ingatlanok", icon: Building2 },
     { href: "/favorites", label: "Kedvencek", icon: Heart },
     ...(isAdmin ? [{ href: "/admin", label: "Összes ingatlan kezelése", icon: ShieldCheck }] : []),
     ...(user?.emailVerified ? [{ href: "/dashboard", label: "Saját hirdetések", icon: LayoutDashboard }] : []),
   ];
   const active = (href: string) => pathname === href.split("#")[0] || pathname.startsWith(href.split("#")[0] + "/");
   const actions = <>
-    {!user ? <Link href="/login" onClick={() => setOpen(false)} className="dh-nav-action bg-[#176b3a] text-white"><LogIn size={18} /> Belépés</Link> : <>
+    {!user && <Link href="/create" onClick={() => setOpen(false)} className="dh-nav-action do-post-action"><Plus size={17} /> Hirdetésfeladás</Link>}
+    {!user ? <Link href="/login" onClick={() => setOpen(false)} className="dh-nav-action bg-[#008000] text-white"><LogIn size={18} /> Belépés</Link> : <>
       <Link href={user.emailVerified ? "/create" : "/login?verify=1"} onClick={() => setOpen(false)} className="dh-nav-action border border-[#b9d1c0] text-[#176b3a]">{user.emailVerified ? <Plus size={18} /> : <ShieldCheck size={18} />}{user.emailVerified ? "Új hirdetés" : "E-mail megerősítése"}</Link>
       <button type="button" disabled={loggingOut} onClick={() => void logout()} className="dh-nav-action border border-[#ded8ce] disabled:opacity-50"><LogOut size={18} />{loggingOut ? "Kilépés…" : "Kilépés"}</button>
     </>}
   </>;
   return <>
     <header className="sticky top-0 z-50 border-b border-[#e7e1d7] bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href="/" aria-label="DebrecenHomes kezdőlap" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d9c28c] bg-[#fbf6e9] text-[#a98335]"><Building2 size={22} /></span>
-          <span className="font-black tracking-tight">Debrecen<span className="text-[#176b3a]">Homes</span><span className="hidden text-[10px] font-semibold uppercase tracking-[.15em] text-[#879087] sm:block">Debreceni ingatlanok</span></span>
+      <div className="do-header-inner mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <Link href="/" aria-label="Debreceni Otthonok kezdőlap" className="flex shrink-0 items-center gap-2">
+          <span className="do-brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M52 10C39-2 15 3 6 20C-4 41 13 63 35 62C48 61 57 53 61 42C51 58 33 62 19 53C2 42 6 18 21 9C31 3 44 4 52 10Z" fill="#B8862D"/><path d="M14 30L33 14L54 32V37L33 20L19 32V52H14V30Z" fill="#183D32"/><path d="M27 54V47a7 7 0 0 1 14 0v7H27Z" fill="#183D32"/><path d="M28 27h5v5h-5zm7 0h5v5h-5zm-7 7h5v5h-5zm7 0h5v5h-5z" fill="#B8862D"/></svg></span>
+          <span className="do-brand"><span className="do-brand-name">Debreceni<br /><span>Otthonok</span></span><span className="do-brand-caption">Ingatlanok Debrecenben</span></span>
         </Link>
         <nav aria-label="Főmenü" className="hidden items-center gap-1 xl:flex">
           {links.map(item => <Link key={item.href} href={item.href} aria-current={active(item.href) ? "page" : undefined} className={"rounded-full px-3 py-3 text-sm font-semibold " + (active(item.href) ? "bg-[#edf5ef] text-[#176b3a]" : "hover:bg-[#f3efe7]")}>{item.href === "/admin" ? "Admin" : item.label}</Link>)}
+          <details className="do-nav-dropdown"><summary>Városrészek</summary><div>{["Belváros", "Nagyerdő", "Józsa", "Tócóskert", "Pallag"].map(district => <Link key={district} href={`/properties?district=${encodeURIComponent(district)}#results`}>{district}</Link>)}</div></details>
+          <details className="do-nav-dropdown"><summary>Információk</summary><div><Link href="/#debrecen">Miért Debrecen?</Link><Link href="/adatvedelem">Adatvédelem</Link><Link href="/impresszum">Kapcsolat</Link></div></details>
         </nav>
         <div className="hidden shrink-0 gap-2 xl:flex">{actions}</div>
         <button type="button" aria-haspopup="dialog" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(true)} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#ded8ce] px-3 font-semibold xl:hidden"><Menu size={20} />Menü</button>

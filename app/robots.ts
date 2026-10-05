@@ -1,3 +1,4 @@
+import { SITE_URL } from "./lib/site";
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
@@ -7,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin", "/dashboard", "/create", "/edit", "/login", "/favorites"],
     },
-    sitemap: "https://debrecenhomes.hu/sitemap.xml",
-    host: "https://debrecenhomes.hu",
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

@@ -234,7 +234,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
     try {
       if (navigator.share) {
         await navigator.share({
-          title: property?.title || "DebrecenHomes ingatlan",
+          title: property?.title || "Debreceni Otthonok ingatlan",
           url,
         });
         return;
@@ -510,7 +510,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                         .getElementById("contact-form")
                         ?.scrollIntoView({ behavior: "smooth", block: "start" })
                     }
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-5 text-sm font-black text-white transition hover:bg-[#115b30]"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-5 text-sm font-black text-white transition hover:bg-[#006b00]"
                   >
                     <MessageCircle size={18} /> Érdeklődöm
                   </button>
@@ -698,7 +698,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                       setDetailFormStatus("idle");
                       setDetailFormMessage("");
                     }}
-                    className="min-h-12 rounded-2xl bg-[#176b3a] px-6 py-4 font-bold text-white transition hover:bg-[#115b30] disabled:opacity-50"
+                    className="min-h-12 rounded-2xl bg-[#008000] px-6 py-4 font-bold text-white transition hover:bg-[#006b00] disabled:opacity-50"
                   >
                     {loading ? "Küldés..." : "✉️ Érdeklődés elküldése"}
                   </button>
@@ -789,7 +789,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                   setContactMode("alert");
                   setContactModalOpen(true);
                 }}
-                className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-5 text-sm font-black text-white transition hover:bg-[#115b30]"
+                className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-5 text-sm font-black text-white transition hover:bg-[#006b00]"
               >
                 <Bell size={18} /> Értesítést kérek
               </button>
@@ -835,7 +835,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                   setContactMode("inquiry");
                   setContactModalOpen(true);
                 }}
-                className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
+                className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#008000] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
               >
                 <MessageCircle size={18} /> Érdeklődöm
               </button>

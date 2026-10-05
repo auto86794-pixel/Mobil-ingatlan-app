@@ -41,6 +41,8 @@ export async function requireAccount(request: Request, adminOnly = false) {
     new URL(request.url).origin,
     "https://debrecenhomes.hu",
     "https://www.debrecenhomes.hu",
+      "https://debreceniotthonok.hu",
+      "https://www.debreceniotthonok.hu",
   ]);
   if (process.env.NODE_ENV === "development") {
     allowedOrigins.add("http://localhost:3000");

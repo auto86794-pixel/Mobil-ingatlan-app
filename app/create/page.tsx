@@ -174,7 +174,7 @@ export default function Create() {
         <div className="mb-8">
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight">Új ingatlan</h1>
           <p className="mt-2 text-[#6c776f]">
-            Egységes DebrecenHomes ingatlan-adatlap.
+            Egységes Debreceni Otthonok ingatlan-adatlap.
           </p>
         </div>
 
@@ -317,7 +317,7 @@ export default function Create() {
           type="button"
           onClick={handleSubmit}
           disabled={uploading || saving}
-          className="w-full rounded-2xl bg-[#176b3a] px-6 py-4 text-lg font-black text-white transition hover:bg-[#115b30] disabled:opacity-50"
+          className="w-full rounded-2xl bg-[#008000] px-6 py-4 text-lg font-black text-white transition hover:bg-[#006b00] disabled:opacity-50"
         >
           {saving ? "Mentés..." : "Ingatlan mentése"}
         </button>

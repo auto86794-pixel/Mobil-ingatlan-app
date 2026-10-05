@@ -1,5 +1,10 @@
 "use client";
 
+import { SITE_URL } from "./lib/site";
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Home, MapPin, ShieldCheck, Heart, Users, GraduationCap, ChartNoAxesColumnIncreasing, Trees, ArrowRight, Search, ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
@@ -21,6 +26,7 @@ import { auth, db } from "./lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "./lib/types";
 
 const emptyFilters: SearchFilters = {
+  listingPurpose: "",
   query: "",
   city: "",
   district: "",
@@ -76,10 +82,12 @@ export default function HomeClient({
 }: {
   initialPosts: PropertyWithId[];
 }) {
+  const routeSearch = useSearchParams();
   const [posts, setPosts] = useState<PropertyWithId[]>(initialPosts);
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [favoriteNotice, setFavoriteNotice] = useState("");
   const searchStateReady = useRef(false);
   const skipNextFilterSave = useRef(true);
@@ -87,13 +95,16 @@ export default function HomeClient({
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("debrecenhomes-search-filters");
-      if (saved) setFilters({ ...emptyFilters, ...JSON.parse(saved) });
+      const restored = saved ? { ...emptyFilters, ...JSON.parse(saved) } : emptyFilters;
+      const params = new URLSearchParams(routeSearch.toString());
+      const purpose = params.get("purpose");
+      setFilters({ ...restored, ...(purpose === "sale" || purpose === "rent" ? { listingPurpose: purpose } : {}), ...(params.has("district") ? { district: params.get("district") || "" } : {}) });
     } catch {
       // Hibás vagy régi mentett keresési állapotot figyelmen kívül hagyjuk.
     } finally {
       searchStateReady.current = true;
     }
-  }, []);
+  }, [routeSearch]);
 
   useEffect(() => {
     if (!searchStateReady.current) return;
@@ -218,7 +229,7 @@ export default function HomeClient({
   const options = useMemo(
     () => ({
       districts: uniqueValues(activePosts, "district"),
-      propertyTypes: uniqueValues(activePosts, "propertyType"),
+      propertyTypes: Array.from(new Set(["lakás", "családi ház", "ikerház", "sorház", "telek", "egyéb", ...uniqueValues(activePosts, "propertyType").map(value => value.trim().toLocaleLowerCase("hu-HU"))])),
       conditions: uniqueValues(activePosts, "condition"),
       parking: uniqueValues(activePosts, "parking"),
       balconies: uniqueValues(activePosts, "balcony"),
@@ -229,6 +240,7 @@ export default function HomeClient({
 
   const filteredPosts = useMemo(() => {
     const result = activePosts.filter((post) => {
+      if (filters.listingPurpose && post.listingPurpose !== filters.listingPurpose) return false;
       if (filters.query) {
         const searchable = [
           post.title,
@@ -247,7 +259,7 @@ export default function HomeClient({
 
       if (filters.city && !includesText(post.city, filters.city)) return false;
       if (filters.district && post.district !== filters.district) return false;
-      if (filters.propertyType && post.propertyType !== filters.propertyType)
+      if (filters.propertyType && normalizeSearchText(post.propertyType) !== normalizeSearchText(filters.propertyType))
         return false;
       if (filters.condition && post.condition !== filters.condition)
         return false;
@@ -287,259 +299,55 @@ export default function HomeClient({
   const featuredPosts = filteredPosts.filter((post) => post.featured);
   const normalPosts = filteredPosts.filter((post) => !post.featured);
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[#f7f4ee] px-4 py-6 md:px-6 md:py-10">
-        <div className="mx-auto mb-10 h-64 max-w-[1500px] animate-pulse rounded-[32px] bg-[#ece7de]" />
-        <div className="mx-auto grid max-w-[1500px] gap-8 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <PropertyCardSkeleton key={index} />
-          ))}
+  const update = (key: keyof SearchFilters, value: string) => setFilters(previous => ({ ...previous, [key]: value }));
+  const showResults = () => document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const hasFilters = Object.entries(filters).some(([key, value]) => key !== "sort" && Boolean(value));
+  const recommended = hasFilters ? filteredPosts : [...featuredPosts, ...normalPosts].slice(0, 4);
+  const benefits = [
+    { icon: Home, title: "Széles kínálat", text: "Lakások, házak, új építésű ingatlanok Debrecenben" },
+    { icon: MapPin, title: "Városrészek szerint", text: "Találd meg a számodra ideális környéket" },
+    { icon: ShieldCheck, title: "Átlátható hirdetések", text: "Az otthon legfontosabb adatai, egy helyen" },
+    { icon: Heart, title: "Könnyű használat", text: "Gyors keresés, kedvencek mentése" },
+    { icon: Users, title: "Helyi szemlélet", text: "Debrecenre és környékére fókuszálva" },
+  ];
+  const websiteJsonLd = { "@context": "https://schema.org", "@type": "WebSite", name: "Debreceni Otthonok", url: SITE_URL, inLanguage: "hu-HU", description: "Eladó és kiadó ingatlanok Debrecenben és környékén." };
+  return <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }} />
+    <main className="do-home">
+      <section className="do-hero" aria-labelledby="home-title">
+        <Image src="/debrecen-nagytemplom.webp" alt="A debreceni Nagytemplom és a főtér naplementében" fill priority sizes="100vw" className="do-hero-image" />
+        <div className="do-hero-shade" />
+        <div className="do-container do-hero-inner">
+          <div className="do-hero-copy"><p className="do-eyebrow">Otthonok. Lehetőségek. Debrecen.</p>
+            <h1 id="home-title">Találd meg<br />az otthonod<br />Debrecenben.</h1>
+            <p className="do-hero-description">Eladó és kiadó lakások, házak, új építésű ingatlanok<br className="hidden sm:block" /> egy helyen – egyszerűen, átláthatóan.</p>
+          </div>
+          <form id="ingatlanok" className="do-search" onSubmit={event => { event.preventDefault(); if (!filters.listingPurpose) update("listingPurpose", "sale"); showResults(); }}>
+            <div className="do-purpose" aria-label="Hirdetés típusa">
+              <button type="button" aria-pressed={filters.listingPurpose !== "rent"} className={filters.listingPurpose !== "rent" ? "is-active" : ""} onClick={() => update("listingPurpose", "sale")}>Eladó</button>
+              <button type="button" aria-pressed={filters.listingPurpose === "rent"} className={filters.listingPurpose === "rent" ? "is-active" : ""} onClick={() => update("listingPurpose", "rent")}>Kiadó</button>
+            </div>
+            <label className="do-search-query"><Search size={19} aria-hidden="true" /><span className="sr-only">Városrész vagy kulcsszó</span><input value={filters.query} onChange={event => update("query", event.target.value)} placeholder="Város, városrész, kulcsszó…" /></label>
+            <label className="do-search-select"><span className="sr-only">Ingatlan típusa</span><select value={filters.propertyType} onChange={event => update("propertyType", event.target.value)}><option value="">Ingatlan típusa</option>{options.propertyTypes.map(value => <option key={value} value={value}>{value.charAt(0).toLocaleUpperCase("hu-HU") + value.slice(1)}</option>)}</select></label>
+            <label className="do-search-select"><span className="sr-only">Maximum ár forintban</span><input type="number" min="0" step="10000" value={filters.maxPrice} onChange={event => update("maxPrice", event.target.value)} placeholder="Maximum ár (Ft)" /></label>
+            <button className="do-search-submit" type="submit">Keresés <ArrowRight size={17} /></button>
+          </form>
         </div>
-      </main>
-    );
-  }
-
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "DebrecenHomes",
-    url: "https://debrecenhomes.hu",
-    description:
-      "Eladó és kiadó ingatlanok Debrecenben egyszerű kereséssel és átlátható információkkal.",
-    inLanguage: "hu-HU",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://debrecenhomes.hu/?city={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
-  };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-      />
-      <main className="mx-auto min-h-screen max-w-[1500px] px-4 py-5 md:px-6 md:py-8">
-        <section className="relative mb-10 overflow-hidden rounded-[34px] border border-[#e2ddd3] bg-white shadow-[0_28px_80px_rgba(55,47,33,.10)]">
-          <div className="grid min-h-[610px] lg:grid-cols-[1.05fr_.95fr]">
-            <div className="relative z-10 flex flex-col justify-center px-6 py-12 sm:px-10 md:px-14 lg:px-16">
-              <div className="mb-6 inline-flex w-fit items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#a1813a]">
-                <span className="h-px w-12 bg-[#c7a95d]" /> DebrecenHomes
-              </div>
-              <h1 className="max-w-3xl text-5xl font-black leading-[.96] tracking-[-0.055em] text-[#172019] sm:text-6xl lg:text-7xl">
-                Találd meg
-                <br />
-                az otthonod <span className="text-[#176b3a]">Debrecenben.</span>
-              </h1>
-              <p className="mt-7 max-w-2xl text-lg leading-8 text-[#667169] md:text-xl">
-                Eladó és kiadó ingatlanok egyszerű kereséssel, átlátható
-                információkkal, egy helyen.
-              </p>
-
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="#ingatlanok"
-                  className="inline-flex items-center justify-center rounded-2xl bg-[#176b3a] px-5 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30]"
-                >
-                  Ingatlanok böngészése
-                </a>
-                <a
-                  href="#ingatlanok"
-                  className="inline-flex items-center justify-center rounded-2xl border border-[#d8d2c7] bg-white px-5 py-3.5 text-sm font-bold text-[#334039] transition hover:border-[#b9d1c0] hover:text-[#176b3a]"
-                >
-                  Keresés és szűrés
-                </a>
-              </div>
-
-              <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-[#fbf7ef] p-4">
-                  <p className="font-bold text-[#263129]">Gyors keresés</p>
-                  <p className="mt-1 text-sm text-[#7b857e]">
-                    Szűrj a fontos szempontokra.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#f2f7f3] p-4">
-                  <p className="font-bold text-[#263129]">Kedvencek</p>
-                  <p className="mt-1 text-sm text-[#7b857e]">
-                    Mentsd el, ami igazán tetszik.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#fbf7ef] p-4">
-                  <p className="font-bold text-[#263129]">Átlátható adatok</p>
-                  <p className="mt-1 text-sm text-[#7b857e]">
-                    A lényeg egy helyen.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative min-h-[360px] overflow-hidden lg:min-h-full">
-              <img
-                src="/debrecen-hero.webp"
-                alt="Modern debreceni otthon panorámával"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/15 to-transparent lg:from-white/85 lg:via-white/10" />
-              <div className="absolute bottom-7 left-7 rounded-2xl border border-white/70 bg-white/90 px-5 py-4 shadow-xl backdrop-blur-xl lg:left-8">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">
-                  Debrecen
-                </p>
-                <p className="mt-1 text-lg font-black text-[#172019]">
-                  Otthon. Egyszerűbben.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            id="ingatlanok"
-            className="relative z-20 scroll-mt-24 border-t border-[#eee8df] bg-[#faf8f4] p-4 md:p-6"
-          >
-            <PropertyFilters
-              filters={filters}
-              setFilters={setFilters}
-              options={options}
-              resultCount={filteredPosts.length}
-              onReset={() => setFilters(emptyFilters)}
-              onShowResults={() =>
-                document
-                  .getElementById("results")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            />
-          </div>
-        </section>
-
-        <div
-          id="results"
-          className="mb-6 scroll-mt-24 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">
-              Aktív kínálat
-            </p>
-            <h2 className="mt-1 text-xl font-black tracking-tight text-[#172019] md:text-2xl">
-              {filteredPosts.length} ingatlan felel meg
-            </h2>
-          </div>
-          <p className="text-sm text-[#7d877f]">
-            Csak az aktuálisan elérhető hirdetések jelennek meg.
-          </p>
-        </div>
-
-        {featuredPosts.length > 0 && (
-          <section className="mb-10 rounded-[30px] border border-[#e6d9b8] bg-gradient-to-br from-[#fffdf8] to-[#f8f4e9] p-4 shadow-[0_16px_45px_rgba(91,73,35,.07)] sm:p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">
-                Kiemelt ingatlanok
-              </h2>
-              <span className="text-sm font-semibold text-[#176b3a]">
-                {featuredPosts.length} kiemelt
-              </span>
-            </div>
-            <div
-              className={`grid gap-6 md:grid-cols-2 ${featuredPosts.length >= 3 ? "xl:grid-cols-3" : "xl:max-w-[980px]"}`}
-            >
-              {featuredPosts.map((post) => (
-                <PropertyCard
-                  key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  city={post.city}
-                  district={post.district}
-                  price={post.price}
-                  area={post.area}
-                  rooms={post.rooms}
-                  propertyType={post.propertyType}
-                  listingPurpose={post.listingPurpose}
-                  imageUrl={post.imageUrl}
-                  phone={post.phone}
-                  featured={post.featured}
-                  isNew={isNewPost(post)}
-                  isFavorite={favorites.includes(post.id)}
-                  onToggleFavorite={() => toggleFavorite(post.id)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {filteredPosts.length === 0 && (
-          <div className="rounded-[30px] border border-[#e2ddd3] bg-white px-6 py-12 text-center shadow-sm sm:p-14">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#eef5ef] text-2xl">
-              ⌕
-            </div>
-            <p className="mt-5 text-2xl font-black text-[#172019]">
-              Most nincs pontos találat.
-            </p>
-            <p className="mx-auto mt-2 max-w-xl leading-7 text-[#6c776f]">
-              Semmi gond — töröld a szűrőket, vagy jelezd nekünk, milyen
-              ingatlant keresel Debrecenben.
-            </p>
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setFilters(emptyFilters)}
-                className="rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white hover:bg-[#115b30]"
-              >
-                Összes ingatlan mutatása
-              </button>
-              <a
-                href="mailto:info@debrecenhomes.hu?subject=Ingatlant%20keresek%20Debrecenben"
-                className="rounded-2xl border border-[#d8d2c7] bg-[#faf8f4] px-5 py-3 font-bold text-[#263129] hover:border-[#b9d1c0]"
-              >
-                Elmondom, mit keresek
-              </a>
-            </div>
-          </div>
-        )}
-
-        {normalPosts.length > 0 && (
-          <section>
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-[#172019] md:text-3xl">
-                Ingatlan kínálatunk
-              </h2>
-              <span className="text-sm text-[#6c776f] md:text-base">
-                {normalPosts.length} további találat
-              </span>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-              {normalPosts.map((post) => (
-                <PropertyCard
-                  key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  city={post.city}
-                  district={post.district}
-                  price={post.price}
-                  area={post.area}
-                  rooms={post.rooms}
-                  propertyType={post.propertyType}
-                  listingPurpose={post.listingPurpose}
-                  imageUrl={post.imageUrl}
-                  phone={post.phone}
-                  featured={post.featured}
-                  isNew={isNewPost(post)}
-                  isFavorite={favorites.includes(post.id)}
-                  onToggleFavorite={() => toggleFavorite(post.id)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-        {favoriteNotice && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-[#172019] px-5 py-3 text-sm font-bold text-white shadow-xl md:bottom-8"
-          >
-            {favoriteNotice}
-          </div>
-        )}
-      </main>
-    </>
-  );
+      </section>
+      <section className="do-container do-benefits" aria-label="Miért Debreceni Otthonok?">{benefits.map(item => <div className="do-benefit" key={item.title}><item.icon aria-hidden="true" /><div><h2>{item.title}</h2><p>{item.text}</p></div></div>)}</section>
+      <section id="results" className="do-container do-listings" aria-labelledby="listings-title">
+        <div className="do-section-heading"><div><p className="do-section-label">{hasFilters ? "Aktuális kínálat" : "Kiemelt ingatlanok"}</p><h2 id="listings-title">{hasFilters ? "Ingatlanok a keresésed szerint" : "Ajánlott ingatlanok Debrecenben"}</h2></div><button type="button" className="do-text-link" onClick={() => { setAdvancedOpen(value => !value); }}>{advancedOpen ? "Szűrők bezárása" : "Összes megtekintése és szűrése"} <ChevronDown size={17} /></button></div>
+        {advancedOpen && <div className="do-advanced"><PropertyFilters filters={filters} setFilters={setFilters} options={options} resultCount={filteredPosts.length} onReset={() => setFilters(emptyFilters)} onShowResults={showResults} /></div>}
+        {hasFilters && <div className="do-result-count"><p>{filteredPosts.length} ingatlan felel meg a keresésnek.</p><button type="button" onClick={() => setFilters(emptyFilters)}>Szűrők törlése</button></div>}
+        <div className="do-property-grid">{loading ? Array.from({ length: 4 }).map((_, index) => <PropertyCardSkeleton key={index} />) : (advancedOpen ? filteredPosts : recommended).map(post => <PropertyCard key={post.id} {...post} isNew={isNewPost(post)} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => void toggleFavorite(post.id)} />)}</div>
+        {!loading && recommended.length === 0 && <div className="do-empty"><Home size={36} /><h3>Most nincs pontos találat.</h3><p>Próbálj tágabb keresést, vagy írd meg, milyen otthont keresel.</p><button type="button" onClick={() => setFilters(emptyFilters)}>Összes ingatlan</button><a href="mailto:info@debrecenhomes.hu?subject=Ingatlant%20keresek%20Debrecenben">Elmondom, mit keresek</a></div>}
+      </section>
+      <section id="debrecen" className="do-container do-city" aria-labelledby="city-title">
+        <div className="do-city-photo"><Image src="/debrecen-varoskep.webp" alt="Debrecen belvárosa és a Nagytemplom" fill sizes="(min-width: 1024px) 38vw, 100vw" className="object-cover" /><div><MapPin size={25} /><p><strong>Fedezd fel Debrecent</strong><span>Egy város, ahol jó élni</span></p></div></div>
+        <div className="do-city-copy"><p className="do-section-label">Miért Debrecen?</p><h2 id="city-title">Egy város, sok lehetőség</h2><p>Debrecen élhető és dinamikus város: egyetemi élet, zöld környékek, munkahelyek és pezsgő kultúra találkoznak itt. Akár saját otthont, akár befektetési lehetőséget keresel, érdemes megismerned a városrészeit.</p><button type="button" className="do-city-button" onClick={() => { setAdvancedOpen(true); showResults(); }}>Megnézem a városrészek kínálatát <ArrowRight size={17} /></button></div>
+        <div className="do-city-facts">{[{ icon: GraduationCap, title: "Egyetemi város", text: "Hallgatók, kutatás, pezsgő élet" }, { icon: ChartNoAxesColumnIncreasing, title: "Folyamatos fejlődés", text: "Új lakónegyedek és lehetőségek" }, { icon: Trees, title: "Zöld város", text: "Nagyerdő, parkok, természet" }, { icon: Heart, title: "Otthon minden élethelyzetre", text: "Városi lakás vagy kertvárosi ház" }].map(item => <div key={item.title}><item.icon aria-hidden="true" /><p><strong>{item.title}</strong><span>{item.text}</span></p></div>)}</div>
+      </section>
+      {favoriteNotice && <div role="status" aria-live="polite" className="do-favorite-notice">{favoriteNotice}</div>}
+    </main>
+  </>;
 }

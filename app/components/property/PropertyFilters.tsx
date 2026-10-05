@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 
 export type SortOption = "featured" | "newest" | "priceAsc" | "priceDesc";
 export type SearchFilters = {
+  listingPurpose?: string;
   query: string;
   city: string;
   district: string;
@@ -220,7 +221,7 @@ export default function PropertyFilters({
           <button type="button" onClick={resetAll} className="hidden items-center justify-center gap-2 rounded-2xl border border-[#ded8ce] bg-[#faf8f4] px-5 py-3.5 text-sm font-semibold text-[#59645d] transition hover:border-[#b9d1c0] hover:text-[#176b3a] md:inline-flex"><RotateCcw size={16} /> Szűrők törlése</button>
         </div>
 
-        <button type="button" onClick={() => { setMobileOpen(false); onShowResults(); }} className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-[#176b3a] px-5 py-3.5 text-sm font-black text-white shadow-sm transition hover:bg-[#115b30] md:hidden">
+        <button type="button" onClick={() => { setMobileOpen(false); onShowResults(); }} className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-[#008000] px-5 py-3.5 text-sm font-black text-white shadow-sm transition hover:bg-[#006b00] md:hidden">
           {resultCount} találat mutatása
         </button>
       </div>

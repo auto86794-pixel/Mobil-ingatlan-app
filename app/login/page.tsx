@@ -220,7 +220,7 @@ export default function Login() {
         <section className="relative hidden overflow-hidden bg-[#f4efe5] p-12 lg:flex lg:flex-col lg:justify-between">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(185,148,69,.16),transparent_32%),radial-gradient(circle_at_80%_65%,rgba(23,107,58,.10),transparent_34%)]" />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-[#a1813a]"><span className="h-px w-12 bg-[#c7a95d]" /> Üdvözlünk a DebrecenHomes-on</div>
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-[#a1813a]"><span className="h-px w-12 bg-[#c7a95d]" /> Üdvözlünk a Debreceni Otthonok oldalán</div>
             <h1 className="mt-8 max-w-2xl text-6xl font-black leading-[.98] tracking-[-0.055em] text-[#172019]">Találd meg<br />az otthonod <span className="text-[#176b3a]">Debrecenben.</span></h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-[#657068]">Eladó és kiadó ingatlanok egyszerű kereséssel, átlátható információkkal, egy helyen.</p>
             <div className="mt-10 grid max-w-2xl grid-cols-3 gap-4">
@@ -253,7 +253,7 @@ export default function Login() {
                     <p className="mt-1">{notice || `Küldtünk egy megerősítő levelet erre a címre: ${unverifiedUser.email || email}`}</p>
                   </div>
                   {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-                  <button type="button" onClick={handleCheckVerification} disabled={loading} className="mt-5 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white transition hover:bg-[#115b30] disabled:opacity-60">{loading ? "Ellenőrzés..." : "Már megerősítettem"}</button>
+                  <button type="button" onClick={handleCheckVerification} disabled={loading} className="mt-5 w-full rounded-2xl bg-[#008000] p-3.5 font-bold text-white transition hover:bg-[#006b00] disabled:opacity-60">{loading ? "Ellenőrzés..." : "Már megerősítettem"}</button>
                   <button type="button" onClick={handleResendVerification} disabled={loading} className="mt-3 w-full rounded-2xl border border-[#d8d2c7] bg-white p-3.5 font-bold text-[#176b3a] transition hover:bg-[#f7f4ee] disabled:opacity-60">Megerősítő e-mail újraküldése</button>
                   <button type="button" onClick={handleUseAnotherAccount} className="mt-4 w-full text-sm font-semibold text-[#6c776f] hover:text-[#172019]">Másik e-mail címet használok</button>
                 </div>
@@ -273,12 +273,12 @@ export default function Login() {
                   )}
                   {notice && <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</div>}
 
-                  <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} className="mt-6 w-full rounded-2xl bg-[#176b3a] p-3.5 font-bold text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Feldolgozás..." : mode === "login" ? "Belépés" : "Fiók létrehozása"}</button>
+                  <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} className="mt-6 w-full rounded-2xl bg-[#008000] p-3.5 font-bold text-white shadow-[0_12px_28px_rgba(23,107,58,.18)] transition hover:bg-[#006b00] disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Feldolgozás..." : mode === "login" ? "Belépés" : "Fiók létrehozása"}</button>
                   {mode === "login" && <button type="button" onClick={handlePasswordReset} disabled={loading} className="mt-4 w-full text-sm font-semibold text-[#176b3a] hover:underline disabled:opacity-60">Elfelejtetted a jelszavad?</button>}
                 </>
               )}
 
-              <p className="mt-5 text-center text-xs leading-5 text-[#8a938c]">A belépéssel a DebrecenHomes felületét használod. Adataidat kizárólag a szolgáltatás működéséhez kezeljük.</p>
+              <p className="mt-5 text-center text-xs leading-5 text-[#8a938c]">A belépéssel a Debreceni Otthonok felületét használod. Adataidat kizárólag a szolgáltatás működéséhez kezeljük.</p>
             </div>
           </div>
         </section>

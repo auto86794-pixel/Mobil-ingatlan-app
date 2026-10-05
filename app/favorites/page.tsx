@@ -103,7 +103,7 @@ export default function FavoritesPage() {
           <Heart className="mx-auto h-14 w-14 text-[#176b3a]" />
           <h1 className="mt-5 text-3xl font-black text-[#172019]">A kedvencekhez jelentkezz be</h1>
           <p className="mx-auto mt-3 max-w-xl leading-7 text-[#667168]">Belépés után elmentheted az érdekes ingatlanokat, és később innen egy helyen visszanézheted őket.</p>
-          <Link href="/login" className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]"><LogIn size={18} /> Belépés</Link>
+          <Link href="/login" className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]"><LogIn size={18} /> Belépés</Link>
         </div>
       </main>
     );
@@ -122,7 +122,7 @@ export default function FavoritesPage() {
           <Heart className="mx-auto h-14 w-14 text-[#b7c0b9]" />
           <h2 className="mt-5 text-2xl font-black text-[#172019]">Még nincs mentett ingatlanod</h2>
           <p className="mt-3 text-[#667168]">A szív ikonra kattintva elmentheted a később megnézendő hirdetéseket.</p>
-          <Link href="/properties#ingatlanok" className="mt-7 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]">Ingatlanok böngészése</Link>
+          <Link href="/properties#ingatlanok" className="mt-7 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]">Ingatlanok böngészése</Link>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -136,7 +136,7 @@ export default function FavoritesPage() {
                 <h2 className="line-clamp-2 text-xl font-black leading-snug text-[#172019]">{post.title}</h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{post.city}{post.district ? `, ${post.district}` : ""}</p>
                 <p className="mt-5 text-2xl font-black text-[#176b3a]">{formatPrice(post.price)}</p>
-                <Link href={`/post/${post.id}`} className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]">Megnézem</Link>
+                <Link href={`/post/${post.id}`} className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]">Megnézem</Link>
               </div>
             </article>
           ))}

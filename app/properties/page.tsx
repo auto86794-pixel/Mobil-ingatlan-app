@@ -6,7 +6,7 @@ export const metadata = {
   alternates: { canonical: "/properties" },
   openGraph: {
     url: "/properties",
-    title: "Ingatlanok Debrecenben | DebrecenHomes",
+    title: "Ingatlanok Debrecenben | Debreceni Otthonok",
     description: "Eladó és kiadó ingatlanok Debrecenben kereséssel és részletes szűrőkkel.",
   },
 };

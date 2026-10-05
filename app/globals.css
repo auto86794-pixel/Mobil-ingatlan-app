@@ -96,3 +96,161 @@ button, a {
   .dh-admin-table td:first-child img, .dh-admin-table td:first-child > div > div:first-child { flex-shrink: 0; }
   .dh-admin-table td:last-child > div { justify-content: flex-start; }
 }
+
+/* Debreceni Otthonok: könnyű, magyar prémium arculat. */
+.do-brand-mark { display:flex; align-items:center; justify-content:center; width:48px; height:48px; color:#a1813a; flex-shrink:0; }
+.do-brand-mark svg { width:100%; height:100%; }
+.do-brand { display:flex; flex-direction:column; gap:4px; }
+.do-brand-name { font-family:Georgia, 'Times New Roman', serif; font-size:25px; line-height:1.15; color:#263b2e; letter-spacing:-.6px; }
+.do-brand-name > span { color:#176b3a; }
+.do-brand-caption { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:#8b6d32; }
+.do-hero-title { font-family:Georgia, 'Times New Roman', serif; font-weight:400; }
+@media (max-width: 420px) {
+ .do-brand-mark { width:35px; height:40px; }
+ .do-brand-name { font-size:20px; }
+ .do-brand-caption { font-size:8px; letter-spacing:1.3px; }
+}
+
+/* A jóváhagyott Nagytemplom-látványterv teljes szerkezete. */
+.do-home { background:#faf9f6; padding-bottom:42px; }
+.do-container { width:min(1320px, calc(100% - 112px)); margin-inline:auto; }
+.do-header-inner { min-height:86px; }
+.do-header-inner .do-brand-name { text-transform:uppercase; font-size:23px; font-weight:700; letter-spacing:.2px; line-height:1; }
+.do-header-inner .do-brand-caption { font-size:7px; letter-spacing:1.7px; }
+.do-header-inner .do-brand-mark { width:60px; height:60px; }
+.do-post-action { background:#b8862d; color:white; }
+.do-header-inner nav > a { font-size:12px; padding-inline:9px; }
+.do-header-inner nav > a[href='/favorites'] { font-size:0; padding:8px; }
+.do-header-inner nav > a[href='/favorites']::after { content:'♡'; font-size:26px; }
+.do-nav-dropdown { position:relative; font-size:12px; font-weight:600; }
+.do-nav-dropdown summary { padding:12px 9px; cursor:pointer; }
+.do-nav-dropdown > div { position:absolute; min-width:180px; top:100%; left:0; padding:8px; background:white; border:1px solid #e7e0d3; border-radius:12px; box-shadow:0 10px 30px #25392c18; }
+.do-nav-dropdown a { display:block; padding:10px; border-radius:7px; }
+.do-nav-dropdown a:hover { background:#f6f2e9; }
+.do-hero { min-height:510px; position:relative; isolation:isolate; color:white; }
+.do-hero-image { object-fit:cover; object-position:center 48%; z-index:-2; }
+.do-hero-shade { position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,rgba(10,30,28,.72),rgba(10,30,28,.27) 52%,rgba(10,30,28,.03)),linear-gradient(0deg,rgba(9,22,18,.32),transparent 55%); }
+.do-hero-inner { padding-top:64px; padding-bottom:24px; }
+.do-eyebrow { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:5px; margin-bottom:16px; }
+.do-hero h1 { font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:clamp(44px,4.8vw,70px); line-height:.99; letter-spacing:-2px; text-shadow:0 2px 12px #0002; }
+.do-hero-description { font-size:18px; line-height:1.5; margin-top:18px; max-width:660px; }
+.do-search { display:grid; grid-template-columns:168px minmax(170px,1.9fr) minmax(150px,1fr) minmax(150px,1fr) 155px; gap:12px; margin-top:25px; padding:14px; background:white; border:1px solid #e1ddd5; border-radius:13px; color:#253c32; box-shadow:0 12px 30px #0002; scroll-margin-top:110px; }
+.do-purpose { display:flex; background:#f6f6f5; border:1px solid #e9e8e3; border-radius:7px; }
+.do-purpose button { flex:1; padding:12px 8px; font-size:14px; font-weight:600; border-radius:7px; }
+.do-purpose button.is-active { background:#b8862d; color:white; }
+.do-search-query, .do-search-select { display:flex; align-items:center; gap:8px; border:1px solid #e6e4de; border-radius:7px; padding:0 12px; min-width:0; }
+.do-search input, .do-search select { width:100%; min-width:0; min-height:46px; background:transparent; font-size:13px; outline:none; }
+.do-search-query:focus-within,.do-search-select:focus-within { border-color:#008000; box-shadow:0 0 0 2px #00800018; }
+.do-search-submit { display:flex; align-items:center; justify-content:center; gap:8px; min-height:46px; border-radius:7px; background:#008000; color:white; font-weight:600; font-size:14px; }
+.do-search-submit:hover { background:#006b00; }
+.do-benefits { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:25px; padding-block:32px 34px; }
+.do-benefit { display:flex; gap:17px; align-items:flex-start; }
+.do-benefit > svg { width:42px; height:42px; flex-shrink:0; color:#b8862d; stroke-width:1.5; }
+.do-benefit h2 { font-size:13px; font-weight:700; margin-bottom:5px; }
+.do-benefit p { font-size:13px; line-height:1.5; color:#646665; }
+.do-listings { padding-block:12px 30px; scroll-margin-top:110px; }
+.do-section-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:18px; margin-bottom:22px; }
+.do-section-label { text-transform:uppercase; font-size:10px; letter-spacing:3px; color:#737775; font-weight:600; margin-bottom:10px; }
+.do-section-heading h2,.do-city-copy h2 { font-family:Georgia,'Times New Roman',serif; font-size:34px; line-height:1.15; letter-spacing:-.8px; color:#152320; font-weight:700; }
+.do-text-link { display:inline-flex; gap:5px; align-items:center; color:#986719; font-size:12px; font-weight:600; white-space:nowrap; min-height:44px; }
+.do-property-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; }
+.do-advanced { border:1px solid #e2ddd3; border-radius:14px; padding:15px; background:white; margin-bottom:20px; }
+.do-result-count { display:flex; justify-content:space-between; align-items:center; gap:16px; font-size:14px; color:#5e6b64; margin-bottom:15px; }
+.do-result-count button { color:#008000; text-decoration:underline; padding:10px 0; }
+.do-city { display:grid; grid-template-columns:1.45fr 1.1fr .92fr; gap:34px; padding-top:5px; align-items:stretch; }
+.do-city-photo { position:relative; overflow:hidden; min-height:260px; border-radius:9px; }
+.do-city-photo > div { position:absolute; inset:0; display:flex; align-items:flex-end; gap:15px; padding:24px; background:linear-gradient(transparent 40%,#10281dd9); color:white; }
+.do-city-photo > div > svg { flex-shrink:0; align-self:flex-end; margin-bottom:8px; }
+.do-city-photo strong { display:block; font-size:19px; }
+.do-city-photo span { display:block; font-size:14px; margin-top:4px; }
+.do-city-copy { padding-block:16px 8px; }
+.do-city-copy h2 { font-size:29px; }
+.do-city-copy > p:not(.do-section-label) { margin-top:15px; font-size:14px; line-height:1.7; color:#626866; }
+.do-city-button { display:inline-flex; align-items:center; gap:10px; color:#72501b; border:1px solid #b8862d; border-radius:8px; padding:12px 14px; font-size:12px; font-weight:600; margin-top:20px; text-align:left; }
+.do-city-facts { display:flex; flex-direction:column; justify-content:center; gap:20px; padding:24px; background:#f2efe8; border-radius:10px; }
+.do-city-facts > div { display:flex; gap:18px; align-items:center; }
+.do-city-facts svg { color:#b8862d; width:32px; height:32px; flex-shrink:0; stroke-width:1.7; }
+.do-city-facts strong { font-size:13px; display:block; }
+.do-city-facts span { display:block; font-size:12px; line-height:1.4; color:#717572; margin-top:5px; }
+.do-empty { text-align:center; background:white; border:1px solid #e5dfd5; padding:35px; border-radius:14px; }
+.do-empty > svg { margin:0 auto 12px; color:#b8862d; }
+.do-empty h3 { font-size:23px; font-weight:700; }
+.do-empty p { margin:10px 0 20px; color:#69736c; }
+.do-empty button,.do-empty a { display:inline-block; padding:12px 18px; margin:5px; border-radius:8px; background:#008000; color:white; }
+.do-favorite-notice { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); z-index:80; padding:12px 20px; border-radius:12px; background:#176b3a; color:white; box-shadow:0 6px 25px #0002; width:max-content; max-width:90vw; }
+@media (min-width:1440px) { .do-hero { min-height:570px; } .do-hero-inner { padding-top:75px; } .do-search { margin-top:35px; } }
+@media (max-width:1200px) {
+ .do-container { width:calc(100% - 64px); }
+ .do-search { grid-template-columns:155px minmax(180px,1fr) minmax(145px,1fr); }
+ .do-search-submit { grid-column:3; }
+ .do-search > .do-search-select:last-of-type { grid-column:1 / 3; grid-row:2; }
+ .do-benefits { gap:20px; grid-template-columns:repeat(3,1fr); }
+ .do-property-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+ .do-city { grid-template-columns:1.2fr 1fr; gap:24px; }
+ .do-city-facts { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; justify-content:space-between; }
+}
+@media (max-width:640px) {
+ .do-container { width:calc(100% - 32px); }
+ .do-header-inner { min-height:75px; }
+ .do-header-inner .do-brand-mark { width:45px; height:45px; }
+ .do-header-inner .do-brand-name { font-size:20px; }
+ .do-header-inner .do-brand-caption { font-size:6px; letter-spacing:1.2px; }
+ .do-hero-inner { padding-top:42px; padding-bottom:20px; }
+ .do-hero h1 { font-size:46px; line-height:1.02; letter-spacing:-1.5px; }
+ .do-eyebrow { font-size:9px; letter-spacing:2.5px; }
+ .do-hero-description { font-size:16px; line-height:1.6; max-width:310px; }
+ .do-hero-image { object-position:66% center; }
+ .do-hero-shade { background:linear-gradient(90deg,#122e2bd9,#132c2866),linear-gradient(0deg,#10261e66,transparent); }
+ .do-search { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; margin-top:25px; padding:12px; }
+ .do-purpose { grid-column:1 / -1; }
+ .do-search-query { grid-column:1 / -1; }
+ .do-search > .do-search-select:last-of-type { grid-column:auto; grid-row:auto; }
+ .do-search-submit { grid-column:1 / -1; min-height:48px; }
+ .do-search-select { padding:0 9px; }
+ .do-benefits { grid-template-columns:1fr 1fr; gap:22px 14px; padding-block:28px; }
+ .do-benefit { gap:10px; }
+ .do-benefit > svg { width:30px; height:30px; }
+ .do-benefit h2 { font-size:13px; }
+ .do-benefit p { font-size:13px; }
+ .do-benefit:last-child { grid-column:1 / -1; }
+ .do-section-heading { flex-direction:column; align-items:flex-start; gap:7px; margin-bottom:15px; }
+ .do-section-heading h2 { font-size:30px; }
+ .do-property-grid { grid-template-columns:minmax(0,1fr); gap:20px; }
+ .do-city { grid-template-columns:minmax(0,1fr); gap:20px; }
+ .do-city-photo { min-height:235px; }
+ .do-city-copy { padding-block:0; }
+ .do-city-copy > p:not(.do-section-label) { font-size:16px; }
+ .do-city-facts { grid-column:auto; display:grid; grid-template-columns:1fr; }
+ .do-city-facts strong { font-size:15px; }
+ .do-city-facts span { font-size:14px; }
+}
+.do-property-card { min-width:0; overflow:hidden; background:white; border:1px solid #eeebe5; border-radius:10px; box-shadow:0 5px 16px #212f2810; transition:box-shadow .2s,transform .2s; }
+.do-property-card:hover { transform:translateY(-3px); box-shadow:0 12px 25px #212f281c; }
+.do-card-image { position:relative; height:178px; overflow:hidden; }
+.do-card-image > a { position:absolute; inset:0; }
+.do-card-purpose { position:absolute; left:13px; top:13px; background:#bb8b2d; color:white; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; pointer-events:none; }
+.do-card-purpose.is-rent { background:#1b3d37; }
+.do-card-heart { position:absolute; right:5px; top:3px; display:flex; align-items:center; justify-content:center; width:44px; height:44px; color:white; filter:drop-shadow(0 1px 2px #0008); }
+.do-card-heart[aria-pressed='true'] { color:#ffdfb0; }
+.do-card-content { padding:14px 15px 6px; }
+.do-card-price { color:#161e1c; font-size:17px; line-height:1.3; font-weight:750; }
+.do-card-content h3 { font-size:14px; font-weight:500; line-height:1.5; margin-top:3px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; min-height:42px; }
+.do-card-location { display:flex; align-items:center; gap:5px; font-size:12px; color:#727876; margin-top:6px; }
+.do-card-location svg { flex-shrink:0; }
+.do-card-facts { display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:12px; color:#6e7470; margin-top:10px; }
+.do-card-facts span { display:inline-flex; align-items:center; gap:5px; }
+.do-card-facts svg { flex-shrink:0; }
+.do-card-actions { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1eee8; margin-top:10px; }
+.do-card-actions > a { display:flex; align-items:center; gap:4px; min-height:38px; color:#008000; font-size:12px; font-weight:600; }
+.do-card-actions > div { display:flex; }
+.do-card-actions > div > * { display:flex; align-items:center; justify-content:center; width:36px; height:38px; color:#586b5f; }
+@media(max-width:1200px) { .do-card-image { height:220px; } }
+@media(max-width:640px) { .do-card-image { height:230px; } .do-card-content { padding:16px 17px 8px; } .do-card-price { font-size:21px; } .do-card-content h3 { font-size:17px; min-height:0; } .do-card-location,.do-card-facts { font-size:14px; } .do-card-actions > a { font-size:14px; min-height:44px; } .do-card-actions > div > * { width:44px; height:44px; } }
+
+/* Kiválasztott 2-es logó: kompakt arany körív és mélyzöld ház. */
+.do-header-inner .do-brand-mark { width:48px; height:48px; }
+@media (max-width:640px) { .do-header-inner .do-brand-mark { width:40px; height:40px; } }
+
+/* Kiválasztott 2-es logó: kompakt arany körív és mélyzöld ház. */
+.do-header-inner .do-brand-mark { width:48px; height:48px; }
+@media (max-width:640px) { .do-header-inner .do-brand-mark { width:40px; height:40px; } }

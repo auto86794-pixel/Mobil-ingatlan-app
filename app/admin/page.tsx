@@ -57,9 +57,9 @@ const STATUS_OPTIONS: StatusOption[] = [
 
 const statusClass: Record<PropertyStatus, string> = {
   archived: "border-stone-300 bg-stone-100 text-stone-700",
-  active: "border-emerald-500/30 bg-[#176b3a]/10 text-[#176b3a]",
+  active: "border-emerald-500/30 bg-[#008000]/10 text-[#176b3a]",
   draft: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  sold: "border-blue-500/30 bg-[#176b3a]/10 text-blue-300",
+  sold: "border-blue-500/30 bg-[#008000]/10 text-blue-300",
   inactive: "border-[#cbc4b7] bg-[#f5f2ec] text-[#4d5a51]",
 };
 
@@ -278,11 +278,11 @@ export default function AdminPage() {
       {confirmationDialog}
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#b9d1c0] bg-[#176b3a]/10 px-4 py-2 text-sm text-[#176b3a]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#b9d1c0] bg-[#008000]/10 px-4 py-2 text-sm text-[#176b3a]">
             <ShieldCheck size={16} /> Adminisztráció
           </div>
           <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-            DebrecenHomes Admin PRO
+            Debreceni Otthonok Admin PRO
           </h1>
           <p className="mt-2 text-[#6c776f]">
             Valós idejű platformkezelés: hirdetések, kiemelések, státuszok és

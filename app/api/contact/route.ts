@@ -148,6 +148,8 @@ export async function POST(req: Request) {
     const allowedOrigins = new Set([
       "https://debrecenhomes.hu",
       "https://www.debrecenhomes.hu",
+      "https://debreceniotthonok.hu",
+      "https://www.debreceniotthonok.hu",
     ]);
     if (process.env.NODE_ENV === "development") {
       allowedOrigins.add("http://localhost:3000");
@@ -275,7 +277,7 @@ export async function POST(req: Request) {
     await sendBrevoEmail({
       apiKey,
       senderEmail,
-      senderName: "DebrecenHomes",
+      senderName: "Debreceni Otthonok",
       toEmail: recipientEmail,
       replyToEmail: email,
       replyToName: name,
@@ -357,11 +359,11 @@ export async function POST(req: Request) {
       await sendBrevoEmail({
         apiKey,
         senderEmail,
-        senderName: "DebrecenHomes",
+        senderName: "Debreceni Otthonok",
         toEmail: email,
         toName: name,
         replyToEmail: recipientEmail,
-        replyToName: "DebrecenHomes",
+        replyToName: "Debreceni Otthonok",
         subject: "Megkaptuk az érdeklődésed",
         htmlContent: `
         <div
@@ -388,7 +390,7 @@ export async function POST(req: Request) {
           </p>
 
           <p>
-            — DebrecenHomes
+            — Debreceni Otthonok
           </p>
         </div>
         `,

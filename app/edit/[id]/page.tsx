@@ -399,7 +399,7 @@ export default function EditPropertyPage() {
           type="button"
           onClick={handleSave}
           disabled={saving || uploading}
-          className="w-full rounded-2xl bg-[#176b3a] px-6 py-4 text-lg font-black text-white transition hover:bg-[#115b30] disabled:opacity-50"
+          className="w-full rounded-2xl bg-[#008000] px-6 py-4 text-lg font-black text-white transition hover:bg-[#006b00] disabled:opacity-50"
         >
           {saving ? "Mentés..." : "Módosítások mentése"}
         </button>

@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/app/lib/site";
 import { NextResponse } from "next/server";
 
 import { getAdminAuth } from "@/app/lib/firebaseAdmin";
@@ -24,17 +25,17 @@ export async function POST(request: Request) {
     if (!apiKey || !senderEmail) throw new Error("BREVO_CONFIG_MISSING");
 
     const verificationLink = await adminAuth.generateEmailVerificationLink(decoded.email, {
-      url: "https://debrecenhomes.hu/login",
+      url: `${SITE_URL}/login`,
       handleCodeInApp: false,
     });
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
       body: JSON.stringify({
-        sender: { name: "DebrecenHomes", email: senderEmail },
+        sender: { name: "Debreceni Otthonok", email: senderEmail },
         to: [{ email: decoded.email }],
-        subject: "Erősítsd meg a DebrecenHomes fiókodat",
-        htmlContent: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;padding:36px;color:#172019;line-height:1.7"><h1>E-mail-cím megerősítése</h1><p>A DebrecenHomes fiókod aktiválásához kattints az alábbi gombra:</p><p style="margin:28px 0"><a href="${escapeHtml(verificationLink)}" style="display:inline-block;background:#176b3a;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">E-mail-cím megerősítése</a></p><p style="font-size:13px;color:#6c776f">A link ehhez a címhez tartozik: ${escapeHtml(decoded.email)}.</p></div>`,
+        subject: "Erősítsd meg a Debreceni Otthonok fiókodat",
+        htmlContent: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;padding:36px;color:#172019;line-height:1.7"><h1>E-mail-cím megerősítése</h1><p>A Debreceni Otthonok fiókod aktiválásához kattints az alábbi gombra:</p><p style="margin:28px 0"><a href="${escapeHtml(verificationLink)}" style="display:inline-block;background:#176b3a;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">E-mail-cím megerősítése</a></p><p style="font-size:13px;color:#6c776f">A link ehhez a címhez tartozik: ${escapeHtml(decoded.email)}.</p></div>`,
       }),
     });
     const brevoBody = await response.text();

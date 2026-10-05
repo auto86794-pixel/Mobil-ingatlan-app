@@ -9,7 +9,7 @@ export default function NotFound() {
         <h1 className="mt-5 text-3xl font-black tracking-tight text-[#172019] sm:text-4xl">Ez az oldal nem található</h1>
         <p className="mx-auto mt-3 max-w-xl leading-7 text-[#667168]">Lehet, hogy a hirdetést már eltávolították, vagy a megnyitott hivatkozás hibás.</p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link href="/properties#ingatlanok" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]"><Search size={18}/> Ingatlanok böngészése</Link>
+          <Link href="/properties#ingatlanok" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]"><Search size={18}/> Ingatlanok böngészése</Link>
           <Link href="/" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#d8d2c7] bg-[#faf8f4] px-6 font-bold text-[#263129] transition hover:border-[#b9d1c0]"><Home size={18}/> Kezdőlap</Link>
         </div>
       </div>

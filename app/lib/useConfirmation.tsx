@@ -96,7 +96,7 @@ export function useConfirmation() {
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl bg-[#176b3a] px-4 py-3 font-bold text-white"
+                  className="rounded-xl bg-[#008000] px-4 py-3 font-bold text-white"
                   onClick={() => finish(true)}
                 >
                   Megerősítés

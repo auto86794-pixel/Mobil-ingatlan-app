@@ -11,7 +11,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
         <h1 className="mt-5 text-3xl font-black text-[#172019]">Valami nem sikerült</h1>
         <p className="mx-auto mt-3 max-w-xl leading-7 text-[#667168]">Az oldal betöltése közben hiba történt. Próbáld újra, vagy térj vissza az ingatlanokhoz.</p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <button type="button" onClick={reset} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#176b3a] px-6 font-bold text-white transition hover:bg-[#115b30]"><RefreshCw size={18}/> Újrapróbálom</button>
+          <button type="button" onClick={reset} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]"><RefreshCw size={18}/> Újrapróbálom</button>
           <Link href="/properties#ingatlanok" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-[#d8d2c7] bg-[#faf8f4] px-6 font-bold text-[#263129]">Ingatlanok</Link>
         </div>
       </div>

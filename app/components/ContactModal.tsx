@@ -160,7 +160,7 @@ export default function ContactModal({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="mt-6 w-full rounded-2xl bg-[#176b3a] px-5 py-3.5 font-bold text-white transition hover:bg-[#115b30]"
+              className="mt-6 w-full rounded-2xl bg-[#008000] px-5 py-3.5 font-bold text-white transition hover:bg-[#006b00]"
             >
               Rendben
             </button>
@@ -266,7 +266,7 @@ export default function ContactModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="min-h-12 rounded-2xl bg-[#176b3a] px-5 py-3 font-bold text-white transition hover:bg-[#115b30] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-12 rounded-2xl bg-[#008000] px-5 py-3 font-bold text-white transition hover:bg-[#006b00] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Küldés..." : submitLabel}
               </button>

@@ -147,7 +147,7 @@ export default function PropertyHistory({
                 {isAdmin && (
                   <button
                     type="button"
-                    className="rounded-xl bg-[#176b3a] px-4 py-2 font-bold text-white disabled:opacity-50"
+                    className="rounded-xl bg-[#008000] px-4 py-2 font-bold text-white disabled:opacity-50"
                     disabled={busy}
                     onClick={() => void restore(item)}
                   >

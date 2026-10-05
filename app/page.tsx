@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 
 import HomeClient from "./HomeClient";
@@ -26,5 +27,5 @@ export default async function HomePage() {
   } catch (error) {
     console.error("Aktív ingatlanok szerveroldali betöltési hibája:", error);
   }
-  return <HomeClient initialPosts={posts} />;
+  return <Suspense fallback={<div className="min-h-[600px] bg-[#faf9f6]" aria-label="Oldal betöltése" />}><HomeClient initialPosts={posts} /></Suspense>;
 }

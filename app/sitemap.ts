@@ -5,7 +5,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./lib/firebase";
 import { propertyFromFirestore } from "./lib/types";
 
-const SITE_URL = "https://debrecenhomes.hu";
+import { SITE_URL } from "@/app/lib/site";
 
 // Az aktív ingatlanok változhatnak deploy nélkül is, ezért a sitemap minden
 // lekéréskor a Firestore aktuális állapotából készül.

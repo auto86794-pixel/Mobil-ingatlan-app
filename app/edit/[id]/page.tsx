@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useConfirmation } from "@/app/lib/useConfirmation";
 
 import { useEffect, useState } from "react";
+import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions } from "@/app/components/property/PropertyDetailSelect";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -263,13 +264,13 @@ export default function EditPropertyPage() {
         />
         {field("Ingatlan neve", title, setTitle)}
         <div className="grid gap-4 md:grid-cols-2">
-          {field("Város", city, setCity)}
-          {field("Városrész", district, setDistrict)}
+          <PropertyDetailSelect label="Város" value={city} onChange={setCity} options={cityOptions} />
+          <PropertyDetailSelect label="Városrész" value={district} onChange={setDistrict} options={districtOptions} />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {field("Ár (Ft)", price, setPrice, "", "number")}
           {field("Alapterület (m²)", area, setArea, "", "number")}
-          {field("Szobák száma", rooms, setRooms, "", "number")}
+          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} />
         </div>
         <div className="mb-4 grid gap-4 md:grid-cols-3">
           <div>
@@ -315,11 +316,11 @@ export default function EditPropertyPage() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {field("Állapot", condition, setCondition)}
-          {field("Emelet", floor, setFloor)}
-          {field("Erkély / terasz", balcony, setBalcony)}
-          {field("Parkolás / garázs", parking, setParking)}
-          {field("Fűtés", heating, setHeating)}
+          <PropertyDetailSelect label="Állapot" value={condition} onChange={setCondition} options={conditionOptions} />
+          <PropertyDetailSelect label="Emelet" value={floor} onChange={setFloor} options={floorOptions} />
+          <PropertyDetailSelect label="Erkély / terasz" value={balcony} onChange={setBalcony} options={balconyOptions} />
+          <PropertyDetailSelect label="Parkolás / garázs" value={parking} onChange={setParking} options={parkingOptions} />
+          <PropertyDetailSelect label="Fűtés" value={heating} onChange={setHeating} options={heatingOptions} />
         </div>
         <div className="mb-6">
           <label className="mb-2 block text-[#6c776f]">Leírás</label>

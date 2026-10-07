@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions } from "@/app/components/property/PropertyDetailSelect";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -180,13 +181,13 @@ export default function Create() {
 
         {field("Ingatlan neve", title, setTitle, "Modern lakás")}
         <div className="grid gap-4 md:grid-cols-2">
-          {field("Város", city, setCity, "Debrecen")}
-          {field("Városrész", district, setDistrict, "Nagyerdő")}
+          <PropertyDetailSelect label="Város" value={city} onChange={setCity} options={cityOptions} />
+          <PropertyDetailSelect label="Városrész" value={district} onChange={setDistrict} options={districtOptions} />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {field("Ár (Ft)", price, setPrice, "95000000", "number")}
           {field("Alapterület (m²)", area, setArea, "65", "number")}
-          {field("Szobák száma", rooms, setRooms, "3", "number")}
+          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} />
         </div>
 
         <div className="mb-4 grid gap-4 md:grid-cols-2">
@@ -238,11 +239,11 @@ export default function Create() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {field("Állapot", condition, setCondition, "Felújított")}
-          {field("Emelet", floor, setFloor, "1. emelet")}
-          {field("Erkély / terasz", balcony, setBalcony, "8 m² erkély")}
-          {field("Parkolás / garázs", parking, setParking, "Udvari beálló")}
-          {field("Fűtés", heating, setHeating, "Hőszivattyú")}
+          <PropertyDetailSelect label="Állapot" value={condition} onChange={setCondition} options={conditionOptions} />
+          <PropertyDetailSelect label="Emelet" value={floor} onChange={setFloor} options={floorOptions} />
+          <PropertyDetailSelect label="Erkély / terasz" value={balcony} onChange={setBalcony} options={balconyOptions} />
+          <PropertyDetailSelect label="Parkolás / garázs" value={parking} onChange={setParking} options={parkingOptions} />
+          <PropertyDetailSelect label="Fűtés" value={heating} onChange={setHeating} options={heatingOptions} />
         </div>
 
         <div className="mb-6">

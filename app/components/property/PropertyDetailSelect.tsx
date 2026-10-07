@@ -10,12 +10,14 @@ export const cityOptions = ["Debrecen", "Hajdúszoboszló", "Hajdúböszörmény
 export const districtOptions = ["Belváros", "Nagyerdő", "Nagyerdőalja", "Sestakert", "Vénkert", "Újkert", "Tócóskert", "Tócóvölgy", "Hatvan utcai kert", "Csigekert", "Biharikert", "Bodobán", "Csapókert", "Dobozi lakótelep", "Epreskert", "Homokkert", "Ispotály", "Józsa", "Alsójózsa", "Felsőjózsa", "Kerekestelep", "Lencztelep", "Libakert", "Széchenyikert", "Tégláskert", "Wesselényi lakótelep", "Nyulas", "Pallag", "Bánk", "Dombostanya", "Kismacs", "Nagymacs", "Ondód", "Pac"];
 export const balconyOptions = ["Nincs erkély / terasz", "Erkély", "Terasz", "Loggia", "Franciaerkély", "Erkély és terasz", "Tetőterasz"];
 export const roomOptions = Array.from({ length: 24 }, (_, index) => String((index + 1) / 2));
+export const propertyTypeOptions = ["lakás", "családi ház", "ikerház", "sorház", "telek", "nyaraló", "üdülő", "iroda", "üzlethelyiség", "garázs", "raktár", "ipari ingatlan", "mezőgazdasági ingatlan", "egyéb"];
 
-export default function PropertyDetailSelect({ label, value, onChange, options }: {
+export default function PropertyDetailSelect({ label, value, onChange, options, inputType = "text" }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: readonly string[];
+  inputType?: "text" | "number";
 }) {
   const id = useId();
   const [custom, setCustom] = useState(false);
@@ -31,12 +33,12 @@ export default function PropertyDetailSelect({ label, value, onChange, options }
       }} className={inputClass}>
         <option value="">Nincs megadva</option>
         {value && !known && <option value={value}>{value}</option>}
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => <option key={option} value={option}>{inputType === "number" ? Number(option).toLocaleString("hu-HU") : option.charAt(0).toLocaleUpperCase("hu-HU") + option.slice(1)}</option>)}
         <option value="__custom__">Egyéb – egyedi megadás</option>
       </select>
       {custom && <div className="mt-2">
         <label htmlFor={`${id}-custom`} className="mb-2 block text-sm text-[#879087]">{label} – egyedi érték</label>
-        <input id={`${id}-custom`} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass} />
+        <input id={`${id}-custom`} type={inputType} min={inputType === "number" ? 0.5 : undefined} step={inputType === "number" ? 0.5 : undefined} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass} />
       </div>}
     </div>
   );

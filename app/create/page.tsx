@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions } from "@/app/components/property/PropertyDetailSelect";
+import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions, propertyTypeOptions } from "@/app/components/property/PropertyDetailSelect";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -187,7 +187,7 @@ export default function Create() {
         <div className="grid gap-4 md:grid-cols-3">
           {field("Ár (Ft)", price, setPrice, "95000000", "number")}
           {field("Alapterület (m²)", area, setArea, "65", "number")}
-          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} />
+          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} inputType="number" />
         </div>
 
         <div className="mb-4 grid gap-4 md:grid-cols-2">
@@ -206,23 +206,7 @@ export default function Create() {
               <option value="rent">Kiadó</option>
             </select>
           </div>
-          <div>
-            <label className="mb-2 block text-sm text-[#6c776f]">
-              Ingatlantípus
-            </label>
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-              className={inputClass}
-            >
-              <option value="lakás">Lakás</option>
-              <option value="családi ház">Családi ház</option>
-              <option value="ikerház">Ikerház</option>
-              <option value="sorház">Sorház</option>
-              <option value="telek">Telek</option>
-              <option value="egyéb">Egyéb</option>
-            </select>
-          </div>
+          <PropertyDetailSelect label="Ingatlantípus" value={propertyType} onChange={setPropertyType} options={propertyTypeOptions} />
           <div>
             <label className="mb-2 block text-sm text-[#6c776f]">Státusz</label>
             <select

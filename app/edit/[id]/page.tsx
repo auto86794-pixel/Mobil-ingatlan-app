@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { useConfirmation } from "@/app/lib/useConfirmation";
 
 import { useEffect, useState } from "react";
-import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions } from "@/app/components/property/PropertyDetailSelect";
+import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions, propertyTypeOptions } from "@/app/components/property/PropertyDetailSelect";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -270,7 +270,7 @@ export default function EditPropertyPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {field("Ár (Ft)", price, setPrice, "", "number")}
           {field("Alapterület (m²)", area, setArea, "", "number")}
-          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} />
+          <PropertyDetailSelect label="Szobák száma" value={rooms} onChange={setRooms} options={roomOptions} inputType="number" />
         </div>
         <div className="mb-4 grid gap-4 md:grid-cols-3">
           <div>
@@ -286,21 +286,7 @@ export default function EditPropertyPage() {
               <option value="rent">Kiadó</option>
             </select>
           </div>
-          <div>
-            <label className="mb-2 block text-[#6c776f]">Ingatlantípus</label>
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-              className={inputClass}
-            >
-              <option value="lakás">Lakás</option>
-              <option value="családi ház">Családi ház</option>
-              <option value="ikerház">Ikerház</option>
-              <option value="sorház">Sorház</option>
-              <option value="telek">Telek</option>
-              <option value="egyéb">Egyéb</option>
-            </select>
-          </div>
+          <PropertyDetailSelect label="Ingatlantípus" value={propertyType} onChange={setPropertyType} options={propertyTypeOptions} />
           <div>
             <label className="mb-2 block text-[#6c776f]">Státusz</label>
             <select

@@ -61,7 +61,7 @@ export default function PropertyCard({
         </div>
         <div className="do-card-content">
           <p className="do-card-price">{formatPrice(price)}{listingPurpose === "rent" ? " / hó" : ""}</p>
-          <h3><Link href={`/post/${id}`}>{title}</Link></h3>
+          <h3 className="dh-listing-title"><Link href={`/post/${id}`}>{title}</Link></h3>
           <p className="do-card-location"><MapPin size={14} />{district ? `${district}, ${city}` : city}</p>
           <div className="do-card-facts">{validRooms ? <span><BedDouble size={15} />{validRooms} szoba</span> : null}{validArea ? <span><Maximize2 size={15} />{validArea} m²</span> : null}{cleanPropertyType && <span className="truncate"><Home size={15} />{cleanPropertyType}</span>}</div>
           <div className="do-card-actions"><Link href={`/post/${id}`}>Részletek <ArrowUpRight size={14} /></Link><div>{callablePhone && <a href={`tel:${callablePhone}`} aria-label="Telefonhívás"><Phone size={15} /></a>}<button type="button" onClick={() => setOpenModal(true)} aria-label="Érdeklődés az ingatlanról"><MessageCircle size={16} /></button></div></div>

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { managementRequest } from "@/app/lib/managementClient";
+import { filterListings, sortListings } from "@/app/lib/listingOrder";
 import { auth, db } from "../lib/firebase";
 import {
   propertyFromFirestore,
@@ -60,6 +61,12 @@ export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [nameFilter, setNameFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateUntil, setDateUntil] = useState("");
+  const invalidDateRange = Boolean(dateFrom && dateUntil && dateFrom > dateUntil);
+  const sortedPosts = useMemo(() => sortListings(filterListings(posts, nameFilter, dateFrom, dateUntil), sortOrder), [posts, nameFilter, dateFrom, dateUntil, sortOrder]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -216,6 +223,34 @@ export default function Dashboard() {
           <StatCard label="Eladva" value={stats.sold} />
         </div>
 
+        <div className="mb-4 grid gap-4 rounded-2xl border border-[#e2ddd3] bg-white p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label htmlFor="listing-name" className="mb-2 block text-sm font-bold">Hirdetés neve</label>
+            <input id="listing-name" type="search" value={nameFilter} onChange={(event) => setNameFilter(event.target.value)} placeholder="Keresés a hirdetés címében…" className="dh-input rounded-xl px-3 py-3" />
+          </div>
+          <div>
+            <label htmlFor="listing-date-from" className="mb-2 block text-sm font-bold">Feltöltés dátuma – ettől</label>
+            <input id="listing-date-from" type="date" value={dateFrom} max={dateUntil || undefined} onChange={(event) => setDateFrom(event.target.value)} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "listing-date-error" : undefined} className="dh-input min-w-0 rounded-xl px-3 py-3" />
+          </div>
+          <div>
+            <label htmlFor="listing-date-until" className="mb-2 block text-sm font-bold">Feltöltés dátuma – eddig</label>
+            <input id="listing-date-until" type="date" value={dateUntil} min={dateFrom || undefined} onChange={(event) => setDateUntil(event.target.value)} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "listing-date-error" : undefined} className="dh-input min-w-0 rounded-xl px-3 py-3" />
+          </div>
+          {invalidDateRange && <p id="listing-date-error" role="alert" className="text-sm text-red-700 sm:col-span-2 lg:col-span-3">A záró dátum nem lehet korábbi a kezdő dátumnál.</p>}
+          {(nameFilter || dateFrom || dateUntil) && <button type="button" onClick={() => { setNameFilter(""); setDateFrom(""); setDateUntil(""); }} className="justify-self-start rounded-xl border border-[#d8d2c7] px-4 py-2 text-sm font-bold">Szűrők törlése</button>}
+        </div>
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <p aria-live="polite" className="text-sm text-[#6c776f]">{sortedPosts.length} találat / {posts.length} saját hirdetés</p>
+          <div className="flex items-center gap-3">
+            <label htmlFor="listing-order" className="text-sm font-bold">Rendezés</label>
+            <select id="listing-order" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "newest" | "oldest")} className="rounded-xl border border-[#d8d2c7] bg-white px-3 py-3 text-sm">
+              <option value="newest">Legújabb feltöltés elöl</option>
+              <option value="oldest">Legrégebbi feltöltés elöl</option>
+            </select>
+          </div>
+        </div>
+
         {posts.length === 0 ? (
           <div className="rounded-3xl border border-[#e2ddd3] bg-white p-10 text-center">
             <h2 className="text-xl font-bold">
@@ -225,9 +260,14 @@ export default function Dashboard() {
               Az első hirdetésedet az „Új ingatlan” gombbal hozhatod létre.
             </p>
           </div>
+        ) : sortedPosts.length === 0 ? (
+          <div className="rounded-3xl border border-[#e2ddd3] bg-white p-10 text-center">
+            <h2 className="text-xl font-bold">Nincs a szűrésnek megfelelő hirdetés.</h2>
+            <p className="mt-2 text-[#6c776f]">Módosítsd a nevet vagy a dátumokat, vagy töröld a szűrőket.</p>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((post) => {
+            {sortedPosts.map((post) => {
               const statusLabel =
                 STATUS_OPTIONS.find((option) => option.value === post.status)
                   ?.label ?? "Aktív";
@@ -266,7 +306,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="p-5">
-                    <h2 className="text-xl font-bold">{post.title}</h2>
+                    <h2 className="dh-listing-title">{post.title}</h2>
                     <p className="mt-1 text-[#6c776f]">
                       📍 {[post.city, post.district].filter(Boolean).join(", ")}
                     </p>

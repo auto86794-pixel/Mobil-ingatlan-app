@@ -133,7 +133,7 @@ export default function FavoritesPage() {
               </button>
               <img src={post.imageUrl} alt={post.title} className="h-60 w-full object-cover" loading="lazy" decoding="async" />
               <div className="p-6">
-                <h2 className="line-clamp-2 text-xl font-black leading-snug text-[#172019]">{post.title}</h2>
+                <h2 className="dh-listing-title line-clamp-2">{post.title}</h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-[#6c776f]"><MapPin size={15} className="text-[#176b3a]" />{post.city}{post.district ? `, ${post.district}` : ""}</p>
                 <p className="mt-5 text-2xl font-black text-[#176b3a]">{formatPrice(post.price)}</p>
                 <Link href={`/post/${post.id}`} className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#008000] px-6 font-bold text-white transition hover:bg-[#006b00]">Megnézem</Link>

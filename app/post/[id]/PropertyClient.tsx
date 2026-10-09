@@ -102,9 +102,11 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
               (item) =>
                 item.id !== data.id &&
                 item.status === "active" &&
+                item.listingPurpose === data.listingPurpose &&
                 Boolean(item.imageUrl),
             )
             .map((item) => {
+              const samePurpose = item.listingPurpose === data.listingPurpose;
               const sameCity = Boolean(
                 item.city && data.city && item.city === data.city,
               );
@@ -126,6 +128,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                 data.area > 0 ? Math.abs(item.area - data.area) / data.area : 1;
 
               const score =
+                (samePurpose ? 8 : -100) +
                 (sameDistrict ? 7 : 0) +
                 (sameCity ? 4 : 0) +
                 (sameType ? 5 : 0) +

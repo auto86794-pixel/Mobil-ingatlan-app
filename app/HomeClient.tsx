@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 
 import PropertyCard from "./components/property/PropertyCard";
+import SearchAlert from "./components/property/SearchAlert";
 import PropertyCardSkeleton from "./components/property/PropertyCardSkeleton";
 import PropertyFilters, {
   type SearchFilters,
@@ -341,6 +342,7 @@ export default function HomeClient({
         {hasFilters && <div className="do-result-count"><p>{filteredPosts.length} ingatlan felel meg a keresésnek.</p><button type="button" onClick={() => setFilters(emptyFilters)}>Szűrők törlése</button></div>}
         <div className="do-property-grid">{loading ? Array.from({ length: 4 }).map((_, index) => <PropertyCardSkeleton key={index} />) : (advancedOpen ? filteredPosts : recommended).map(post => <PropertyCard key={post.id} {...post} isNew={isNewPost(post)} isFavorite={favorites.includes(post.id)} onToggleFavorite={() => void toggleFavorite(post.id)} />)}</div>
         {!loading && recommended.length === 0 && <div className="do-empty"><Home size={36} /><h3>Most nincs pontos találat.</h3><p>Próbálj tágabb keresést, vagy írd meg, milyen otthont keresel.</p><button type="button" onClick={() => setFilters(emptyFilters)}>Összes ingatlan</button><a href="mailto:info@debrecenhomes.hu?subject=Ingatlant%20keresek%20Debrecenben">Elmondom, mit keresek</a></div>}
+        <SearchAlert criteria={filters} />
       </section>
       <section id="debrecen" className="do-container do-city" aria-labelledby="city-title">
         <div className="do-city-photo"><Image src="/debrecen-varoskep.webp" alt="Debrecen belvárosa és a Nagytemplom" fill sizes="(min-width: 1024px) 38vw, 100vw" className="object-cover" /><div><MapPin size={25} /><p><strong>Fedezd fel Debrecent</strong><span>Egy város, ahol jó élni</span></p></div></div>

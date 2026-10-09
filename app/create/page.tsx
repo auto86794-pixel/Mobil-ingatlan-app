@@ -12,6 +12,7 @@ import { auth, db, storage } from "../lib/firebase";
 import { createSafeImageName, validateImageFile } from "../lib/imageUpload";
 import type { ListingPurpose, PropertyStatus } from "../lib/types";
 import { normalizeHungarianPhone } from "../lib/format";
+import ListingQuality from "../components/property/ListingQuality";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), {
   ssr: false,
@@ -179,6 +180,7 @@ export default function Create() {
           </p>
         </div>
 
+        <ListingQuality property={{title,city,district,price:Number(price),area:Number(area),rooms:Number(rooms),images,description,condition,heating,phone,email}} />
         {field("Ingatlan neve", title, setTitle, "Modern lakás")}
         <div className="grid gap-4 md:grid-cols-2">
           <PropertyDetailSelect label="Város" value={city} onChange={setCity} options={cityOptions} />

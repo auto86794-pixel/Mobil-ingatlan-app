@@ -1,7 +1,8 @@
 "use client";
+import { uploadImageBatch } from "@/app/lib/imageUploadBatch";
 import { cleanPropertyPatch } from "@/app/lib/managementPolicy";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions, propertyTypeOptions } from "@/app/components/property/PropertyDetailSelect";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -48,6 +49,7 @@ export default function Create() {
   const [lng, setLng] = useState(21.6273);
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const uploadPending = useRef(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -68,32 +70,26 @@ export default function Create() {
   }, [router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
+    if (!files.length || !user || uploadPending.current || saving) return;
+    uploadPending.current = true;
+    setUploading(true);
     try {
-      setUploading(true);
-      const uploadedUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        const validationError = validateImageFile(file);
-        if (validationError) {
-          alert(validationError);
-          return;
-        }
-        const safeName = createSafeImageName(file);
-        const imageRef = ref(storage, `properties/${user.uid}/${safeName}`);
+      const errors = await uploadImageBatch(files, images.length, validateImageFile, async file => {
+        const imageRef = ref(storage, `properties/${user.uid}/${createSafeImageName(file)}`);
         await uploadBytes(imageRef, file, { contentType: file.type });
-        uploadedUrls.push(await getDownloadURL(imageRef));
-      }
-      setImages((prev) => [...prev, ...uploadedUrls]);
-    } catch (err) {
-      console.error(err);
-      alert("Hiba a képfeltöltés során.");
+        return getDownloadURL(imageRef);
+      }, url => setImages(prev => [...prev, url]));
+      if (errors.length) alert(errors.join("\n"));
     } finally {
+      input.value = "";
+      uploadPending.current = false;
       setUploading(false);
     }
   };
-
   const handleSubmit = async () => {
+    if (uploadPending.current || saving) return;
     if (!user) return router.replace("/login");
     if (!user.emailVerified) return router.replace("/login?verify=1");
     if (!title.trim() || !city.trim() || !price || !area || !rooms) {
@@ -256,6 +252,7 @@ export default function Create() {
             type="file"
             multiple
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            disabled={uploading || saving}
             onChange={handleImageUpload}
             className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4"
           />

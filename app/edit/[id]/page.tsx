@@ -1,10 +1,11 @@
 "use client";
 import ListingQuality from "@/app/components/property/ListingQuality";
+import { uploadImageBatch } from "@/app/lib/imageUploadBatch";
 import { cleanPropertyPatch } from "@/app/lib/managementPolicy";
 import toast from "react-hot-toast";
 import { useConfirmation } from "@/app/lib/useConfirmation";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions, propertyTypeOptions } from "@/app/components/property/PropertyDetailSelect";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -37,6 +38,7 @@ export default function EditPropertyPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const uploadPending = useRef(false);
   const [version, setVersion] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -121,31 +123,24 @@ export default function EditPropertyPage() {
   }, [params.id, router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
+    if (!files.length || !user || uploadPending.current || saving) return;
+    uploadPending.current = true;
+    setUploading(true);
     try {
-      setUploading(true);
-      const uploadedUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        const validationError = validateImageFile(file);
-        if (validationError) {
-          toast.error(validationError);
-          return;
-        }
-        const safeName = createSafeImageName(file);
-        const imageRef = ref(storage, `properties/${user.uid}/${safeName}`);
+      const errors = await uploadImageBatch(files, images.length, validateImageFile, async file => {
+        const imageRef = ref(storage, `properties/${user.uid}/${createSafeImageName(file)}`);
         await uploadBytes(imageRef, file, { contentType: file.type });
-        uploadedUrls.push(await getDownloadURL(imageRef));
-      }
-      setImages((prev) => [...prev, ...uploadedUrls]);
-    } catch (err) {
-      console.error(err);
-      toast.error("Hiba képfeltöltés közben.");
+        return getDownloadURL(imageRef);
+      }, url => setImages(prev => [...prev, url]));
+      if (errors.length) toast.error(errors.join("\n"));
     } finally {
+      input.value = "";
+      uploadPending.current = false;
       setUploading(false);
     }
   };
-
   const handleRemoveImage = async (image: string) => {
     const confirmed = await confirmAction("Biztosan eltávolítod ezt a képet?");
     if (!confirmed) return;
@@ -159,6 +154,7 @@ export default function EditPropertyPage() {
   };
 
   const handleSave = async () => {
+    if (uploadPending.current || saving) return;
     if (!user) return router.replace("/login");
     if (!user.emailVerified) return router.replace("/login?verify=1");
     if (!title.trim() || !city.trim() || !price || !area || !rooms) {
@@ -332,6 +328,7 @@ export default function EditPropertyPage() {
             type="file"
             multiple
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            disabled={uploading || saving}
             onChange={handleImageUpload}
             className="w-full rounded-2xl border border-[#d8d2c7] bg-white p-4"
           />

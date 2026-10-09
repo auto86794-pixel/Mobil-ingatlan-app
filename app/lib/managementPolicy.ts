@@ -1,3 +1,4 @@
+import { MAX_PROPERTY_IMAGES } from "./imageUploadBatch";
 import type { Property } from "./types";
 import { listingQuality } from "./listingQuality";
 export const propertyStatuses = [
@@ -65,7 +66,7 @@ export function cleanPropertyPatch(input: Record<string, unknown>) {
   if ("images" in input) {
     if (
       !Array.isArray(input.images) ||
-      input.images.length > 50 ||
+      input.images.length > MAX_PROPERTY_IMAGES ||
       input.images.some(
         (url) =>
           typeof url !== "string" ||

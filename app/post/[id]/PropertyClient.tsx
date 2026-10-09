@@ -10,6 +10,7 @@ import {
   getDocs,
   query,
   where,
+  limit,
 } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -85,8 +86,9 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
           setSelectedImageIndex(0);
 
           const allSnapshot = await getDocs(
-            query(collection(db, "posts"), where("status", "==", "active")),
+            query(collection(db, "posts"), where("status", "==", "active"), limit(100)),
           );
+          if (!active) return;
           const rankedCandidates = allSnapshot.docs
             .map((item) =>
               propertyFromFirestore(

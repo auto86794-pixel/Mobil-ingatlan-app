@@ -102,3 +102,17 @@ test('Admin API returns one row for stored duplicate search requests without del
  assert.equal(data.inquiries.length,1);assert.equal(data.inquiries[0].id,'one');
  assert.equal([...e.store.keys()].filter(k=>k.startsWith('inquiries/')).length,2);
 });
+
+test('Image batches validate before uploads, enforce capacity and retain successes after failures',async()=>{
+ const {uploadImageBatch}=environment().load('app/lib/imageUploadBatch.ts');
+ const files=[{name:'one.jpg'},{name:'bad.jpg'},{name:'three.jpg'}];
+ let calls=0;const urls=[];
+ assert.equal((await uploadImageBatch(files,11,()=>null,async()=>{calls++;return 'url'},u=>urls.push(u))).length,1);
+ assert.equal(calls,0);
+ assert.equal((await uploadImageBatch(files,0,f=>f.name==='bad.jpg'?'Invalid':null,async()=>{calls++;return 'url'},u=>urls.push(u))).length,1);
+ assert.equal(calls,0);
+ const errors=await uploadImageBatch(files,9,()=>null,async f=>{calls++;if(f.name==='bad.jpg')throw Error('network');return f.name},u=>urls.push(u));
+ assert.deepEqual(urls,['one.jpg','three.jpg']);assert.equal(calls,3);assert.match(errors[0],/bad.jpg/);
+ const retry=await uploadImageBatch([files[1]],11,()=>null,async f=>f.name,u=>urls.push(u));
+ assert.equal(retry.length,0);assert.equal(urls.length,3);
+});

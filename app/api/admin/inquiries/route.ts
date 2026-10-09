@@ -1,3 +1,4 @@
+import { uniqueInquiries } from "@/app/lib/uniqueInquiries";
 import { searchCriteriaMessage } from "@/app/lib/searchCriteria";
 import { NextResponse } from "next/server";
 import {
@@ -29,11 +30,11 @@ export async function GET(request: Request) {
     }
     const snapshot = await query.get();
     return NextResponse.json({
-      inquiries: snapshot.docs.map((item) => ({
+      inquiries: uniqueInquiries(snapshot.docs.map((item) => ({
         ...(serializable(item.data()) as object),
         id: legacy ? `legacy_${item.id}` : item.id,
         ...(legacy ? {name:"Ingatlant kereső",phone:"",propertyId:"",propertyTitle:"Keresési igény",message:searchCriteriaMessage(item.data().criteria || {}),status:item.data().status === "pending" ? "new" : item.data().status || "new",notes:item.data().notes || "",viewingAt:item.data().viewingAt || "",version:item.data().version || 0,delivery:"legacy"} : {}),
-      })),
+      }))),
       cursor: snapshot.size === 50 ? snapshot.docs.at(-1)!.id : null,
     });
   } catch (error) {

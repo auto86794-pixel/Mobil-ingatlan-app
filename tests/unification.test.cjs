@@ -80,3 +80,25 @@ test('Verification emails use shared sender and throttle repeated sends',async()
   assert.equal(sent,1);assert.ok(e.auth.verifyChecks.every(Boolean));
  }finally{keys.forEach((k,i)=>before[i]===undefined?delete process.env[k]:process.env[k]=before[i]);}
 });
+
+test('Duplicate search rows collapse across sources and pages while distinct work stays visible',()=>{
+ const e=environment(),{uniqueInquiries}=e.load('app/lib/uniqueInquiries.ts');
+ const a={id:'search-one',kind:'search',email:'A@test.invalid',criteria:'{"city":"Debrecen","maxPrice":"70000000"}',status:'new',createdAt:'2026-10-09'};
+ const b={...a,id:'legacy_old',kind:undefined,email:' a@test.invalid ',criteria:{maxPrice:'070000000',city:'Debrecen'},createdAt:'2026-10-08'};
+ assert.deepEqual(uniqueInquiries([b,a]).map(x=>x.id),['search-one']);
+ assert.equal(uniqueInquiries([a,{...b,notes:'Called'}]).length,2);
+ assert.equal(uniqueInquiries([a,{...b,status:'closed'}]).length,2);
+ assert.equal(uniqueInquiries([a,{...b,criteria:{city:'Budapest'}}]).length,2);
+ assert.equal(uniqueInquiries([a,{...b,criteria:'broken'}]).length,2);
+ assert.equal(uniqueInquiries([{...a,kind:undefined},{...a,id:'contact',kind:undefined}]).length,2);
+ assert.equal(uniqueInquiries([a,{...a,notes:'Updated'}])[0].notes,'Updated');
+});
+
+test('Admin API returns one row for stored duplicate search requests without deleting data',async()=>{
+ const e=environment();
+ const row={kind:'search',email:'a@test.invalid',criteria:'{"city":"Debrecen"}',status:'new',createdAt:'2026-10-09'};
+ e.store.set('inquiries/one',row);e.store.set('inquiries/two',{...row,createdAt:'2026-10-08'});
+ const data=await(await e.load('app/api/admin/inquiries/route.ts').GET(e.request('admin',undefined,'GET'))).json();
+ assert.equal(data.inquiries.length,1);assert.equal(data.inquiries[0].id,'one');
+ assert.equal([...e.store.keys()].filter(k=>k.startsWith('inquiries/')).length,2);
+});

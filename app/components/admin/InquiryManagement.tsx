@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { uniqueInquiries } from "@/app/lib/uniqueInquiries";
 import toast from "react-hot-toast";
 import { managementRequest } from "@/app/lib/managementClient";
 type Inquiry = {
@@ -41,7 +42,7 @@ export default function InquiryManagement() {
         append && !pageCursor ? Promise.resolve({inquiries:[],cursor:null} as Page) : managementRequest<Page>(`/api/admin/inquiries${append ? `?cursor=${encodeURIComponent(pageCursor!)}` : ""}`),
         append && !legacyCursor ? Promise.resolve({inquiries:[],cursor:null} as Page) : managementRequest<Page>(`/api/admin/inquiries?source=legacy${append ? `&cursor=${encodeURIComponent(legacyCursor!)}` : ""}`),
       ]);
-      setItems(old => Array.from(new Map([...(append ? old : []),...data.inquiries,...legacy.inquiries].map(item=>[item.id,item])).values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()));
+      setItems(old => uniqueInquiries([...(append ? old : []),...data.inquiries,...legacy.inquiries]));
       setCursor(data.cursor);
       setLegacyCursor(legacy.cursor);
     } catch (error) {

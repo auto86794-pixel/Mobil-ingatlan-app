@@ -1,3 +1,5 @@
+import type { Property } from "./types";
+import { listingQuality } from "./listingQuality";
 export const propertyStatuses = [
   "active",
   "draft",
@@ -87,23 +89,8 @@ export function cleanPropertyPatch(input: Record<string, unknown>) {
   return result;
 }
 
-export function missingPropertyFields(post: {
-  area?: number;
-  rooms?: number;
-  phone?: string;
-  images?: string[];
-  imageUrl?: string;
-  propertyType?: string;
-}) {
-  return [
-    !(post.area && post.area > 0) ? "alapterület" : "",
-    !(post.rooms && post.rooms > 0) ? "szobaszám" : "",
-    !post.phone?.trim() ? "telefonszám" : "",
-    !post.images?.some((image) => image.trim()) && !post.imageUrl?.trim()
-      ? "kép"
-      : "",
-    !post.propertyType?.trim() ? "ingatlantípus" : "",
-  ].filter(Boolean);
+export function missingPropertyFields(post: Partial<Property>) {
+  return listingQuality(post).missing;
 }
 
 export function assertManageableAccount(

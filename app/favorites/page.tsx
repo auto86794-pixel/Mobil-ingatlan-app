@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { Heart, LogIn, MapPin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { setFavorite } from "@/app/lib/favorites";
 import { auth, db } from "@/app/lib/firebase";
 import { formatPrice } from "@/app/lib/format";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
@@ -34,13 +35,13 @@ export default function FavoritesPage() {
           query(collection(db, "favorites"), where("userId", "==", currentUser.uid))
         );
         const favoriteDocMap: Record<string, string> = {};
-        const postIds = favoritesSnapshot.docs
+        const postIds = Array.from(new Set(favoritesSnapshot.docs
           .map((item) => {
             const postId = item.data().postId;
             if (typeof postId === "string" && postId.length > 0) favoriteDocMap[postId] = item.id;
             return postId;
           })
-          .filter((value): value is string => typeof value === "string" && value.length > 0);
+          .filter((value): value is string => typeof value === "string" && value.length > 0)));
         setFavoriteDocs(favoriteDocMap);
 
         if (postIds.length === 0) {
@@ -74,7 +75,8 @@ export default function FavoritesPage() {
 
     setRemovingId(postId);
     try {
-      await deleteDoc(doc(db, "favorites", favoriteDocId));
+      if (!auth.currentUser) throw new Error("Jelentkezz be.");
+      await setFavorite(auth.currentUser.uid, postId, false);
       setFavorites((current) => current.filter((item) => item.id !== postId));
       setFavoriteDocs((current) => {
         const next = { ...current };

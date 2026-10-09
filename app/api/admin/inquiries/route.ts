@@ -1,3 +1,4 @@
+import { searchCriteriaMessage } from "@/app/lib/searchCriteria";
 import { NextResponse } from "next/server";
 import {
   adminDb,
@@ -13,22 +14,25 @@ export async function GET(request: Request) {
   try {
     await requireAccount(request, true);
     const db = adminDb();
+    const legacy = new URL(request.url).searchParams.get("source") === "legacy";
+    const source = legacy ? "searchAlerts" : "inquiries";
     let query = db
-      .collection("inquiries")
+      .collection(source)
       .orderBy("createdAt", "desc")
       .limit(50);
     const cursor = new URL(request.url).searchParams.get("cursor");
     if (cursor) {
       if (!/^[\w-]+$/.test(cursor))
         throw new ApiError(400, "Érvénytelen lapozás.");
-      const last = await db.doc(`inquiries/${cursor}`).get();
+      const last = await db.doc(`${source}/${cursor}`).get();
       if (last.exists) query = query.startAfter(last);
     }
     const snapshot = await query.get();
     return NextResponse.json({
       inquiries: snapshot.docs.map((item) => ({
-        id: item.id,
         ...(serializable(item.data()) as object),
+        id: legacy ? `legacy_${item.id}` : item.id,
+        ...(legacy ? {name:"Ingatlant kereső",phone:"",propertyId:"",propertyTitle:"Keresési igény",message:searchCriteriaMessage(item.data().criteria || {}),status:item.data().status === "pending" ? "new" : item.data().status || "new",notes:item.data().notes || "",viewingAt:item.data().viewingAt || "",version:item.data().version || 0,delivery:"legacy"} : {}),
       })),
       cursor: snapshot.size === 50 ? snapshot.docs.at(-1)!.id : null,
     });
@@ -52,7 +56,7 @@ export async function PATCH(request: Request) {
     if (date && !Number.isFinite(date.getTime()))
       throw new ApiError(400, "Érvénytelen időpont.");
     const db = adminDb(),
-      ref = db.doc(`inquiries/${body.id}`);
+      ref = body.id.startsWith("legacy_") ? db.doc(`searchAlerts/${body.id.slice(7)}`) : db.doc(`inquiries/${body.id}`);
     await db.runTransaction(async (tx) => {
       const [item, profile] = await tx.getAll(
         ref,

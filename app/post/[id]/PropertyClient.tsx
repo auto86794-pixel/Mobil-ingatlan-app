@@ -4,9 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
   onSnapshot,
   getDocs,
@@ -16,7 +14,6 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Bell,
   CheckCircle2,
   Heart,
   MessageCircle,
@@ -24,9 +21,11 @@ import {
   Share2,
 } from "lucide-react";
 
+import { setFavorite } from "@/app/lib/favorites";
 import { auth, db } from "@/app/lib/firebase";
 import { propertyFromFirestore, type PropertyWithId } from "@/app/lib/types";
 import { formatPrice, normalizeHungarianPhone } from "@/app/lib/format";
+import SearchAlert from "@/app/components/property/SearchAlert";
 import ContactModal from "@/app/components/ContactModal";
 import PropertyDescription from "@/app/components/property/PropertyDescription";
 
@@ -58,9 +57,6 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
   );
   const [shareNotice, setShareNotice] = useState("");
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [contactMode, setContactMode] = useState<"inquiry" | "alert">(
-    "inquiry",
-  );
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [favoriteNotice, setFavoriteNotice] = useState("");
@@ -103,10 +99,13 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                 item.id !== data.id &&
                 item.status === "active" &&
                 item.listingPurpose === data.listingPurpose &&
+                item.city.trim().toLocaleLowerCase("hu-HU") === data.city.trim().toLocaleLowerCase("hu-HU") &&
+                item.propertyType === data.propertyType &&
+                Math.abs(item.price - data.price) / Math.max(data.price, 1) <= 0.35 &&
+                Math.abs(item.area - data.area) / Math.max(data.area, 1) <= 0.35 &&
                 Boolean(item.imageUrl),
             )
             .map((item) => {
-              const samePurpose = item.listingPurpose === data.listingPurpose;
               const sameCity = Boolean(
                 item.city && data.city && item.city === data.city,
               );
@@ -128,7 +127,6 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
                 data.area > 0 ? Math.abs(item.area - data.area) / data.area : 1;
 
               const score =
-                (samePurpose ? 8 : -100) +
                 (sameDistrict ? 7 : 0) +
                 (sameCity ? 4 : 0) +
                 (sameType ? 5 : 0) +
@@ -262,29 +260,10 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
 
     setFavoriteLoading(true);
     try {
-      const favoritesRef = collection(db, "favorites");
-      const snapshot = await getDocs(
-        query(
-          favoritesRef,
-          where("userId", "==", auth.currentUser.uid),
-          where("postId", "==", property.id),
-        ),
-      );
-
-      if (!snapshot.empty) {
-        await Promise.all(
-          snapshot.docs.map((item) => deleteDoc(doc(db, "favorites", item.id))),
-        );
-        setIsFavorite(false);
-        setFavoriteNotice("Eltávolítva a kedvencekből.");
-      } else {
-        await addDoc(favoritesRef, {
-          userId: auth.currentUser.uid,
-          postId: property.id,
-        });
-        setIsFavorite(true);
-        setFavoriteNotice("Elmentve a kedvencek közé.");
-      }
+      const wanted = !isFavorite;
+      await setFavorite(auth.currentUser.uid, property.id, wanted);
+      setIsFavorite(wanted);
+      setFavoriteNotice(wanted ? "Elmentve a kedvencek közé." : "Eltávolítva a kedvencekből.");
     } catch (error) {
       console.error("Kedvenc módosítási hiba:", error);
       setFavoriteNotice("A mentés most nem sikerült.");
@@ -772,32 +751,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
             </section>
           )}
 
-          <section className="mt-8 rounded-[28px] border border-[#d9e7dc] bg-[#f2f7f3] p-5 sm:p-7">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a1813a]">
-                  Ne maradj le
-                </p>
-                <h2 className="mt-1 text-2xl font-black text-[#172019]">
-                  Kérsz értesítést hasonló ingatlanokról?
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667168]">
-                  Írd meg az elérhetőséged, és jelezheted, hogy ehhez hasonló
-                  debreceni ingatlanokat keresel.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setContactMode("alert");
-                  setContactModalOpen(true);
-                }}
-                className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#008000] px-5 text-sm font-black text-white transition hover:bg-[#006b00]"
-              >
-                <Bell size={18} /> Értesítést kérek
-              </button>
-            </div>
-          </section>
+          <SearchAlert criteria={{listingPurpose:property.listingPurpose,city:property.city,district:property.district,propertyType:property.propertyType,minPrice:String(Math.round(property.price * .85)),maxPrice:String(Math.round(property.price * 1.15)),minArea:String(Math.floor(property.area * .8)),maxArea:String(Math.ceil(property.area * 1.2))}} />
 
           {property.lat && property.lng ? (
             <div className="mt-10">
@@ -835,7 +789,6 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
               <button
                 type="button"
                 onClick={() => {
-                  setContactMode("inquiry");
                   setContactModalOpen(true);
                 }}
                 className="flex min-h-14 flex-[1.35] items-center justify-center gap-2 rounded-2xl bg-[#008000] px-4 text-sm font-black text-white shadow-[0_8px_22px_rgba(23,107,58,.18)] active:scale-[0.99]"
@@ -852,22 +805,7 @@ export default function PropertyClient({ initialProperty }: { initialProperty: P
         setOpen={setContactModalOpen}
         propertyTitle={property.title}
         propertyId={property.id}
-        modalTitle={
-          contactMode === "alert" ? "Hasonló ingatlan értesítő" : "Érdeklődöm"
-        }
-        initialMessage={
-          contactMode === "alert"
-            ? `Kérek értesítést a(z) „${property.title}” ingatlanhoz hasonló debreceni ingatlanokról.`
-            : undefined
-        }
-        submitLabel={
-          contactMode === "alert" ? "Értesítést kérek" : "Érdeklődés elküldése"
-        }
-        successMessage={
-          contactMode === "alert"
-            ? "Megkaptuk a kérésed. Ha hasonló ingatlan érkezik, az érdeklődésed alapján fel tudjuk venni veled a kapcsolatot."
-            : undefined
-        }
+
       />
 
       {galleryOpen && selectedImage && (

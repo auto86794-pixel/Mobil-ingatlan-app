@@ -9,7 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run build",
-    "test": "node --test tests/management.test.cjs tests/seo.test.cjs",
+    "test": "node --test tests/management.test.cjs tests/seo.test.cjs tests/unification.test.cjs",
     "test:rules": "node --test tests/rules.test.cjs"
   },
   "dependencies": {

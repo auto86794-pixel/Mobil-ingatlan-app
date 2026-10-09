@@ -1,3 +1,5 @@
+import { sendBrevoPayload } from "@/app/lib/brevoEmail";
+import { reserveAuthEmail } from "@/app/lib/authEmailLimit";
 import { SITE_URL } from "@/app/lib/site";
 import { NextResponse } from "next/server";
 
@@ -15,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const adminAuth = getAdminAuth();
-    const decoded = await adminAuth.verifyIdToken(authorization.slice(7));
+    const decoded = await adminAuth.verifyIdToken(authorization.slice(7), true);
     if (!decoded.email || decoded.email_verified) {
       return NextResponse.json({ error: decoded.email_verified ? "Az e-mail cím már megerősített." : "A fiókhoz nem tartozik e-mail cím." }, { status: 400 });
     }
@@ -24,26 +26,18 @@ export async function POST(request: Request) {
     const senderEmail = process.env.BREVO_FROM_EMAIL;
     if (!apiKey || !senderEmail) throw new Error("BREVO_CONFIG_MISSING");
 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!await reserveAuthEmail(decoded.email, ip, "verify")) return NextResponse.json({error:"Túl sok kérés. Próbáld újra néhány perc múlva."},{status:429});
     const verificationLink = await adminAuth.generateEmailVerificationLink(decoded.email, {
       url: `${SITE_URL}/login`,
       handleCodeInApp: false,
     });
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
-      body: JSON.stringify({
+    await sendBrevoPayload(apiKey, {
         sender: { name: "Debreceni Otthonok", email: senderEmail },
         to: [{ email: decoded.email }],
         subject: "Erősítsd meg a Debreceni Otthonok fiókodat",
         htmlContent: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;padding:36px;color:#172019;line-height:1.7"><h1>E-mail-cím megerősítése</h1><p>A Debreceni Otthonok fiókod aktiválásához kattints az alábbi gombra:</p><p style="margin:28px 0"><a href="${escapeHtml(verificationLink)}" style="display:inline-block;background:#176b3a;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">E-mail-cím megerősítése</a></p><p style="font-size:13px;color:#6c776f">A link ehhez a címhez tartozik: ${escapeHtml(decoded.email)}.</p></div>`,
-      }),
-    });
-    const brevoBody = await response.text();
-    if (!response.ok) {
-      console.error("BREVO_VERIFICATION_SEND_ERROR", response.status, brevoBody);
-      throw new Error("BREVO_SEND_FAILED");
-    }
-    console.log("BREVO_VERIFICATION_SENT", { uid: decoded.uid, status: response.status, response: brevoBody });
+      });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("VERIFICATION_EMAIL_ERROR", error);

@@ -1,4 +1,6 @@
 "use client";
+import ListingQuality from "@/app/components/property/ListingQuality";
+import { cleanPropertyPatch } from "@/app/lib/managementPolicy";
 import toast from "react-hot-toast";
 import { useConfirmation } from "@/app/lib/useConfirmation";
 
@@ -178,6 +180,7 @@ export default function EditPropertyPage() {
       return;
     }
     try {
+      cleanPropertyPatch({title, city, price:Number(price), area:Number(area), rooms:Number(rooms), listingPurpose, images, lat, lng});
       setSaving(true);
       await managementRequest(
         `/api/posts/${params.id}`,
@@ -382,6 +385,7 @@ export default function EditPropertyPage() {
           </label>
           <MapPicker lat={lat} lng={lng} setLat={setLat} setLng={setLng} />
         </div>
+        <ListingQuality property={{title,city,district,propertyType,price:Number(price),area:Number(area),rooms:Number(rooms),images,description,condition,heating,phone,email}} />
         <button
           type="button"
           onClick={handleSave}

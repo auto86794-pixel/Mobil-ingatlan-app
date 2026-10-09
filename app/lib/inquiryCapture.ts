@@ -1,11 +1,21 @@
+import { cleanSearchCriteria } from "./searchCriteria";
 import { createHash, randomUUID } from "node:crypto";
 import { adminDb, stamp } from "./managementServer";
 export async function captureInquiry(
   body: Record<string, string>,
   submissionId: unknown,
   ip: string,
+  uniqueKey?: string,
 ) {
-  const id =
+  if (uniqueKey) {
+    const legacy = await adminDb().collection("searchAlerts").where("email", "==", body.email).get();
+    for (const item of legacy.docs) {
+      try {
+        if (JSON.stringify(cleanSearchCriteria(item.data().criteria)) === body.criteria) return {ref:item.ref,duplicate:true};
+      } catch { /* A legacy malformed request does not block a valid one. */ }
+    }
+  }
+  const id = uniqueKey ? `search-${createHash("sha256").update(uniqueKey).digest("hex")}` :
     typeof submissionId === "string" && /^[0-9a-f-]{36}$/i.test(submissionId)
       ? submissionId
       : randomUUID();
@@ -32,6 +42,7 @@ export async function captureInquiry(
     tx.set(ref, {
       ...body,
       fingerprint,
+      ...(uniqueKey ? {consentAt:stamp()} : {}),
       status: "new",
       notes: "",
       viewingAt: "",

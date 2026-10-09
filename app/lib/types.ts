@@ -74,10 +74,11 @@ export function propertyFromFirestore(
   const rawPurpose = stringValue(raw.listingPurpose);
   const searchableTitle = stringValue(raw.title).toLocaleLowerCase("hu-HU");
   const listingPurpose: ListingPurpose =
-    rawPurpose === "rent" ||
+    rawPurpose === "rent" ? "rent" : rawPurpose === "sale" ? "sale" :
+    (
     searchableTitle.includes("kiadó") ||
     searchableTitle.includes("kiado")
-      ? "rent"
+      ) ? "rent"
       : "sale";
 
   return {

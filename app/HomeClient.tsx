@@ -1,5 +1,7 @@
 "use client";
 
+import { listingCreatedMillis } from "./lib/listingOrder";
+import { setFavorite } from "./lib/favorites";
 import { SITE_URL } from "./lib/site";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,10 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { Home, MapPin, ShieldCheck, Heart, Users, GraduationCap, ChartNoAxesColumnIncreasing, Trees, ArrowRight, Search, ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  addDoc,
   collection,
-  deleteDoc,
-  doc,
   getDocs,
   onSnapshot,
   query,
@@ -56,14 +55,7 @@ const normalizeSearchText = (value: string) =>
 const includesText = (value: string, filter: string) =>
   normalizeSearchText(value).includes(normalizeSearchText(filter));
 
-const timestampToMillis = (value: unknown) => {
-  if (value && typeof value === "object" && "toMillis" in value) {
-    const toMillis = (value as { toMillis?: () => number }).toMillis;
-    if (typeof toMillis === "function") return toMillis.call(value);
-  }
-  if (value instanceof Date) return value.getTime();
-  return 0;
-};
+const timestampToMillis = (value: unknown) => listingCreatedMillis(value) ?? 0;
 
 const uniqueValues = (posts: PropertyWithId[], key: keyof PropertyWithId) =>
   Array.from(
@@ -181,7 +173,10 @@ export default function HomeClient({
     );
   }, []);
 
+  const favoriteOperations = useRef(new Set<string>());
   const toggleFavorite = async (id: string) => {
+    if (favoriteOperations.current.has(id)) return;
+    favoriteOperations.current.add(id);
     try {
       if (!auth.currentUser) {
         setFavoriteNotice("A kedvencek mentéséhez jelentkezz be.");
@@ -189,26 +184,14 @@ export default function HomeClient({
       }
 
       const userId = auth.currentUser.uid;
-      const favoritesRef = collection(db, "favorites");
-      const q = query(
-        favoritesRef,
-        where("userId", "==", userId),
-        where("postId", "==", id),
-      );
-      const snapshot = await getDocs(q);
-
-      if (!snapshot.empty) {
-        await deleteDoc(doc(db, "favorites", snapshot.docs[0].id));
-        setFavorites((prev) => prev.filter((favoriteId) => favoriteId !== id));
-        setFavoriteNotice("Eltávolítva a kedvencekből.");
-      } else {
-        await addDoc(favoritesRef, { userId, postId: id });
-        setFavorites((prev) => [...prev, id]);
-        setFavoriteNotice("Elmentve a kedvencek közé.");
-      }
+      const wanted = !favorites.includes(id);
+      await setFavorite(userId, id, wanted);
+      setFavorites(prev => wanted ? Array.from(new Set([...prev, id])) : prev.filter(item => item !== id));
+      setFavoriteNotice(wanted ? "Elmentve a kedvencek közé." : "Eltávolítva a kedvencekből.");
     } catch (error) {
       console.error("Kedvenc módosítási hiba:", error);
-    }
+      setFavoriteNotice("A mentés most nem sikerült.");
+    } finally { favoriteOperations.current.delete(id); }
   };
 
   useEffect(() => {

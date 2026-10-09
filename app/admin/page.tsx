@@ -26,6 +26,7 @@ import {
 
 import UserManagement from "@/app/components/admin/UserManagement";
 import InquiryManagement from "@/app/components/admin/InquiryManagement";
+import { listingQuality } from "@/app/lib/listingQuality";
 import { missingPropertyFields } from "@/app/lib/managementPolicy";
 import { managementRequest } from "@/app/lib/managementClient";
 import { auth, db } from "../lib/firebase";
@@ -114,16 +115,8 @@ export default function AdminPage() {
   }, [router]);
 
   const loadAdminData = async () => {
-    const [postSnapshot, userSnapshot] = await Promise.all([
-      getDocs(collection(db, "posts")),
-      getDocs(collection(db, "users")),
-    ]);
+    const userSnapshot = await getDocs(collection(db, "users"));
 
-    setPosts(
-      postSnapshot.docs.map((item) =>
-        propertyFromFirestore(item.id, item.data()),
-      ),
-    );
 
     setUsers(
       userSnapshot.docs.map((item) => {
@@ -398,11 +391,7 @@ export default function AdminPage() {
                               </p>
                               <p className="mt-2 text-xs">
                                 Kitöltöttség:{" "}
-                                {Math.round(
-                                  ((5 - missingPropertyFields(post).length) /
-                                    5) *
-                                    100,
-                                )}
+                                {listingQuality(post).score}
                                 %
                               </p>
                               {missingPropertyFields(post).length > 0 && (

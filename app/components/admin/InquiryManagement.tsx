@@ -28,6 +28,7 @@ const input = "rounded-xl border border-[#d8d2c7] bg-white p-3";
 export default function InquiryManagement() {
   const [items, setItems] = useState<Inquiry[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
+    [legacyCursor, setLegacyCursor] = useState<string | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false),
     [filter, setFilter] = useState("all");
@@ -35,25 +36,25 @@ export default function InquiryManagement() {
     setLoading(true);
     setError("");
     try {
-      const data = await managementRequest<{
-        inquiries: Inquiry[];
-        cursor: string | null;
-      }>(
-        `/api/admin/inquiries${append && pageCursor ? `?cursor=${encodeURIComponent(pageCursor)}` : ""}`,
-      );
-      setItems((old) =>
-        append ? [...old, ...data.inquiries] : data.inquiries,
-      );
+      type Page = {inquiries:Inquiry[];cursor:string|null};
+      const [data, legacy] = await Promise.all([
+        append && !pageCursor ? Promise.resolve({inquiries:[],cursor:null} as Page) : managementRequest<Page>(`/api/admin/inquiries${append ? `?cursor=${encodeURIComponent(pageCursor!)}` : ""}`),
+        append && !legacyCursor ? Promise.resolve({inquiries:[],cursor:null} as Page) : managementRequest<Page>(`/api/admin/inquiries?source=legacy${append ? `&cursor=${encodeURIComponent(legacyCursor!)}` : ""}`),
+      ]);
+      setItems(old => Array.from(new Map([...(append ? old : []),...data.inquiries,...legacy.inquiries].map(item=>[item.id,item])).values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()));
       setCursor(data.cursor);
+      setLegacyCursor(legacy.cursor);
     } catch (error) {
       setError((error as Error).message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [legacyCursor]);
   useEffect(() => {
     void load();
-  }, [load]);
+    // Initial load only; pagination explicitly calls load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <section className="mt-10 rounded-3xl border border-[#e2ddd3] bg-white p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -104,7 +105,7 @@ export default function InquiryManagement() {
         !items.some((item) => filter === "all" || item.status === filter) && (
           <p className="my-4">Nincs megjeleníthető érdeklődés.</p>
         )}
-      {cursor && (
+      {(cursor || legacyCursor) && (
         <button
           className={input}
           disabled={loading}
@@ -182,7 +183,7 @@ function InquiryCard({
         )}
       </div>
       <p className="whitespace-pre-wrap break-words">{item.message}</p>
-      {item.delivery !== "sent" && (
+      {item.delivery !== "sent" && item.delivery !== "legacy" && (
         <p className="mt-2 text-sm text-amber-800">
           {item.delivery === "pending"
             ? "E-mail-értesítés még nincs visszaigazolva."

@@ -1,4 +1,5 @@
 "use client";
+import { cleanPropertyPatch } from "@/app/lib/managementPolicy";
 
 import { useEffect, useState } from "react";
 import PropertyDetailSelect, { conditionOptions, floorOptions, heatingOptions, parkingOptions, cityOptions, districtOptions, balconyOptions, roomOptions, propertyTypeOptions } from "@/app/components/property/PropertyDetailSelect";
@@ -104,6 +105,7 @@ export default function Create() {
       return;
     }
     try {
+      cleanPropertyPatch({title, city, price:Number(price), area:Number(area), rooms:Number(rooms), listingPurpose, images, lat, lng});
       setSaving(true);
       await addDoc(collection(db, "posts"), {
         title: title.trim(),
@@ -180,7 +182,7 @@ export default function Create() {
           </p>
         </div>
 
-        <ListingQuality property={{title,city,district,price:Number(price),area:Number(area),rooms:Number(rooms),images,description,condition,heating,phone,email}} />
+        <ListingQuality property={{title,city,district,propertyType,price:Number(price),area:Number(area),rooms:Number(rooms),images,description,condition,heating,phone,email}} />
         {field("Ingatlan neve", title, setTitle, "Modern lakás")}
         <div className="grid gap-4 md:grid-cols-2">
           <PropertyDetailSelect label="Város" value={city} onChange={setCity} options={cityOptions} />

@@ -1,5 +1,16 @@
 # HomeFlow CRM – 6.1: weboldali érdeklődőfogadás
 
+## Valódi hirdetéses próba: sikeres – 2026. november 6.
+
+- Aktív hirdetés: `i3T6re7x9ytHkuYWK0mj`, „Családi otthon saját kerttel, terasszal és napelemmel Debrecen Csapókertben!”.
+- A nyilvános böngészőűrlapból elküldött `HF-V6-20261106-01` jelölésű, egyértelmű rendszerellenőrzési üzenetre sikeres visszajelzés jelent meg.
+- Az éles Supabase-ból visszaolvasva: completed import, ügyfél, hozzá kapcsolt todo visszahívási feladat, helyes hirdetéscím és hivatkozás, teljes üzenet, 1 idővonalbejegyzés.
+- A határidő 2026. november 7. 10:00 Europe/Budapest szerint.
+- Azonos beküldésazonosítóval és tartalommal a valódi `/api/contact` ismételten 200 / success választ adott. Utána pontosan **1 import, 1 ügyfél, 1 tesztfeladat és 1 idővonalbejegyzés** tartozott a próbához.
+- A felhasználó a saját postaládájában visszaigazolta a „Megkaptuk az érdeklődésed” levél megérkezését. A postafiókba nem léptünk be, jelszót nem kértünk.
+- A csak erre a próbára létrejött ügyfél test besorolást kapott; a visszahívási feladat cancelled állapotba került, hogy ne szerepeljen valódi teendőként. Bejegyzést nem töröltünk, régi ügyfelet vagy hirdetést nem módosítottunk.
+- Ezzel a hirdetéses érdeklődőfogadás valódi mentési, duplikációs és visszaigazoló e-mail-próbája lezárt. A landing külön teljes űrlapos/mailbox-próbája nem része ennek az egyhirdetéses ellenőrzésnek.
+
 ## Éles kiadás: kész
 
 Mindhárom projekt Production / READY állapotban telepítve:
@@ -12,7 +23,7 @@ Mindhárom projekt Production / READY állapotban telepítve:
 
 A három forráscommit a felhasználó külön engedélyével a megfelelő GitHub main ágra feltöltve. A titkok csak a kiadási folyamat memóriájában és a Vercel Production beállításaiban szerepeltek; fájlba vagy forráskódba nem kerültek.
 
-Éles ellenőrzés: CRM és landing-inbox titok nélkül 401, megfelelő titokkal érvénytelen bemenetre 400; landing botcsapda 200, nyitóoldal 200. A visszagörgetett SQL-próba az éles sémán sikeres; meglévő ügyféladatok ellenőrzőösszege változatlan. Új ügyfelet nem hagytunk a próbák után, levelet nem küldtünk. Egy valódi űrlap teljes, éles mentési és mailbox-próbája még nincs elvégezve.
+Kiadáskori ellenőrzés: CRM és landing-inbox titok nélkül 401, megfelelő titokkal érvénytelen bemenetre 400; landing botcsapda 200, nyitóoldal 200. A visszagörgetett SQL-próba az éles sémán sikeres; meglévő ügyféladatok ellenőrzőösszege változatlan. A kiadáskori műszaki próbákat később a fent rögzített valódi hirdetéses és e-mailes próba egészítette ki.
 
 A régi ügyfél- és hirdetésállomány átvétele nem része a kiadásnak. A következő új érdeklődések tartós admin-bejegyzésből jutnak a HomeFlow-ba.
 

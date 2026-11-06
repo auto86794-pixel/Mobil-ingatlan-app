@@ -1,0 +1,55 @@
+import { createHash, timingSafeEqual } from "node:crypto";
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizePhone } from "@/lib/contact-normalization";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const secret = process.env.WEBSITE_LEAD_SECRET;
+  const supplied = request.headers.get("x-website-lead-secret") || "";
+  if (!secret || !supplied || Buffer.byteLength(secret) !== Buffer.byteLength(supplied) ||
+    !timingSafeEqual(Buffer.from(secret), Buffer.from(supplied)))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let body: Record<string, unknown>;
+  try {
+    const raw = await request.text();
+    if (Buffer.byteLength(raw) > 20_000) return NextResponse.json({ error: "Too large" }, { status: 413 });
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+    body = parsed;
+  } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  const text = (key: string) => typeof body[key] === "string" ? body[key].trim() : "";
+  const payload = {
+    submissionId: text("submissionId"), name: text("name"), email: text("email").toLowerCase(),
+    phone: normalizePhone(text("phone")) || "", message: text("message"),
+    propertyId: text("propertyId"), propertyTitle: text("propertyTitle"), propertyUrl: text("propertyUrl"),
+    kind: text("kind") || "contact", receivedAt: text("receivedAt"),
+    source: text("source") || "debreceniotthonok.hu",
+  };
+  if (!/^[\w-]{1,150}$/.test(payload.submissionId) || !payload.name || payload.name.length > 100 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email) || payload.email.length > 254 ||
+    payload.phone.length > 40 || payload.message.length > 3000 || payload.propertyId.length > 100 ||
+    payload.propertyTitle.length > 200 || payload.propertyUrl.length > 500 ||
+    !["contact", "search"].includes(payload.kind) ||
+    !["debrecenhomes.hu", "debreceniotthonok.hu"].includes(payload.source) ||
+    (payload.receivedAt && (!/^\d{4}-\d{2}-\d{2}T/.test(payload.receivedAt) || !Number.isFinite(Date.parse(payload.receivedAt)))))
+    return NextResponse.json({ error: "Invalid lead" }, { status: 400 });
+  try {
+    const hash = createHash("sha256").update(`debreceni-otthonok:${payload.submissionId}`).digest("hex");
+    const fingerprint = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+    const { data, error } = await createAdminClient().rpc("receive_website_lead", {
+      p_hash: hash, p_fingerprint: fingerprint, p_payload: payload,
+    });
+    if (error) {
+      const review = ["CONTACT_REVIEW", "LEGACY_PROCESSING", "SUBMISSION_CONFLICT"].some(code => error.message.includes(code));
+      console.error("WEBSITE_LEAD_IMPORT", { code: review ? "REVIEW" : error.code });
+      return NextResponse.json({ error: review ? "Manual review required" : "Import failed" }, { status: review ? 409 : 503 });
+    }
+    if (!data || data.success !== true) throw new Error("Missing import acknowledgement");
+    return NextResponse.json(data);
+  } catch {
+    console.error("WEBSITE_LEAD_UNAVAILABLE");
+    return NextResponse.json({ error: "Import unavailable" }, { status: 503 });
+  }
+}

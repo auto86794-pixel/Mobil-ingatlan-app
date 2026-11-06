@@ -2,7 +2,7 @@ const fs = require("node:fs"),
   path = require("node:path"),
   vm = require("node:vm"),
   ts = require("typescript");
-function environment() {
+function environment(overrides = {}) {
   const store = new Map(),
     accounts = new Map();
   let seq = 0;
@@ -174,6 +174,7 @@ function environment() {
       },
     }).outputText;
     const customRequire = (name) => {
+      if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith("/firebaseAdmin") || name === "./firebaseAdmin")
         return { getAdminAuth: () => auth };
       if (name === "firebase-admin/firestore")

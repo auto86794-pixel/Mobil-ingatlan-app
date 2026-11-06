@@ -1,5 +1,6 @@
 import { sendBrevoPayload } from "./brevoEmail";
 import { captureInquiry } from "@/app/lib/inquiryCapture";
+import { deliverToHomeFlow } from "./homeflowDelivery";
 import { NextResponse } from "next/server";
 
 
@@ -157,6 +158,9 @@ export async function handleContact(req: Request, search = false) {
       ip,
       search ? `${email}:${JSON.stringify(body.criteria)}` : undefined,
     );
+    // CRM delivery is independent of e-mail configuration and provider health.
+    // The durable inquiry remains available even if either delivery fails.
+    await deliverToHomeFlow(saved.ref).catch(() => console.error("HOMEFLOW_DELIVERY_STATE_ERROR"));
     if (saved.duplicate) return NextResponse.json({ success: true });
     const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.BREVO_FROM_EMAIL;

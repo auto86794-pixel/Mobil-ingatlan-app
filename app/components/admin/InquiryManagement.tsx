@@ -18,6 +18,7 @@ type Inquiry = {
   viewingAt: string;
   version: number;
   delivery: string;
+  crmDelivery?: string;
 };
 const statuses = {
   new: "Új",
@@ -160,6 +161,16 @@ function InquiryCard({
       setBusy(false);
     }
   }
+  async function retryCrm() {
+    setBusy(true);
+    try {
+      const result = await managementRequest<{crmDelivery:string}>("/api/admin/inquiries/crm", { id: item.id }, "POST");
+      if (result.crmDelivery === "sent") toast.success("HomeFlow átvétel visszaigazolva.");
+      else toast.error("Az átvétel még nincs visszaigazolva. Ellenőrizd a CRM állapotát.");
+      onSaved();
+    } catch (error) { toast.error((error as Error).message); }
+    finally { setBusy(false); }
+  }
   return (
     <article className="break-words rounded-2xl border p-4">
       <div className="flex flex-wrap justify-between gap-2">
@@ -184,9 +195,19 @@ function InquiryCard({
         )}
       </div>
       <p className="whitespace-pre-wrap break-words">{item.message}</p>
+      {!item.id.startsWith("legacy_") && (
+        <div className="mt-3 rounded-xl bg-[#f5f3ee] p-3 text-sm" aria-live="polite">
+          <p>HomeFlow: {({ sent: "átvétel visszaigazolva", processing: "feldolgozás folyamatban", failed: "sikertelen továbbítás", review: "kézi ellenőrzés szükséges", not_configured: "kapcsolat nincs beállítva" } as Record<string,string>)[item.crmDelivery || ""] || "még nincs továbbítva"}</p>
+          {item.crmDelivery !== "sent" && (
+            <button type="button" className="mt-2 rounded-lg border px-3 py-2 font-bold disabled:opacity-50" disabled={busy} onClick={() => void retryCrm()}>
+              HomeFlow-továbbítás újrapróbálása
+            </button>
+          )}
+        </div>
+      )}
       {item.delivery !== "sent" && item.delivery !== "legacy" && (
         <p className="mt-2 text-sm text-amber-800">
-          {item.delivery === "pending"
+          {["pending", "external_pending"].includes(item.delivery)
             ? "E-mail-értesítés még nincs visszaigazolva."
             : "E-mail-értesítés nem sikerült. Az érdeklődés itt megmaradt."}
         </p>

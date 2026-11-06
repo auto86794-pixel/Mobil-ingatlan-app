@@ -13,6 +13,96 @@ const post = {
   version: 0,
   images: ["https://example.invalid/photo.jpg"],
 };
+async function withCrmConfig(run) {
+  const keys = ["HOMEFLOW_CRM_URL", "HOMEFLOW_LEAD_SECRET"];
+  const before = keys.map(key => process.env[key]);
+  process.env.HOMEFLOW_CRM_URL = "https://crm.test.invalid";
+  process.env.HOMEFLOW_LEAD_SECRET = "test-secret";
+  try { await run(); } finally {
+    keys.forEach((key, i) => before[i] === undefined ? delete process.env[key] : process.env[key] = before[i]);
+  }
+}
+test("CRM failure is durable, admin retry reuses the saved payload, success is not sent again", async () => withCrmConfig(async () => {
+  const e = environment();
+  const id = "44444444-4444-4444-8444-444444444444";
+  const data = {name:"Teszt Elek", email:"elek@test.invalid", message:"Érdekel", propertyId:"firebase-listing", createdAt:"2026-11-06T10:00:00.000Z"};
+  e.store.set(`inquiries/${id}`, data);
+  let calls = 0;
+  e.setFetch(async (url, options) => {
+    calls++;
+    assert.equal(String(url), "https://crm.test.invalid/api/website-lead");
+    assert.equal(options.headers["x-website-lead-secret"], "test-secret");
+    const payload = JSON.parse(options.body);
+    assert.equal(payload.submissionId, id);
+    assert.equal(payload.message, data.message);
+    assert.equal(payload.propertyId, "firebase-listing");
+    assert.equal(payload.source, "debrecenhomes.hu");
+    return calls === 1 ? new Response("down", {status:503}) : Response.json({success:true});
+  });
+  const {deliverToHomeFlow} = e.load("app/lib/homeflowDelivery.ts");
+  await deliverToHomeFlow(e.db.doc(`inquiries/${id}`));
+  assert.equal(e.store.get(`inquiries/${id}`).crmDelivery, "failed");
+  assert.equal(e.store.get(`inquiries/${id}`).crmErrorCode, "HTTP_503");
+  const route = e.load("app/api/admin/inquiries/crm/route.ts");
+  assert.equal((await route.POST(e.request("owner", {id}))).status, 403);
+  assert.equal(calls, 1);
+  assert.equal((await route.POST(e.request("admin", {id}))).status, 200);
+  assert.equal(e.store.get(`inquiries/${id}`).crmDelivery, "sent");
+  assert.equal(e.store.get(`inquiries/${id}`).crmAttempts, 2);
+  await deliverToHomeFlow(e.db.doc(`inquiries/${id}`));
+  assert.equal(calls, 2);
+  assert.equal(e.store.get(`inquiries/${id}`).message, data.message);
+}));
+test("CRM rejects false acknowledgements, marks review, and recovers an expired lease", async () => withCrmConfig(async () => {
+  const e = environment(), ref = e.db.doc("inquiries/retry");
+  e.store.set(ref.path, {name:"Teszt",email:"test@test.invalid",crmDelivery:"processing",crmLeaseUntil:Date.now()+60000});
+  let calls=0;
+  e.setFetch(async () => { calls++; return Response.json({success:false}); });
+  const {deliverToHomeFlow} = e.load("app/lib/homeflowDelivery.ts");
+  await deliverToHomeFlow(ref);
+  assert.equal(calls,0);
+  await ref.update({crmLeaseUntil:0});
+  await deliverToHomeFlow(ref);
+  assert.equal(e.store.get(ref.path).crmDelivery,"failed");
+  assert.equal(e.store.get(ref.path).crmErrorCode,"INVALID_RESPONSE");
+  e.setFetch(async () => new Response("review",{status:409}));
+  await deliverToHomeFlow(ref);
+  assert.equal(e.store.get(ref.path).crmDelivery,"review");
+}));
+test("Contact forwards saved inquiries even when email is not configured", async () => withCrmConfig(async () => {
+  const e = environment();
+  let calls=0;
+  e.setFetch(async () => {calls++; return Response.json({success:true});});
+  const route=e.load("app/api/contact/route.ts");
+  const body={name:"Teszt",email:"test@test.invalid",message:"Érdekel",submissionId:"55555555-5555-4555-8555-555555555555"};
+  assert.equal((await route.POST(e.request("",body))).status,200);
+  assert.equal(e.store.get(`inquiries/${body.submissionId}`).crmDelivery,"sent");
+  assert.equal((await route.POST(e.request("",body))).status,200);
+  assert.equal(calls,1);
+}));
+test("A late failed CRM response cannot overwrite a newer successful retry", async () => withCrmConfig(async () => {
+  const e = environment(), ref = e.db.doc("inquiries/late-response");
+  e.store.set(ref.path, {name:"Teszt",email:"test@test.invalid",message:"Megőrzendő"});
+  let releaseFirst, enteredFirst;
+  const entered = new Promise(resolve => {enteredFirst=resolve;});
+  const held = new Promise(resolve => {releaseFirst=resolve;});
+  let calls=0;
+  e.setFetch(async () => {
+    if (++calls === 1) {enteredFirst(); await held; return new Response("down",{status:503});}
+    return Response.json({success:true});
+  });
+  const {deliverToHomeFlow}=e.load("app/lib/homeflowDelivery.ts");
+  const first=deliverToHomeFlow(ref);
+  await entered;
+  await ref.update({crmLeaseUntil:0});
+  await deliverToHomeFlow(ref);
+  assert.equal(e.store.get(ref.path).crmDelivery,"sent");
+  releaseFirst();
+  await first;
+  assert.equal(e.store.get(ref.path).crmDelivery,"sent");
+  assert.equal(e.store.get(ref.path).crmErrorCode,"");
+  assert.equal(e.store.get(ref.path).crmAttempts,2);
+}));
 test("Contact delivery failure still acknowledges a durably saved inquiry; retry sends no duplicate", async () => {
   const e = environment();
   let sends = 0;

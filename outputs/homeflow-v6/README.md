@@ -1,5 +1,21 @@
 # HomeFlow CRM – 6.1: weboldali érdeklődőfogadás
 
+## Éles kiadás: kész
+
+Mindhárom projekt Production / READY állapotban telepítve:
+
+| Projekt | Nyilvános cím | Kiadási azonosító | Forráscommit |
+| --- | --- | --- | --- |
+| HomeFlow | https://www.homeflowcrm.hu | dpl_EXTTx8Ef9zyfXURkNzfSqyrQJzcH | 0b80149 |
+| Ingatlanos alkalmazás | https://debrecenhomes.hu | dpl_31NLqTovpYLGQcZQw6TFrEynGhoh | 2d4ab55 |
+| Bemutatkozó oldal | https://www.debreceniotthonok.hu | dpl_4jbFkswdEtj2x9ErkUf9m32aH3y7 | 6270529 |
+
+A három forráscommit a felhasználó külön engedélyével a megfelelő GitHub main ágra feltöltve. A titkok csak a kiadási folyamat memóriájában és a Vercel Production beállításaiban szerepeltek; fájlba vagy forráskódba nem kerültek.
+
+Éles ellenőrzés: CRM és landing-inbox titok nélkül 401, megfelelő titokkal érvénytelen bemenetre 400; landing botcsapda 200, nyitóoldal 200. A visszagörgetett SQL-próba az éles sémán sikeres; meglévő ügyféladatok ellenőrzőösszege változatlan. Új ügyfelet nem hagytunk a próbák után, levelet nem küldtünk. Egy valódi űrlap teljes, éles mentési és mailbox-próbája még nincs elvégezve.
+
+A régi ügyfél- és hirdetésállomány átvétele nem része a kiadásnak. A következő új érdeklődések tartós admin-bejegyzésből jutnak a HomeFlow-ba.
+
 A felhasználó engedélyezte az élesítést mindkét weboldal új érdeklődéseire. Külön tisztázta: a meglévő ügyfeleket és a 37 hirdetést (közülük a felhasználó szerint 32 aktív) nem kell importálni. A régi állomány eltérő darabszáma ezért nem kiadási akadály; automatikus visszamenőleges import nincs.
 
 ## Éles előellenőrzés és adatmegőrzés
@@ -17,9 +33,9 @@ A felhasználó engedélyezte az élesítést mindkét weboldal új érdeklődé
 - HomeFlow: `homeflow-crm`, `https://www.homeflowcrm.hu`, helyi forrás `C:\Users\wingo\homeflow-crm`.
 - Ingatlanos alkalmazás: `mobil-ingatlan-app`, `https://debrecenhomes.hu`, helyi forrás `F:\debrecenhomes-app`. Az itt elkészült tartós továbbítás és admin újrapróbálás ezt a projektet érinti.
 - Külön bemutatkozó oldal: `debreceni-otthonok`, `https://www.debreceniotthonok.hu`, helyi forrás `F:\debreceni-otthonok`. A helyi `/api/lead` már a közös adminlistába ment, majd a meglévő Resend-értesítést küldi. Nem szabad a Next.js alkalmazást erre a projektre telepíteni.
-- A HomeFlow helyi mappája a megfelelő Vercel-projekthez kapcsolva, külön `project inspect` ellenőrzéssel. Az éles Supabase szerveroldali kulcs jelen van; `WEBSITE_LEAD_SECRET` még nincs beállítva.
+- Mindhárom helyi mappa a megfelelő Vercel-projekthez kapcsolva, külön `project inspect` ellenőrzéssel. A szükséges Production integrációs változók beállítva.
 - A felhasználó mindkét forrást választotta. A HomeFlow-fogadó külön rögzíti a két forrásnevet.
-- A Supabase connector és CLI helyett a felhasználó által bejelentkeztetett böngészőben történt a projekt- és sémaellenőrzés. Éles migráció és telepítés nem történt.
+- A Supabase connector és CLI helyett a felhasználó által bejelentkeztetett böngészőben történt a projekt- és sémaellenőrzés, majd a tesztelt új séma alkalmazása. A telepítés Vercel CLI-vel történt.
 
 ## Elkészült helyben
 
@@ -69,7 +85,7 @@ npm.cmd run test:homeflow:ui
 1. A megfelelő Supabase projekt és jelenlegi séma ellenőrzése; a tényleges ügyfélszám, kapcsolatok, mentés és visszaállítási pont rögzítése. Az éles adatokat ez a munka nem módosította.
 2. Elkülönített tesztkörnyezetben ellenőrizni a két migrációt a tényleges sémával, a meglévő triggerekkel és jogosultságokkal.
 3. A korábbi `20261105230000_website_lead_imports.sql`, majd az új `20261105231137_website_lead_atomic_intake.sql` alkalmazása, ha még nincsenek alkalmazva. A korábbi `processing` rekordokat kézzel ellenőrizni, nem törölni.
-4. HomeFlow szerver: `WEBSITE_LEAD_SECRET` és a meglévő szerveroldali Supabase secret/service-role kulcs beállítása. Weboldal szerver: `HOMEFLOW_CRM_URL` (HTTPS), `HOMEFLOW_LEAD_SECRET` (ugyanaz a megosztott titok). Titok nem kerülhet `NEXT_PUBLIC_` változóba, klienskódba vagy dokumentumba.
+4. HomeFlow szerver: `WEBSITE_LEAD_SECRET` és a meglévő szerveroldali Supabase secret/service-role kulcs beállítása. Weboldal szerver: `HOMEFLOW_CRM_URL` (HTTPS), `HOMEFLOW_LEAD_SECRET` (ugyanaz a megosztott titok), valamint `LANDING_LEAD_SECRET`. Landing szerver: `LEAD_INBOX_URL` (a debrecenhomes.hu `/api/integrations/landing-lead` végpontja), `LANDING_LEAD_SECRET` (a weboldallal azonos). Titok nem kerülhet `NEXT_PUBLIC_` változóba, klienskódba vagy dokumentumba.
 5. Előbb a HomeFlow, majd a weboldal telepítése. A külső main ágra push külön jóváhagyást igényel a korábbi munkamegállapodás szerint.
 6. Egy egyértelműen jelölt kontroll-érdeklődés beküldése saját ellenőrzött elérhetőséggel. Az ügyfél, feladat, idővonal, importnyugta, weboldali CRM-állapot és a tényleges mailbox külön ellenőrzendő. Az ismételt továbbítás ugyanazt a feladatot adja vissza.
 7. Meglévő ügyféllel, átmeneti elérhetetlenséggel és újrapróbálással megismételni; mobilon ügyféladatlap/feladat/naptár, valamint a korábbi ügy- és párosítási munkafolyamat ellenőrzése.

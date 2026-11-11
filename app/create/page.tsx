@@ -14,6 +14,7 @@ import { auth, db, storage } from "../lib/firebase";
 import { createSafeImageName, validateImageFile } from "../lib/imageUpload";
 import type { ListingPurpose, PropertyStatus } from "../lib/types";
 import { normalizeHungarianPhone } from "../lib/format";
+import SortableImageGallery from "@/app/components/property/SortableImageGallery";
 import ListingQuality from "../components/property/ListingQuality";
 
 const MapPicker = dynamic(() => import("@/app/components/map/MapPicker"), {
@@ -261,36 +262,7 @@ export default function Create() {
           )}
         </div>
 
-        {images.length > 0 && (
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {images.map((image, index) => (
-              <div
-                key={image}
-                className="relative overflow-hidden rounded-2xl border border-[#e2ddd3]"
-              >
-                <img
-                  src={image}
-                  alt={`Ingatlan kép ${index + 1}`}
-                  className="h-44 w-full object-cover"
-                />
-                {index === 0 && (
-                  <div className="absolute left-3 top-3 rounded-full bg-[#b99445] px-3 py-1 text-xs font-bold text-[#172019]">
-                    BORÍTÓ
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((prev) => prev.filter((_, i) => i !== index))
-                  }
-                  className="absolute bottom-3 right-3 rounded-lg bg-red-600 px-3 py-1 text-sm font-bold"
-                >
-                  Törlés
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <SortableImageGallery images={images} setImages={setImages} onRemove={image => setImages(previous => previous.filter(item => item !== image))} disabled={uploading || saving} />
 
         <div className="mb-8">
           <label className="mb-3 block text-sm text-[#6c776f]">

@@ -1,4 +1,5 @@
 "use client";
+import SortableImageGallery from "@/app/components/property/SortableImageGallery";
 import ListingQuality from "@/app/components/property/ListingQuality";
 import { uploadImageBatch } from "@/app/lib/imageUploadBatch";
 import { cleanPropertyPatch } from "@/app/lib/managementPolicy";
@@ -147,10 +148,6 @@ export default function EditPropertyPage() {
 
     // A fájl megmarad az előzmények visszaállításához.
     setImages((prev) => prev.filter((item) => item !== image));
-  };
-
-  const handleSetCover = (image: string) => {
-    setImages((prev) => [image, ...prev.filter((item) => item !== image)]);
   };
 
   const handleSave = async () => {
@@ -336,46 +333,8 @@ export default function EditPropertyPage() {
             <p className="mt-2 text-sm text-[#a1813a]">Képek feltöltése...</p>
           )}
         </div>
-        {images.length > 0 && (
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {images.map((image, index) => (
-              <div
-                key={image}
-                className="overflow-hidden rounded-2xl border border-[#e2ddd3] bg-[#f7f4ee]"
-              >
-                <div className="relative">
-                  <img
-                    src={image}
-                    alt={`Ingatlan kép ${index + 1}`}
-                    className="h-44 w-full object-cover"
-                  />
-                  {index === 0 && (
-                    <span className="absolute left-3 top-3 rounded-full bg-[#b99445] px-3 py-1 text-xs font-bold text-[#172019]">
-                      BORÍTÓ
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2 p-2">
-                  <button
-                    type="button"
-                    disabled={index === 0}
-                    onClick={() => handleSetCover(image)}
-                    className="rounded-lg bg-[#ebe6dc] px-2 py-2 text-xs font-bold disabled:cursor-default disabled:opacity-40"
-                  >
-                    Borítónak
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemoveImage(image)}
-                    className="rounded-lg bg-red-600 px-2 py-2 text-xs font-bold"
-                  >
-                    Törlés
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <SortableImageGallery images={images} setImages={setImages} onRemove={handleRemoveImage} disabled={uploading || saving} />
+
         <div className="mb-8">
           <label className="mb-3 block text-[#6c776f]">
             Elhelyezkedés a térképen
